@@ -1,0 +1,23 @@
+// Curated word pairs with good semantic distance for gameplay
+export const WORD_PAIRS: [string, string][] = [
+  ['fire', 'snow'],
+  ['ocean', 'mountain'],
+  ['sun', 'moon'],
+  ['day', 'night'],
+  ['war', 'peace'],
+  ['hot', 'cold'],
+  ['love', 'hate'],
+  ['city', 'forest'],
+  ['fast', 'slow'],
+  ['light', 'dark'],
+  ['begin', 'end'],
+  ['earth', 'sky'],
+  ['rich', 'poor'],
+  ['laugh', 'cry'],
+  ['dream', 'wake'],
+  ['music', 'silence'],
+  ['water', 'desert'],
+  ['young', 'ancient'],
+  ['storm', 'calm'],
+  ['build', 'destroy'],
+];

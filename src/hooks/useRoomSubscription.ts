@@ -1,0 +1,43 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { subscribeRoom } from '../services/roomService';
+import { useGameStore } from '../store/useGameStore';
+
+/**
+ * Subscribes to a Firebase room and keeps the Zustand store in sync.
+ * Automatically redirects on game start and win.
+ */
+export function useRoomSubscription(roomId: string | undefined): void {
+  const setRoom = useGameStore((s) => s.setRoom);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    const unsubscribe = subscribeRoom(roomId, (room) => {
+      setRoom(room);
+
+      if (!room) {
+        navigate('/');
+        return;
+      }
+
+      if (room.status === 'playing') {
+        // Only redirect from lobby to game
+        const path = window.location.pathname;
+        if (path.includes('/lobby')) {
+          navigate(`/game/${roomId}`);
+        }
+      }
+
+      if (room.status === 'won') {
+        const path = window.location.pathname;
+        if (!path.includes('/victory')) {
+          navigate(`/victory/${roomId}`);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [roomId, setRoom, navigate]);
+}
