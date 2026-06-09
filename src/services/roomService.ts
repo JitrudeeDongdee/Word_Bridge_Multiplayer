@@ -11,7 +11,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { db } from './firebase';
 import type { Room, Player, GameNode, GameEdge, SharedWordScore, LastWordScores } from '../types';
-import { WORD_PAIRS, pickWordPair } from '../utils/wordPairs';
+import { pickWordPair } from '../utils/wordPairs';
 import { generateRoomCode } from '../utils/generateRoomCode';
 
 // --- Room operations ---

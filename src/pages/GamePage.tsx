@@ -82,7 +82,7 @@ export default function GamePage() {
               </button>
               <button
                 onClick={handleBackToLobby}
-                disabled={leavingLobby || restarting}
+                disabled={leavingLobby}
                 className="px-3 py-1 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
               >
                 {leavingLobby ? 'Returning…' : '← Back to Lobby'}
