@@ -44,13 +44,7 @@ export function useRoomSubscription(roomId: string | undefined): void {
           navigate(`/lobby/${roomId}`);
         }
       }
-
-      if (room.status === 'won') {
-        const path = window.location.pathname;
-        if (!path.includes('/victory')) {
-          navigate(`/victory/${roomId}`);
-        }
-      }
+      // 'won' is handled as a modal overlay inside GamePage — no redirect needed
     });
 
     return unsubscribe;

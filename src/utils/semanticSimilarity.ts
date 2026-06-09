@@ -24,7 +24,7 @@ async function fetchRelatedScores(
     clearTimeout(timer);
 
     if (!res.ok) {
-      relatedCache.set(key, new Map());
+      // Don't cache HTTP errors — allow a retry on the next call
       return new Map();
     }
 
@@ -33,11 +33,12 @@ async function fetchRelatedScores(
     const scores = new Map<string, number>(
       data.map((item) => [item.word.toLowerCase(), item.score / maxScore]),
     );
+    // Cache successful results (including genuine empty-200 responses)
     relatedCache.set(key, scores);
     return scores;
   } catch {
     clearTimeout(timer);
-    relatedCache.set(key, new Map());
+    // Don't cache timeouts / network errors — allow a retry on the next call
     return new Map();
   }
 }

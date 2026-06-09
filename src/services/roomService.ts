@@ -11,7 +11,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { db } from './firebase';
 import type { Room, Player, GameNode, GameEdge, SharedWordScore, LastWordScores } from '../types';
-import { WORD_PAIRS } from '../utils/wordPairs';
+import { WORD_PAIRS, pickWordPair } from '../utils/wordPairs';
 import { generateRoomCode } from '../utils/generateRoomCode';
 
 // --- Room operations ---
@@ -106,7 +106,14 @@ export async function joinRoom(
 }
 
 export async function startGame(roomId: string): Promise<void> {
-  const [wordA, wordB] = WORD_PAIRS[Math.floor(Math.random() * WORD_PAIRS.length)];
+  // Read history to avoid repeating recent pairs / categories
+  const histSnap = await get(ref(db, `rooms/${roomId}/usedPairs`));
+  const usedPairs: string[] = histSnap.exists()
+    ? (Object.values(histSnap.val() as Record<string, string>))
+    : [];
+
+  const [wordA, wordB] = pickWordPair(usedPairs);
+  const updatedUsedPairs = [...usedPairs, `${wordA}/${wordB}`].slice(-30);
   const wordANodeId = uuidv4();
   const wordBNodeId = uuidv4();
 
@@ -139,13 +146,21 @@ export async function startGame(roomId: string): Promise<void> {
       wordBNodeId,
       startedAt: serverTimestamp(),
     },
+    [`rooms/${roomId}/usedPairs`]: updatedUsedPairs,
   };
 
   await update(ref(db), updates);
 }
 
 export async function restartGame(roomId: string): Promise<void> {
-  const [wordA, wordB] = WORD_PAIRS[Math.floor(Math.random() * WORD_PAIRS.length)];
+  // Read history to avoid repeating recent pairs / categories
+  const histSnap = await get(ref(db, `rooms/${roomId}/usedPairs`));
+  const usedPairs: string[] = histSnap.exists()
+    ? (Object.values(histSnap.val() as Record<string, string>))
+    : [];
+
+  const [wordA, wordB] = pickWordPair(usedPairs);
+  const updatedUsedPairs = [...usedPairs, `${wordA}/${wordB}`].slice(-30);
   const wordANodeId = uuidv4();
   const wordBNodeId = uuidv4();
 
@@ -182,6 +197,7 @@ export async function restartGame(roomId: string): Promise<void> {
     [`rooms/${roomId}/winningPath`]: null,
     [`rooms/${roomId}/lastWordScores`]: null,
     [`rooms/${roomId}/roundScores`]: null,
+    [`rooms/${roomId}/usedPairs`]: updatedUsedPairs,
     // `scores` (cumulative) is intentionally not cleared
   };
 

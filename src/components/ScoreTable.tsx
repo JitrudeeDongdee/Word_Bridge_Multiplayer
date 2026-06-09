@@ -32,7 +32,11 @@ export default function ScoreTable({ lastWordScores }: ScoreTableProps) {
             <tr key={s.word} className="border-t border-gray-100">
               <td className="py-1 uppercase font-semibold text-gray-700">{s.word}</td>
               <td className="py-1 text-right tabular-nums text-gray-500">
-                {(s.score * 100).toFixed(0)}
+                {s.score >= 0.001
+                  ? `${(s.score * 100).toFixed(1)}%`
+                  : s.score > 0
+                  ? '< 0.1%'
+                  : '—'}
               </td>
               <td className="py-1 text-right">
                 {s.connected ? (

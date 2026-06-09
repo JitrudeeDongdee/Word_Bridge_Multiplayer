@@ -57,4 +57,6 @@ export interface Room {
   scores: Record<string, number>;
   /** Points earned in the most recently completed round (playerId → pts) */
   roundScores: Record<string, number> | null;
+  /** History of used pairs stored as "wordA/wordB" — used to avoid repetition */
+  usedPairs?: string[];
 }

@@ -7,6 +7,8 @@ import GameCanvas from '../components/GameCanvas';
 import AddWordPanel from '../components/AddWordPanel';
 import PlayerList from '../components/PlayerList';
 import ScoreTable from '../components/ScoreTable';
+import VictoryModal from '../components/VictoryModal';
+import NewGameModal from '../components/NewGameModal';
 import { getPlayerColorMap } from '../utils/playerColors';
 import { resetToLobby } from '../services/roomService';
 
@@ -19,6 +21,7 @@ export default function GamePage() {
   useWinDetection(roomId ?? '');
 
   const [leavingLobby, setLeavingLobby] = useState(false);
+  const [showNewGameModal, setShowNewGameModal] = useState(false);
 
   const playerColorMap = useMemo(
     () => getPlayerColorMap(room?.players ?? {}),
@@ -38,6 +41,8 @@ export default function GamePage() {
       setLeavingLobby(false);
     }
   };
+
+
 
   if (!room || !roomId || !playerId) {
     return (
@@ -67,13 +72,22 @@ export default function GamePage() {
           </span>
           <span className="text-gray-400">{nodeCount} nodes</span>
           {isHost && (
-            <button
-              onClick={handleBackToLobby}
-              disabled={leavingLobby}
-              className="ml-2 px-3 py-1 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
-            >
-              {leavingLobby ? 'Returning…' : '← Back to Lobby'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowNewGameModal(true)}
+                disabled={leavingLobby}
+                className="px-3 py-1 rounded-lg border border-brand-300 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50 transition-colors"
+              >
+                ↺ New Game
+              </button>
+              <button
+                onClick={handleBackToLobby}
+                disabled={leavingLobby || restarting}
+                className="px-3 py-1 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+              >
+                {leavingLobby ? 'Returning…' : '← Back to Lobby'}
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -83,8 +97,25 @@ export default function GamePage() {
         {/* Canvas */}
         <main className="flex-1 relative">
           <GameCanvas room={room} roomId={roomId} playerId={playerId} playerColorMap={playerColorMap} />
+          {/* Victory modal — mounts when game is won, unmounts on restart */}
+          {showNewGameModal && room.status === 'playing' && (
+            <NewGameModal
+              room={room}
+              roomId={roomId}
+              playerId={playerId}
+              playerColorMap={playerColorMap}
+              onClose={() => setShowNewGameModal(false)}
+            />
+          )}
+          {room.status === 'won' && (
+            <VictoryModal
+              room={room}
+              roomId={roomId}
+              playerId={playerId}
+              playerColorMap={playerColorMap}
+            />
+          )}
         </main>
-
         {/* Sidebar */}
         <aside className="w-64 bg-white border-l border-gray-200 flex flex-col gap-4 p-4 overflow-y-auto">
           <div>
