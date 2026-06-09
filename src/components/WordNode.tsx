@@ -19,7 +19,7 @@ interface WordNodeProps {
 }
 
 function WordNode({ id, data, selected }: WordNodeProps) {
-  const { word, isStart, canDelete, onDelete, playerColor, isPathNode, isHighlighted, connectedWords } = data;
+  const { word, isStart, canDelete, onDelete, playerColor, isPathNode, isHighlighted } = data;
 
   const baseClass =
     'px-4 py-2 rounded-xl border-2 shadow-md select-none text-sm font-semibold uppercase tracking-wide transition-all';
