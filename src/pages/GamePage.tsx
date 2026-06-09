@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { useRoomSubscription } from '../hooks/useRoomSubscription';
@@ -10,13 +10,21 @@ import ScoreTable from '../components/ScoreTable';
 import VictoryModal from '../components/VictoryModal';
 import NewGameModal from '../components/NewGameModal';
 import { getPlayerColorMap } from '../utils/playerColors';
-import { resetToLobby, requestJoinGame, approveJoinRequest, denyJoinRequest, leaveRoom } from '../services/roomService';
+import { resetToLobby, requestJoinGame, approveJoinRequest, denyJoinRequest, leaveRoom, joinRoom } from '../services/roomService';
+
+const ADJ = ['Swift', 'Bright', 'Clever', 'Bold', 'Quick', 'Sharp', 'Witty', 'Calm'];
+const NOUN = ['Fox', 'Owl', 'Lynx', 'Wolf', 'Hawk', 'Bear', 'Deer', 'Crow'];
+function randomName() {
+  return ADJ[Math.floor(Math.random() * ADJ.length)] + NOUN[Math.floor(Math.random() * NOUN.length)];
+}
 
 export default function GamePage() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const room = useGameStore((s) => s.room);
   const playerId = useGameStore((s) => s.playerId);
+  const setIdentity = useGameStore((s) => s.setIdentity);
+  const setRoom = useGameStore((s) => s.setRoom);
 
   useRoomSubscription(roomId);
   useWinDetection(roomId ?? '');
@@ -27,6 +35,9 @@ export default function GamePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [joinName, setJoinName] = useState(randomName);
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const fitViewRef = useRef<(() => void) | null>(null);
 
   const handleCopyLink = () => {
@@ -82,11 +93,91 @@ export default function GamePage() {
 
 
   if (!room || !roomId || !playerId) {
+    // No playerId → user opened game link directly; show join form
+    if (roomId && !playerId) {
+      const handleJoin = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!joinName.trim()) return;
+        setJoining(true);
+        setJoinError(null);
+        try {
+          const result = await joinRoom(roomId, joinName.trim());
+          if (!result) {
+            setJoinError('Room not found or game has already ended.');
+            setJoining(false);
+            return;
+          }
+          setIdentity(result.playerId, joinName.trim());
+          setRoom(result.room);
+        } catch {
+          setJoinError('Failed to join. Check your connection.');
+          setJoining(false);
+        }
+      };
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-brand-50 to-sky-100 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-black text-brand-600 tracking-tight">Word Bridge</h1>
+              <p className="mt-2 text-gray-500 text-sm">A game is in progress</p>
+            </div>
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <form onSubmit={handleJoin} className="flex flex-col gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">Join Game</h2>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Room <span className="font-mono font-bold tracking-wider">{roomId}</span>
+                  </p>
+                </div>
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm text-gray-600">Your name</span>
+                  <input
+                    type="text"
+                    value={joinName}
+                    onChange={(e) => setJoinName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    maxLength={20}
+                    autoFocus
+                    disabled={joining}
+                    inputMode="text"
+                    enterKeyHint="go"
+                  />
+                </label>
+                {joinError && <p className="text-red-500 text-xs">{joinError}</p>}
+                <button
+                  type="submit"
+                  disabled={joining || !joinName.trim()}
+                  className="w-full py-3 rounded-xl bg-brand-500 text-white font-bold text-lg hover:bg-brand-600 disabled:opacity-60 transition-colors"
+                >
+                  {joining ? 'Joining…' : 'Join Game →'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className="text-sm text-gray-400 hover:text-gray-600 transition-colors text-center"
+                >
+                  ← Back to home
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-gray-400">
+        <div className="flex flex-col items-center gap-4 text-gray-400">
           <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin" />
           <span className="text-sm">Connecting…</span>
+          <button
+            onClick={() => navigate('/')}
+            className="mt-2 text-sm text-brand-500 hover:text-brand-700 underline underline-offset-2"
+          >
+            ← Back to Home
+          </button>
         </div>
       </div>
     );
