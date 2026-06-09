@@ -85,12 +85,18 @@ export function useGameActions(roomId: string) {
 
       // 2. Also bridge existing node-pairs that have no edge yet
       //    (catches words added simultaneously or missed due to stale state)
+      const { wordANodeId, wordBNodeId } = room.gameState!;
       const pairChecks: Promise<void>[] = [];
       for (let i = 0; i < existingNodes.length; i++) {
         for (let j = i + 1; j < existingNodes.length; j++) {
           const a = existingNodes[i];
           const b = existingNodes[j];
           if (hasEdge(a.id, b.id)) continue;
+          // Never create a direct edge between the two goal nodes — win must go through intermediates
+          if (
+            (a.id === wordANodeId && b.id === wordBNodeId) ||
+            (a.id === wordBNodeId && b.id === wordANodeId)
+          ) continue;
           pairChecks.push(
             semanticSimilarity(a.word.toLowerCase(), b.word.toLowerCase()).then(
               (sim) => {

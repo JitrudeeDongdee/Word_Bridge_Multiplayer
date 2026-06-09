@@ -48,6 +48,49 @@ export async function kickPlayer(roomId: string, playerId: string): Promise<void
   await remove(ref(db, `rooms/${roomId}/players/${playerId}`));
 }
 
+export async function leaveRoom(
+  roomId: string,
+  playerId: string,
+  players: Record<string, import('../types').Player>,
+): Promise<void> {
+  const remaining = Object.values(players).filter((p) => p.id !== playerId);
+
+  if (remaining.length === 0) {
+    // Last player leaving — delete the room entirely
+    await remove(ref(db, `rooms/${roomId}`));
+    return;
+  }
+
+  const updates: Record<string, unknown> = {
+    [`rooms/${roomId}/players/${playerId}`]: null,
+  };
+
+  // Transfer host if the leaving player is the current host
+  const isHost = players[playerId]?.isHost;
+  if (isHost) {
+    const nextHost = remaining.sort((a, b) => a.joinedAt - b.joinedAt)[0];
+    updates[`rooms/${roomId}/hostId`] = nextHost.id;
+    updates[`rooms/${roomId}/players/${nextHost.id}/isHost`] = true;
+  }
+
+  await update(ref(db), updates);
+}
+
+export async function requestJoinGame(roomId: string, playerId: string): Promise<void> {
+  await update(ref(db, `rooms/${roomId}/players/${playerId}`), { joinRequest: true });
+}
+
+export async function approveJoinRequest(roomId: string, playerId: string): Promise<void> {
+  await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
+    spectator: null,
+    joinRequest: null,
+  });
+}
+
+export async function denyJoinRequest(roomId: string, playerId: string): Promise<void> {
+  await update(ref(db, `rooms/${roomId}/players/${playerId}`), { joinRequest: null });
+}
+
 export async function createRoom(hostName: string): Promise<{ room: Room; playerId: string }> {
   // Clean up stale rooms before creating a new one (best-effort; don't block on failure)
   await cleanOldRooms().catch(() => {});
@@ -90,7 +133,7 @@ export async function joinRoom(
   if (!snapshot.exists()) return null;
 
   const room = snapshot.val() as Room;
-  if (room.status !== 'waiting') return null;
+  if (room.status === 'won') return null;
 
   const playerId = uuidv4();
   const player: Player = {
@@ -98,6 +141,7 @@ export async function joinRoom(
     name: playerName,
     isHost: false,
     joinedAt: Date.now(),
+    spectator: room.status !== 'waiting' ? true : undefined,
   };
 
   await update(ref(db, `rooms/${roomId}/players`), { [playerId]: player });
@@ -200,6 +244,14 @@ export async function restartGame(roomId: string): Promise<void> {
     [`rooms/${roomId}/usedPairs`]: updatedUsedPairs,
     // `scores` (cumulative) is intentionally not cleared
   };
+
+  // Promote any spectators to full players for this round
+  const playersSnap = await get(ref(db, `rooms/${roomId}/players`));
+  if (playersSnap.exists()) {
+    for (const pid of Object.keys(playersSnap.val())) {
+      updates[`rooms/${roomId}/players/${pid}/spectator`] = null;
+    }
+  }
 
   await update(ref(db), updates);
 }

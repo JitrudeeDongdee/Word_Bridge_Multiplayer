@@ -9,6 +9,7 @@ export default function App() {
     <HashRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/join/:roomId" element={<HomePage />} />
         <Route path="/lobby/:roomId" element={<LobbyPage />} />
         <Route path="/game/:roomId" element={<GamePage />} />
         <Route path="/victory/:roomId" element={<VictoryPage />} />

@@ -5,10 +5,12 @@ interface PlayerListProps {
   currentPlayerId: string | null;
   hostId?: string;
   onKick?: (playerId: string) => void;
+  onApprove?: (playerId: string) => void;
+  onDeny?: (playerId: string) => void;
   playerColorMap?: Record<string, string>;
 }
 
-export default function PlayerList({ players, currentPlayerId, hostId, onKick, playerColorMap = {} }: PlayerListProps) {
+export default function PlayerList({ players, currentPlayerId, hostId, onKick, onApprove, onDeny, playerColorMap = {} }: PlayerListProps) {
   const sorted = Object.values(players).sort((a, b) => a.joinedAt - b.joinedAt);
   const isHost = currentPlayerId === hostId;
 
@@ -24,6 +26,21 @@ export default function PlayerList({ players, currentPlayerId, hostId, onKick, p
             style={{ backgroundColor: playerColorMap[player.id] ?? '#d1d5db' }}
           />
           <span className="text-sm text-gray-800 flex-1 truncate">{player.name}</span>
+          {player.spectator && !player.joinRequest && (
+            <span className="text-xs font-medium text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">
+              Watching
+            </span>
+          )}
+          {player.joinRequest && player.id !== currentPlayerId && isHost && (
+            <span className="flex items-center gap-1">
+              <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">Wants in</span>
+              <button onClick={() => onApprove?.(player.id)} className="text-xs text-green-600 hover:text-green-800 font-bold" title="Approve">✓</button>
+              <button onClick={() => onDeny?.(player.id)} className="text-xs text-red-400 hover:text-red-600 font-bold" title="Deny">✗</button>
+            </span>
+          )}
+          {player.joinRequest && player.id === currentPlayerId && (
+            <span className="text-xs text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">Requested</span>
+          )}
           {player.isHost && (
             <span className="text-xs font-medium text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded">
               Host
@@ -36,9 +53,9 @@ export default function PlayerList({ players, currentPlayerId, hostId, onKick, p
             <button
               onClick={() => onKick(player.id)}
               className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors ml-1"
-              title="Kick player"
+              title={player.spectator ? 'Remove spectator' : 'Kick player'}
             >
-              Kick
+              {player.spectator ? 'Remove' : 'Kick'}
             </button>
           )}
         </li>

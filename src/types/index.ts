@@ -5,6 +5,8 @@ export interface Player {
   name: string;
   isHost: boolean;
   joinedAt: number;
+  spectator?: boolean;
+  joinRequest?: boolean;
 }
 
 export interface GameNode {

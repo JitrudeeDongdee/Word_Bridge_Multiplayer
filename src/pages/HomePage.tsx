@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, type FormEvent } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { createRoom, joinRoom } from '../services/roomService';
 import { useGameStore } from '../store/useGameStore';
 
@@ -13,6 +13,15 @@ export default function HomePage() {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const { roomId: inviteRoomId } = useParams<{ roomId?: string }>();
+
+  useEffect(() => {
+    if (inviteRoomId) {
+      setMode('join');
+      setCode(inviteRoomId);
+    }
+  }, [inviteRoomId]);
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
@@ -41,13 +50,16 @@ export default function HomePage() {
     try {
       const result = await joinRoom(code.trim().toUpperCase(), name.trim());
       if (!result) {
-        setError('Room not found or game already started.');
+        setError('Room not found.');
         setLoading(false);
         return;
       }
       setIdentity(result.playerId, name.trim());
       setRoom(result.room);
-      navigate(`/lobby/${result.room.id}`);
+      const dest = result.room.status === 'waiting'
+        ? `/lobby/${result.room.id}`
+        : `/game/${result.room.id}`;
+      navigate(dest);
     } catch {
       setError('Failed to join room. Check your connection.');
     } finally {
@@ -132,17 +144,19 @@ export default function HomePage() {
                   autoFocus
                 />
               </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm text-gray-600">Room code</span>
-                <input
-                  type="text"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. AB3XY7"
-                  className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 uppercase tracking-widest font-mono"
-                  maxLength={6}
-                />
-              </label>
+              {!inviteRoomId && (
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm text-gray-600">Room code</span>
+                  <input
+                    type="text"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    placeholder="e.g. AB3XY7"
+                    className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 uppercase tracking-widest font-mono"
+                    maxLength={6}
+                  />
+                </label>
+              )}
               {error && <p className="text-red-500 text-sm">{error}</p>}
               <button
                 type="submit"
@@ -151,13 +165,15 @@ export default function HomePage() {
               >
                 {loading ? 'Joining…' : 'Join Room'}
               </button>
-              <button
-                type="button"
-                onClick={() => { setMode('menu'); setError(null); }}
-                className="text-sm text-gray-400 hover:text-gray-600"
-              >
-                ← Back
-              </button>
+              {!inviteRoomId && (
+                <button
+                  type="button"
+                  onClick={() => { setMode('menu'); setError(null); }}
+                  className="text-sm text-gray-400 hover:text-gray-600"
+                >
+                  ← Back
+                </button>
+              )}
             </form>
           )}
         </div>

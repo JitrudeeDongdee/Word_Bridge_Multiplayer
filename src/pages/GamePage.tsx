@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { useRoomSubscription } from '../hooks/useRoomSubscription';
 import { useWinDetection } from '../hooks/useWinDetection';
@@ -10,10 +10,11 @@ import ScoreTable from '../components/ScoreTable';
 import VictoryModal from '../components/VictoryModal';
 import NewGameModal from '../components/NewGameModal';
 import { getPlayerColorMap } from '../utils/playerColors';
-import { resetToLobby } from '../services/roomService';
+import { resetToLobby, requestJoinGame, approveJoinRequest, denyJoinRequest, leaveRoom } from '../services/roomService';
 
 export default function GamePage() {
   const { roomId } = useParams<{ roomId: string }>();
+  const navigate = useNavigate();
   const room = useGameStore((s) => s.room);
   const playerId = useGameStore((s) => s.playerId);
 
@@ -22,6 +23,7 @@ export default function GamePage() {
 
   const [leavingLobby, setLeavingLobby] = useState(false);
   const [showNewGameModal, setShowNewGameModal] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   const playerColorMap = useMemo(
     () => getPlayerColorMap(room?.players ?? {}),
@@ -30,6 +32,24 @@ export default function GamePage() {
   );
 
   const isHost = room?.hostId === playerId;
+  const isSpectator = !!room?.players?.[playerId ?? '']?.spectator;
+  const hasJoinRequest = !!room?.players?.[playerId ?? '']?.joinRequest;
+
+  const handleRequestJoin = async () => {
+    if (!roomId || !playerId) return;
+    await requestJoinGame(roomId, playerId);
+  };
+
+  const handleLeave = async () => {
+    if (!roomId || !playerId || !room) return;
+    setLeaving(true);
+    try {
+      await leaveRoom(roomId, playerId, room.players ?? {});
+      navigate('/');
+    } catch {
+      setLeaving(false);
+    }
+  };
 
   const handleBackToLobby = async () => {
     if (!roomId) return;
@@ -75,20 +95,27 @@ export default function GamePage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowNewGameModal(true)}
-                disabled={leavingLobby}
+                disabled={leavingLobby || leaving}
                 className="px-3 py-1 rounded-lg border border-brand-300 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50 transition-colors"
               >
                 ↺ New Game
               </button>
               <button
                 onClick={handleBackToLobby}
-                disabled={leavingLobby}
+                disabled={leavingLobby || leaving}
                 className="px-3 py-1 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
               >
                 {leavingLobby ? 'Returning…' : '← Back to Lobby'}
               </button>
             </div>
           )}
+          <button
+            onClick={handleLeave}
+            disabled={leaving || leavingLobby}
+            className="px-3 py-1 rounded-lg border border-red-200 text-xs font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
+          >
+            {leaving ? 'Leaving…' : 'Leave Room'}
+          </button>
         </div>
       </header>
 
@@ -122,13 +149,37 @@ export default function GamePage() {
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Add Word
             </p>
-            <AddWordPanel roomId={roomId} />
+            {isSpectator ? (
+              <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-center flex flex-col gap-2">
+                <p className="text-xs font-semibold text-yellow-700">Watching</p>
+                <p className="text-xs text-yellow-600">You'll join the next round</p>
+                {!hasJoinRequest ? (
+                  <button
+                    onClick={handleRequestJoin}
+                    className="text-xs bg-brand-500 text-white rounded-lg py-1.5 px-2 hover:bg-brand-600 font-semibold transition-colors"
+                  >
+                    Request to join now
+                  </button>
+                ) : (
+                  <p className="text-xs text-blue-600 font-medium">Waiting for host…</p>
+                )}
+              </div>
+            ) : (
+              <AddWordPanel roomId={roomId} />
+            )}
           </div>
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Players
             </p>
-            <PlayerList players={room.players ?? {}} currentPlayerId={playerId} playerColorMap={playerColorMap} />
+            <PlayerList
+              players={room.players ?? {}}
+              currentPlayerId={playerId}
+              hostId={room.hostId}
+              playerColorMap={playerColorMap}
+              onApprove={isHost ? (pid) => approveJoinRequest(roomId, pid) : undefined}
+              onDeny={isHost ? (pid) => denyJoinRequest(roomId, pid) : undefined}
+            />
           </div>
 
           {/* Cumulative scores — visible once any player has earned points */}

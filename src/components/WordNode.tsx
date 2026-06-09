@@ -8,6 +8,8 @@ interface WordNodeData {
   onDelete: (id: string) => void;
   playerColor?: string;
   isPathNode?: boolean;
+  isHighlighted?: boolean;
+  connectedWords?: string[];
 }
 
 interface WordNodeProps {
@@ -17,7 +19,7 @@ interface WordNodeProps {
 }
 
 function WordNode({ id, data, selected }: WordNodeProps) {
-  const { word, isStart, canDelete, onDelete, playerColor, isPathNode } = data;
+  const { word, isStart, canDelete, onDelete, playerColor, isPathNode, isHighlighted, connectedWords } = data;
 
   const baseClass =
     'px-4 py-2 rounded-xl border-2 shadow-md select-none text-sm font-semibold uppercase tracking-wide transition-all';
@@ -52,6 +54,12 @@ function WordNode({ id, data, selected }: WordNodeProps) {
       {isPathNode && (
         <div
           className="absolute inset-0 rounded-xl border-2 border-brand-400 animate-pulse pointer-events-none"
+          style={{ margin: '-3px' }}
+        />
+      )}
+      {isHighlighted && (
+        <div
+          className="absolute inset-0 rounded-xl border-2 border-sky-400 shadow-[0_0_8px_2px_rgba(56,189,248,0.5)] pointer-events-none"
           style={{ margin: '-3px' }}
         />
       )}

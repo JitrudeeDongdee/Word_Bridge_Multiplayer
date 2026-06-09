@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { useRoomSubscription } from '../hooks/useRoomSubscription';
-import { startGame, deleteRoom, kickPlayer } from '../services/roomService';
+import { startGame, deleteRoom, kickPlayer, leaveRoom } from '../services/roomService';
 import PlayerList from '../components/PlayerList';
 import { useState } from 'react';
 
@@ -12,6 +12,15 @@ export default function LobbyPage() {
   const playerId = useGameStore((s) => s.playerId);
   const [starting, setStarting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}${window.location.pathname}#/join/${roomId}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useRoomSubscription(roomId);
 
@@ -42,6 +51,17 @@ export default function LobbyPage() {
     }
   };
 
+  const handleLeave = async () => {
+    if (!roomId || !playerId) return;
+    setLeaving(true);
+    try {
+      await leaveRoom(roomId, playerId, players);
+      navigate('/');
+    } catch {
+      setLeaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm('Delete this room? All players will be removed.')) return;
     setDeleting(true);
@@ -65,6 +85,12 @@ export default function LobbyPage() {
                 {roomId}
               </span>
             </div>
+            <button
+              onClick={handleCopyLink}
+              className="mt-2 text-xs text-brand-500 hover:text-brand-700 underline"
+            >
+              {copied ? '✓ Copied!' : '🔗 Copy invite link'}
+            </button>
           </div>
 
           <div>
@@ -100,9 +126,18 @@ export default function LobbyPage() {
               </p>
             </div>
           ) : (
-            <p className="text-center text-gray-500 text-sm">
-              Waiting for the host to start the game…
-            </p>
+            <div className="flex flex-col gap-2">
+              <p className="text-center text-gray-500 text-sm">
+                Waiting for the host to start the game…
+              </p>
+              <button
+                onClick={handleLeave}
+                disabled={leaving}
+                className="w-full py-2 rounded-xl border border-red-300 text-red-500 text-sm font-semibold hover:bg-red-50 disabled:opacity-50 transition-colors"
+              >
+                {leaving ? 'Leaving…' : 'Leave Room'}
+              </button>
+            </div>
           )}
         </div>
       </div>

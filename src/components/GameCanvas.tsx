@@ -12,6 +12,7 @@ import {
   type Node,
   type Edge,
   type OnNodeDrag,
+  type NodeMouseHandler,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -44,6 +45,30 @@ interface GameCanvasProps {
 
 export default function GameCanvas({ room, roomId, playerId, playerColorMap }: GameCanvasProps) {
   const { handleDeleteNode, handleNodeDragStop } = useGameActions(roomId);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+
+  // Adjacency: nodeId → connected words list (for tooltip)
+  const adjacencyWords = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const edge of Object.values(room.edges ?? {})) {
+      const srcWord = room.nodes?.[edge.source]?.word;
+      const tgtWord = room.nodes?.[edge.target]?.word;
+      if (tgtWord) { if (!map.has(edge.source)) map.set(edge.source, []); map.get(edge.source)!.push(tgtWord); }
+      if (srcWord) { if (!map.has(edge.target)) map.set(edge.target, []); map.get(edge.target)!.push(srcWord); }
+    }
+    return map;
+  }, [room.edges, room.nodes]);
+
+  // Set of node IDs connected to the hovered node
+  const highlightedIds = useMemo(() => {
+    if (!hoveredNodeId) return new Set<string>();
+    const set = new Set<string>();
+    for (const edge of Object.values(room.edges ?? {})) {
+      if (edge.source === hoveredNodeId) set.add(edge.target);
+      if (edge.target === hoveredNodeId) set.add(edge.source);
+    }
+    return set;
+  }, [hoveredNodeId, room.edges]);
 
   // Build React Flow nodes from Firebase state
   const rfNodes: Node[] = useMemo(() => {
@@ -61,10 +86,12 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap }: G
         onDelete: handleDeleteNode,
         playerColor: n.isStart ? undefined : (playerColorMap[n.createdBy] ?? '#94a3b8'),
         isPathNode: pathIds.has(n.id),
+        connectedWords: adjacencyWords.get(n.id) ?? [],
+        isHighlighted: highlightedIds.has(n.id),
       },
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room.nodes, room.winningPath, room.status, playerId, playerColorMap]);
+  }, [room.nodes, room.winningPath, room.status, playerId, playerColorMap, adjacencyWords, highlightedIds]);
 
   // Build React Flow edges from Firebase state
   const rfEdges: Edge[] = useMemo(() => {
@@ -167,6 +194,14 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap }: G
     [handleNodeDragStop, syncedNodes],
   );
 
+  const onNodeMouseEnter = useCallback<NodeMouseHandler>((_e, node) => {
+    setHoveredNodeId(node.id);
+  }, []);
+
+  const onNodeMouseLeave = useCallback<NodeMouseHandler>(() => {
+    setHoveredNodeId(null);
+  }, []);
+
   // Use Firebase-derived nodes/edges as the source of truth (controlled mode)
   void localNodes;
   void localEdges;
@@ -179,6 +214,8 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap }: G
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={onNodeDragStop}
+        onNodeMouseEnter={onNodeMouseEnter}
+        onNodeMouseLeave={onNodeMouseLeave}
         connectOnClick={false}
         nodesConnectable={false}
         connectionMode={ConnectionMode.Loose}
