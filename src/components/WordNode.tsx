@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { Handle, Position } from '@xyflow/react';
 
 interface WordNodeData {
   word: string;
@@ -32,8 +33,20 @@ function WordNode({ id, data, selected }: WordNodeProps) {
         }
       : undefined;
 
+  const invisibleHandle = { opacity: 0, width: 1, height: 1, minWidth: 0, minHeight: 0, border: 0 } as const;
+
   return (
     <div className="relative group">
+      {/* source handles — one per side */}
+      <Handle id="s-top"    type="source" position={Position.Top}    style={invisibleHandle} />
+      <Handle id="s-right"  type="source" position={Position.Right}  style={invisibleHandle} />
+      <Handle id="s-bottom" type="source" position={Position.Bottom} style={invisibleHandle} />
+      <Handle id="s-left"   type="source" position={Position.Left}   style={invisibleHandle} />
+      {/* target handles — one per side */}
+      <Handle id="t-top"    type="target" position={Position.Top}    style={invisibleHandle} />
+      <Handle id="t-right"  type="target" position={Position.Right}  style={invisibleHandle} />
+      <Handle id="t-bottom" type="target" position={Position.Bottom} style={invisibleHandle} />
+      <Handle id="t-left"   type="target" position={Position.Left}   style={invisibleHandle} />
       <div
         className={`${baseClass} ${isStart ? startClass : normalClass}`}
         style={nodeStyle}

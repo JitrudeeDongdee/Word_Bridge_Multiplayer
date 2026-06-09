@@ -4,6 +4,7 @@ import {
   Background,
   Controls,
   MiniMap,
+  ConnectionMode,
   type NodeChange,
   type EdgeChange,
   applyNodeChanges,
@@ -19,6 +20,20 @@ import type { Room } from '../types';
 import { useGameActions } from '../hooks/useGameActions';
 
 const nodeTypes = { wordNode: WordNode };
+
+const NODE_GAP = 8; // minimum gap between nodes in pixels
+
+function nodesOverlap(
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number },
+): boolean {
+  return (
+    a.x < b.x + b.w + NODE_GAP &&
+    a.x + a.w + NODE_GAP > b.x &&
+    a.y < b.y + b.h + NODE_GAP &&
+    a.y + a.h + NODE_GAP > b.y
+  );
+}
 
 interface GameCanvasProps {
   room: Room;
@@ -50,16 +65,38 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap }: G
   );
 
   // Build React Flow edges from Firebase state
-  const rfEdges: Edge[] = useMemo(
-    () =>
-      Object.values(room.edges ?? {}).map((e) => ({
+  const rfEdges: Edge[] = useMemo(() => {
+    const nodeMap = new Map(rfNodes.map((n) => [n.id, n.position]));
+    return Object.values(room.edges ?? {}).map((e) => {
+      const srcPos = nodeMap.get(e.source);
+      const tgtPos = nodeMap.get(e.target);
+
+      let sourceHandle = 's-right';
+      let targetHandle = 't-left';
+
+      if (srcPos && tgtPos) {
+        const dx = tgtPos.x - srcPos.x;
+        const dy = tgtPos.y - srcPos.y;
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          sourceHandle = dx >= 0 ? 's-right' : 's-left';
+          targetHandle = dx >= 0 ? 't-left'  : 't-right';
+        } else {
+          sourceHandle = dy >= 0 ? 's-bottom' : 's-top';
+          targetHandle = dy >= 0 ? 't-top'    : 't-bottom';
+        }
+      }
+
+      return {
         id: e.id,
         source: e.source,
         target: e.target,
+        sourceHandle,
+        targetHandle,
+        type: 'default',
         animated: false,
-      })),
-    [room.edges],
-  );
+      };
+    });
+  }, [room.edges, rfNodes]);
 
   const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
   const [localEdges, setLocalEdges] = useState<Edge[]>(rfEdges);
@@ -78,9 +115,26 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap }: G
 
   const onNodeDragStop = useCallback<OnNodeDrag>(
     (_event, node) => {
-      handleNodeDragStop(node.id, node.position.x, node.position.y);
+      const dw = (node.measured?.width ?? 150);
+      const dh = (node.measured?.height ?? 44);
+      const dragged = { x: node.position.x, y: node.position.y, w: dw, h: dh };
+
+      const hasOverlap = syncedNodes.some((other) => {
+        if (other.id === node.id) return false;
+        return nodesOverlap(dragged, {
+          x: other.position.x,
+          y: other.position.y,
+          w: (other.measured?.width ?? 150),
+          h: (other.measured?.height ?? 44),
+        });
+      });
+
+      if (!hasOverlap) {
+        handleNodeDragStop(node.id, node.position.x, node.position.y);
+      }
+      // If overlapping, skip Firebase update → node reverts to original position
     },
-    [handleNodeDragStop],
+    [handleNodeDragStop, syncedNodes],
   );
 
   // Use Firebase-derived nodes/edges as the source of truth (controlled mode)
@@ -97,6 +151,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap }: G
         onNodeDragStop={onNodeDragStop}
         connectOnClick={false}
         nodesConnectable={false}
+        connectionMode={ConnectionMode.Loose}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}

@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { useRoomSubscription } from '../hooks/useRoomSubscription';
-import { startGame, deleteRoom } from '../services/roomService';
+import { startGame, deleteRoom, kickPlayer } from '../services/roomService';
 import PlayerList from '../components/PlayerList';
 import { useState } from 'react';
 
@@ -26,6 +26,11 @@ export default function LobbyPage() {
   const isHost = room.hostId === playerId;
   const players = room.players ?? {};
   const playerCount = Object.keys(players).length;
+
+  const handleKick = async (targetPlayerId: string) => {
+    if (!roomId) return;
+    await kickPlayer(roomId, targetPlayerId).catch(() => {});
+  };
 
   const handleStart = async () => {
     setStarting(true);
@@ -66,7 +71,12 @@ export default function LobbyPage() {
             <p className="text-sm font-semibold text-gray-600 mb-2">
               Players ({playerCount})
             </p>
-            <PlayerList players={players} currentPlayerId={playerId} />
+            <PlayerList
+              players={players}
+              currentPlayerId={playerId}
+              hostId={room.hostId}
+              onKick={isHost ? handleKick : undefined}
+            />
           </div>
 
           {isHost ? (

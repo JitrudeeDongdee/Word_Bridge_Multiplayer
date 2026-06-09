@@ -44,9 +44,13 @@ export async function deleteRoom(roomId: string): Promise<void> {
   await remove(ref(db, `rooms/${roomId}`));
 }
 
+export async function kickPlayer(roomId: string, playerId: string): Promise<void> {
+  await remove(ref(db, `rooms/${roomId}/players/${playerId}`));
+}
+
 export async function createRoom(hostName: string): Promise<{ room: Room; playerId: string }> {
-  // Clean up stale rooms before creating a new one
-  await cleanOldRooms();
+  // Clean up stale rooms before creating a new one (best-effort; don't block on failure)
+  await cleanOldRooms().catch(() => {});
 
   const roomId = generateRoomCode();
   const playerId = uuidv4();

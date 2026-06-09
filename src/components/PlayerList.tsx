@@ -3,11 +3,14 @@ import type { Player } from '../types';
 interface PlayerListProps {
   players: Record<string, Player>;
   currentPlayerId: string | null;
+  hostId?: string;
+  onKick?: (playerId: string) => void;
   playerColorMap?: Record<string, string>;
 }
 
-export default function PlayerList({ players, currentPlayerId, playerColorMap = {} }: PlayerListProps) {
+export default function PlayerList({ players, currentPlayerId, hostId, onKick, playerColorMap = {} }: PlayerListProps) {
   const sorted = Object.values(players).sort((a, b) => a.joinedAt - b.joinedAt);
+  const isHost = currentPlayerId === hostId;
 
   return (
     <ul className="space-y-2">
@@ -28,6 +31,15 @@ export default function PlayerList({ players, currentPlayerId, playerColorMap = 
           )}
           {player.id === currentPlayerId && (
             <span className="text-xs text-gray-400">(you)</span>
+          )}
+          {isHost && onKick && player.id !== currentPlayerId && (
+            <button
+              onClick={() => onKick(player.id)}
+              className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors ml-1"
+              title="Kick player"
+            >
+              Kick
+            </button>
           )}
         </li>
       ))}

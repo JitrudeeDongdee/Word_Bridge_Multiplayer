@@ -9,6 +9,7 @@ import { useGameStore } from '../store/useGameStore';
  */
 export function useRoomSubscription(roomId: string | undefined): void {
   const setRoom = useGameStore((s) => s.setRoom);
+  const playerId = useGameStore((s) => s.playerId);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,6 +19,12 @@ export function useRoomSubscription(roomId: string | undefined): void {
       setRoom(room);
 
       if (!room) {
+        navigate('/');
+        return;
+      }
+
+      // Redirect if this player was kicked
+      if (playerId && !room.players?.[playerId]) {
         navigate('/');
         return;
       }
@@ -47,5 +54,5 @@ export function useRoomSubscription(roomId: string | undefined): void {
     });
 
     return unsubscribe;
-  }, [roomId, setRoom, navigate]);
+  }, [roomId, playerId, setRoom, navigate]);
 }
