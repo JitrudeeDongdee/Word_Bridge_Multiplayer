@@ -10,7 +10,6 @@ import {
   applyEdgeChanges,
   type Node,
   type Edge,
-  type Connection,
   type OnNodeDrag,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -25,10 +24,11 @@ interface GameCanvasProps {
   room: Room;
   roomId: string;
   playerId: string;
+  playerColorMap: Record<string, string>;
 }
 
-export default function GameCanvas({ room, roomId, playerId }: GameCanvasProps) {
-  const { handleConnect, handleDeleteNode, handleNodeDragStop } = useGameActions(roomId);
+export default function GameCanvas({ room, roomId, playerId, playerColorMap }: GameCanvasProps) {
+  const { handleDeleteNode, handleNodeDragStop } = useGameActions(roomId);
 
   // Build React Flow nodes from Firebase state
   const rfNodes: Node[] = useMemo(
@@ -42,10 +42,11 @@ export default function GameCanvas({ room, roomId, playerId }: GameCanvasProps) 
           isStart: n.isStart,
           canDelete: n.createdBy === playerId && !n.isStart,
           onDelete: handleDeleteNode,
+          playerColor: n.isStart ? undefined : (playerColorMap[n.createdBy] ?? '#94a3b8'),
         },
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [room.nodes, playerId],
+    [room.nodes, playerId, playerColorMap],
   );
 
   // Build React Flow edges from Firebase state
@@ -75,13 +76,6 @@ export default function GameCanvas({ room, roomId, playerId }: GameCanvasProps) 
     setLocalEdges((eds) => applyEdgeChanges(changes, eds));
   }, []);
 
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      handleConnect(connection);
-    },
-    [handleConnect],
-  );
-
   const onNodeDragStop = useCallback<OnNodeDrag>(
     (_event, node) => {
       handleNodeDragStop(node.id, node.position.x, node.position.y);
@@ -100,8 +94,9 @@ export default function GameCanvas({ room, roomId, playerId }: GameCanvasProps) 
         edges={syncedEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
         onNodeDragStop={onNodeDragStop}
+        connectOnClick={false}
+        nodesConnectable={false}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
@@ -109,7 +104,7 @@ export default function GameCanvas({ room, roomId, playerId }: GameCanvasProps) 
       >
         <Background />
         <Controls />
-        <MiniMap nodeColor={(n) => (n.data.isStart ? '#0ea5e9' : '#e2e8f0')} />
+        <MiniMap nodeColor={(n) => (n.data.isStart ? '#0ea5e9' : ((n.data.playerColor as string) ?? '#e2e8f0'))} />
       </ReactFlow>
     </div>
   );

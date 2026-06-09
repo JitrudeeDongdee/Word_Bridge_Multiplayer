@@ -16,9 +16,9 @@ export default function AddWordPanel({ roomId }: AddWordPanelProps) {
     setError(null);
     setLoading(true);
 
-    const err = await handleAddWord(word);
-    if (err) {
-      setError(err);
+    const result = await handleAddWord(word.trim());
+    if (result.error) {
+      setError(result.error);
     } else {
       setWord('');
     }

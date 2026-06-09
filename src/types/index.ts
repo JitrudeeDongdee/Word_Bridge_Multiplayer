@@ -30,9 +30,21 @@ export interface GameState {
   startedAt: number;
 }
 
+export interface SharedWordScore {
+  word: string;
+  score: number;
+  connected: boolean;
+}
+
+export interface LastWordScores {
+  addedWord: string;
+  scores: SharedWordScore[];
+}
+
 export interface Room {
   id: string;
   hostId: string;
+  createdAt: number;
   status: GameStatus;
   players: Record<string, Player>;
   nodes: Record<string, GameNode>;
@@ -40,4 +52,5 @@ export interface Room {
   gameState: GameState | null;
   winnerId: string | null;
   winningPath: string[] | null;
+  lastWordScores: LastWordScores | null;
 }

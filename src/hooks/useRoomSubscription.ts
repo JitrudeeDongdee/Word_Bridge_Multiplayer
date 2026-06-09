@@ -30,6 +30,14 @@ export function useRoomSubscription(roomId: string | undefined): void {
         }
       }
 
+      if (room.status === 'waiting') {
+        // Redirect everyone back to lobby when host returns
+        const path = window.location.pathname;
+        if (path.includes('/game') || path.includes('/victory')) {
+          navigate(`/lobby/${roomId}`);
+        }
+      }
+
       if (room.status === 'won') {
         const path = window.location.pathname;
         if (!path.includes('/victory')) {

@@ -3,9 +3,10 @@ import type { Player } from '../types';
 interface PlayerListProps {
   players: Record<string, Player>;
   currentPlayerId: string | null;
+  playerColorMap?: Record<string, string>;
 }
 
-export default function PlayerList({ players, currentPlayerId }: PlayerListProps) {
+export default function PlayerList({ players, currentPlayerId, playerColorMap = {} }: PlayerListProps) {
   const sorted = Object.values(players).sort((a, b) => a.joinedAt - b.joinedAt);
 
   return (
@@ -16,9 +17,8 @@ export default function PlayerList({ players, currentPlayerId }: PlayerListProps
           className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200"
         >
           <span
-            className={`w-2 h-2 rounded-full flex-shrink-0 ${
-              player.id === currentPlayerId ? 'bg-green-400' : 'bg-gray-300'
-            }`}
+            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+            style={{ backgroundColor: playerColorMap[player.id] ?? '#d1d5db' }}
           />
           <span className="text-sm text-gray-800 flex-1 truncate">{player.name}</span>
           {player.isHost && (

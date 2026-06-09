@@ -10,13 +10,44 @@ import {
 } from 'firebase/database';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from './firebase';
-import type { Room, Player, GameNode, GameEdge } from '../types';
+import type { Room, Player, GameNode, GameEdge, SharedWordScore, LastWordScores } from '../types';
 import { WORD_PAIRS } from '../utils/wordPairs';
 import { generateRoomCode } from '../utils/generateRoomCode';
 
 // --- Room operations ---
 
+const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+/** Deletes stale rooms to keep the database tidy. */
+async function cleanOldRooms(): Promise<void> {
+  const snapshot = await get(ref(db, 'rooms'));
+  if (!snapshot.exists()) return;
+
+  const rooms = snapshot.val() as Record<string, Room>;
+  const now = Date.now();
+
+  const deleteOps = Object.values(rooms)
+    .filter((room) => {
+      const age = now - (room.createdAt ?? 0);
+      return (
+        age > TWENTY_FOUR_HOURS_MS ||
+        (room.status === 'won' && age > THIRTY_MINUTES_MS)
+      );
+    })
+    .map((room) => remove(ref(db, `rooms/${room.id}`)));
+
+  await Promise.all(deleteOps);
+}
+
+export async function deleteRoom(roomId: string): Promise<void> {
+  await remove(ref(db, `rooms/${roomId}`));
+}
+
 export async function createRoom(hostName: string): Promise<{ room: Room; playerId: string }> {
+  // Clean up stale rooms before creating a new one
+  await cleanOldRooms();
+
   const roomId = generateRoomCode();
   const playerId = uuidv4();
 
@@ -30,6 +61,7 @@ export async function createRoom(hostName: string): Promise<{ room: Room; player
   const room: Room = {
     id: roomId,
     hostId: playerId,
+    createdAt: Date.now(),
     status: 'waiting',
     players: { [playerId]: host },
     nodes: {},
@@ -37,6 +69,7 @@ export async function createRoom(hostName: string): Promise<{ room: Room; player
     gameState: null,
     winnerId: null,
     winningPath: null,
+    lastWordScores: null,
   };
 
   await set(ref(db, `rooms/${roomId}`), room);
@@ -105,9 +138,73 @@ export async function startGame(roomId: string): Promise<void> {
   await update(ref(db), updates);
 }
 
+export async function restartGame(roomId: string): Promise<void> {
+  const [wordA, wordB] = WORD_PAIRS[Math.floor(Math.random() * WORD_PAIRS.length)];
+  const wordANodeId = uuidv4();
+  const wordBNodeId = uuidv4();
+
+  const nodeA: GameNode = {
+    id: wordANodeId,
+    word: wordA,
+    x: 100,
+    y: 300,
+    createdBy: 'system',
+    isStart: true,
+  };
+
+  const nodeB: GameNode = {
+    id: wordBNodeId,
+    word: wordB,
+    x: 900,
+    y: 300,
+    createdBy: 'system',
+    isStart: true,
+  };
+
+  const updates: Record<string, unknown> = {
+    [`rooms/${roomId}/status`]: 'playing',
+    [`rooms/${roomId}/nodes`]: { [wordANodeId]: nodeA, [wordBNodeId]: nodeB },
+    [`rooms/${roomId}/edges`]: null,
+    [`rooms/${roomId}/gameState`]: {
+      wordA,
+      wordANodeId,
+      wordB,
+      wordBNodeId,
+      startedAt: serverTimestamp(),
+    },
+    [`rooms/${roomId}/winnerId`]: null,
+    [`rooms/${roomId}/winningPath`]: null,
+    [`rooms/${roomId}/lastWordScores`]: null,
+  };
+
+  await update(ref(db), updates);
+}
+
+export async function resetToLobby(roomId: string): Promise<void> {
+  await update(ref(db, `rooms/${roomId}`), {
+    status: 'waiting',
+    nodes: null,
+    edges: null,
+    gameState: null,
+    winnerId: null,
+    winningPath: null,
+    lastWordScores: null,
+  });
+}
+
 // --- Node operations ---
 
-export async function addNode(roomId: string, word: string, playerId: string): Promise<void> {
+export async function fetchNodes(roomId: string): Promise<Record<string, GameNode>> {
+  const snapshot = await get(ref(db, `rooms/${roomId}/nodes`));
+  return snapshot.exists() ? (snapshot.val() as Record<string, GameNode>) : {};
+}
+
+export async function fetchEdges(roomId: string): Promise<Record<string, GameEdge>> {
+  const snapshot = await get(ref(db, `rooms/${roomId}/edges`));
+  return snapshot.exists() ? (snapshot.val() as Record<string, GameEdge>) : {};
+}
+
+export async function addNode(roomId: string, word: string, playerId: string): Promise<string> {
   const nodeId = uuidv4();
   const node: GameNode = {
     id: nodeId,
@@ -118,6 +215,7 @@ export async function addNode(roomId: string, word: string, playerId: string): P
     isStart: false,
   };
   await set(ref(db, `rooms/${roomId}/nodes/${nodeId}`), node);
+  return nodeId;
 }
 
 export async function updateNodePosition(
@@ -162,6 +260,15 @@ export async function deleteEdgesForNode(roomId: string, nodeId: string): Promis
 }
 
 // --- Win state ---
+
+export async function saveWordScores(
+  roomId: string,
+  addedWord: string,
+  scores: SharedWordScore[],
+): Promise<void> {
+  const payload: LastWordScores = { addedWord, scores };
+  await update(ref(db, `rooms/${roomId}`), { lastWordScores: payload });
+}
 
 export async function markRoomWon(
   roomId: string,

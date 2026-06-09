@@ -44,3 +44,19 @@ export function validateWord(
 
   return { valid: true };
 }
+
+/**
+ * Checks whether a word exists in the English dictionary
+ * using the free dictionaryapi.dev API.
+ */
+export async function checkRealWord(word: string): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.toLowerCase())}`,
+    );
+    return res.ok;
+  } catch {
+    // Network error — fail open so the game isn't blocked
+    return true;
+  }
+}
