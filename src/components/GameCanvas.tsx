@@ -99,7 +99,6 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
         isPathNode: pathIds.has(n.id),
         connectedWords: adjacencyWords.get(n.id) ?? [],
         isHighlighted: highlightedIds.has(n.id),
-        isNew: !!n.isNew,
       },
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps

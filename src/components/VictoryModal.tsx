@@ -36,6 +36,7 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
   }, []);
   const wordB = gameState?.wordB ?? '?';
   const path = winningPath ?? [];
+  const isOneWordWin = path.filter((nid) => !nodes?.[nid]?.isStart).length === 1;
 
   const roundEntries = Object.entries(room.roundScores ?? {}).sort(([, a], [, b]) => b - a);
   const totalEntries = Object.entries(room.scores ?? {}).sort(([, a], [, b]) => b - a);
@@ -95,6 +96,16 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-6 pb-2 flex flex-col gap-5">
+          {/* 1-word bonus banner */}
+          {isOneWordWin && (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+              <span className="text-lg">⚡</span>
+              <div>
+                <p className="text-xs font-bold text-amber-700">1-Word Bonus! +5 pts</p>
+                <p className="text-xs text-amber-600">Bridged in a single word</p>
+              </div>
+            </div>
+          )}
           {/* Winning path */}
           {path.length > 0 && (
             <div>

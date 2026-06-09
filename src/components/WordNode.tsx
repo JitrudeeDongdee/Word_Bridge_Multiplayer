@@ -10,7 +10,6 @@ interface WordNodeData {
   isPathNode?: boolean;
   isHighlighted?: boolean;
   connectedWords?: string[];
-  isNew?: boolean;
 }
 
 interface WordNodeProps {
@@ -20,7 +19,7 @@ interface WordNodeProps {
 }
 
 function WordNode({ id, data, selected }: WordNodeProps) {
-  const { word, isStart, canDelete, onDelete, playerColor, isPathNode, isHighlighted, isNew } = data;
+  const { word, isStart, canDelete, onDelete, playerColor, isPathNode, isHighlighted } = data;
 
   const baseClass =
     'px-4 py-2 rounded-xl border-2 shadow-md select-none text-sm font-semibold uppercase tracking-wide transition-all';
@@ -51,13 +50,6 @@ function WordNode({ id, data, selected }: WordNodeProps) {
       <Handle id="t-right"  type="target" position={Position.Right}  style={invisibleHandle} />
       <Handle id="t-bottom" type="target" position={Position.Bottom} style={invisibleHandle} />
       <Handle id="t-left"   type="target" position={Position.Left}   style={invisibleHandle} />
-      {/* New-node arrival flash ring */}
-      {isNew && !isStart && (
-        <div
-          className="absolute inset-0 rounded-xl border-2 border-green-400 animate-ping pointer-events-none"
-          style={{ margin: '-3px' }}
-        />
-      )}
       {/* Winning-path highlight ring */}
       {isPathNode && (
         <div

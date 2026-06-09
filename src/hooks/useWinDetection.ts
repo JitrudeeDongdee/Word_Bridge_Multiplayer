@@ -30,6 +30,15 @@ export function useWinDetection(roomId: string): void {
         }
       }
 
+      // Bonus: +5 points if the bridge was completed with just 1 intermediate word
+      const nonStartInPath = path.filter((nid) => !room.nodes?.[nid]?.isStart);
+      if (nonStartInPath.length === 1) {
+        const bonusNode = room.nodes?.[nonStartInPath[0]];
+        if (bonusNode) {
+          roundScores[bonusNode.createdBy] = (roundScores[bonusNode.createdBy] ?? 0) + 5;
+        }
+      }
+
       markRoomWon(roomId, playerId, path, roundScores).catch(console.error);
     }
   }, [room, playerId, roomId]);
