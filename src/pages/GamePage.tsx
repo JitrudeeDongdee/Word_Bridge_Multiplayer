@@ -214,39 +214,31 @@ export default function GamePage() {
 
           {/* FAB — mobile only, non-spectators only */}
           {!isSpectator && (
-            <>
+            <div className="fixed bottom-6 right-6 z-20 md:hidden flex flex-col items-end gap-3">
               {fabOpen && (
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setFabOpen(false)}
-                />
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 w-72">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Add Word</p>
+                  <AddWordPanel roomId={roomId} onSuccess={() => setFabOpen(false)} />
+                </div>
               )}
-              <div className="fixed bottom-6 right-6 z-20 md:hidden flex flex-col items-end gap-3">
-                {fabOpen && (
-                  <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 w-72">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Add Word</p>
-                    <AddWordPanel roomId={roomId} onSuccess={() => setFabOpen(false)} />
-                  </div>
-                )}
-                <button
-                  onClick={() => setFabOpen((v) => !v)}
-                  aria-label="Add word"
+              <button
+                onClick={() => setFabOpen((v) => !v)}
+                aria-label="Add word"
+                className={[
+                  'w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white transition-all duration-200 active:scale-95',
+                  fabOpen ? 'bg-gray-400 hover:bg-gray-500' : 'bg-brand-500 hover:bg-brand-600',
+                ].join(' ')}
+              >
+                <span
                   className={[
-                    'w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white transition-all duration-200 active:scale-95',
-                    fabOpen ? 'bg-gray-400 hover:bg-gray-500' : 'bg-brand-500 hover:bg-brand-600',
+                    'text-3xl font-light leading-none inline-block transition-transform duration-200',
+                    fabOpen ? 'rotate-45' : '',
                   ].join(' ')}
                 >
-                  <span
-                    className={[
-                      'text-3xl font-light leading-none inline-block transition-transform duration-200',
-                      fabOpen ? 'rotate-45' : '',
-                    ].join(' ')}
-                  >
-                    +
-                  </span>
-                </button>
-              </div>
-            </>
+                  +
+                </span>
+              </button>
+            </div>
           )}
         </main>
 
