@@ -20,7 +20,17 @@ export function useWinDetection(roomId: string): void {
 
     if (checkWin(wordANodeId, wordBNodeId, edges)) {
       const path = findPath(wordANodeId, wordBNodeId, edges) ?? [];
-      markRoomWon(roomId, playerId, path).catch(console.error);
+
+      // 1 point per non-start node in the path for the player who added it
+      const roundScores: Record<string, number> = {};
+      for (const nodeId of path) {
+        const node = room.nodes?.[nodeId];
+        if (node && !node.isStart) {
+          roundScores[node.createdBy] = (roundScores[node.createdBy] ?? 0) + 1;
+        }
+      }
+
+      markRoomWon(roomId, playerId, path, roundScores).catch(console.error);
     }
   }, [room, playerId, roomId]);
 }

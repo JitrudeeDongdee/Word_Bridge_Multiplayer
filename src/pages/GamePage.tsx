@@ -99,6 +99,33 @@ export default function GamePage() {
             </p>
             <PlayerList players={room.players ?? {}} currentPlayerId={playerId} playerColorMap={playerColorMap} />
           </div>
+
+          {/* Cumulative scores — visible once any player has earned points */}
+          {room.scores && Object.keys(room.scores).length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Scores
+              </p>
+              <div className="flex flex-col gap-1">
+                {Object.entries(room.scores)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([pid, pts], rank) => {
+                    const color = playerColorMap[pid] ?? '#94a3b8';
+                    const name = room.players?.[pid]?.name ?? pid;
+                    return (
+                      <div key={pid} className="flex items-center justify-between py-0.5">
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-xs text-gray-400 w-3">{rank + 1}.</span>
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                          <span className="text-xs text-gray-700 truncate max-w-[110px]">{name}</span>
+                        </span>
+                        <span className="text-xs font-bold text-gray-800">{pts}</span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Last Word Scores

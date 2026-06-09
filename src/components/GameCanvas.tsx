@@ -46,27 +46,55 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap }: G
   const { handleDeleteNode, handleNodeDragStop } = useGameActions(roomId);
 
   // Build React Flow nodes from Firebase state
-  const rfNodes: Node[] = useMemo(
-    () =>
-      Object.values(room.nodes ?? {}).map((n) => ({
-        id: n.id,
-        type: 'wordNode',
-        position: { x: n.x, y: n.y },
-        data: {
-          word: n.word,
-          isStart: n.isStart,
-          canDelete: n.createdBy === playerId && !n.isStart,
-          onDelete: handleDeleteNode,
-          playerColor: n.isStart ? undefined : (playerColorMap[n.createdBy] ?? '#94a3b8'),
-        },
-      })),
+  const rfNodes: Node[] = useMemo(() => {
+    const pathIds = new Set(
+      room.status === 'won' ? (room.winningPath ?? []) : [],
+    );
+    return Object.values(room.nodes ?? {}).map((n) => ({
+      id: n.id,
+      type: 'wordNode',
+      position: { x: n.x, y: n.y },
+      data: {
+        word: n.word,
+        isStart: n.isStart,
+        canDelete: n.createdBy === playerId && !n.isStart,
+        onDelete: handleDeleteNode,
+        playerColor: n.isStart ? undefined : (playerColorMap[n.createdBy] ?? '#94a3b8'),
+        isPathNode: pathIds.has(n.id),
+      },
+    }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [room.nodes, playerId, playerColorMap],
-  );
+  }, [room.nodes, room.winningPath, room.status, playerId, playerColorMap]);
 
   // Build React Flow edges from Firebase state
   const rfEdges: Edge[] = useMemo(() => {
     const nodeMap = new Map(rfNodes.map((n) => [n.id, n.position]));
+
+    // Build a map of edgeId → highlight color for winning-path edges
+    const pathEdgeColors = new Map<string, string>();
+    if (room.status === 'won' && room.winningPath && room.winningPath.length >= 2) {
+      const pairColor = new Map<string, string>();
+      for (let i = 0; i < room.winningPath.length - 1; i++) {
+        const aId = room.winningPath[i];
+        const bId = room.winningPath[i + 1];
+        const bNode = room.nodes?.[bId];
+        const aNode = room.nodes?.[aId];
+        const colorNode =
+          bNode && !bNode.isStart ? bNode
+          : aNode && !aNode.isStart ? aNode
+          : null;
+        const color = colorNode
+          ? (playerColorMap[colorNode.createdBy] ?? '#0ea5e9')
+          : '#0ea5e9';
+        pairColor.set([aId, bId].sort().join('|'), color);
+      }
+      for (const e of Object.values(room.edges ?? {})) {
+        const key = [e.source, e.target].sort().join('|');
+        const color = pairColor.get(key);
+        if (color) pathEdgeColors.set(e.id, color);
+      }
+    }
+
     return Object.values(room.edges ?? {}).map((e) => {
       const srcPos = nodeMap.get(e.source);
       const tgtPos = nodeMap.get(e.target);
@@ -86,6 +114,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap }: G
         }
       }
 
+      const pathColor = pathEdgeColors.get(e.id);
       return {
         id: e.id,
         source: e.source,
@@ -93,10 +122,11 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap }: G
         sourceHandle,
         targetHandle,
         type: 'default',
-        animated: false,
+        animated: pathColor !== undefined,
+        style: pathColor ? { stroke: pathColor, strokeWidth: 3 } : undefined,
       };
     });
-  }, [room.edges, rfNodes]);
+  }, [room.edges, room.winningPath, room.status, room.nodes, rfNodes, playerColorMap]);
 
   const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
   const [localEdges, setLocalEdges] = useState<Edge[]>(rfEdges);

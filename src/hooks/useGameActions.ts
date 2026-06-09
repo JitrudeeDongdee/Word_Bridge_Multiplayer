@@ -8,7 +8,9 @@ import {
   deleteNode,
   deleteEdgesForNode,
   updateNodePosition,
+  batchUpdateNodePositions,
 } from '../services/roomService';
+import { forceDirectedLayout } from '../utils/graphLayout';
 import { useGameStore } from '../store/useGameStore';
 import { validateWord, checkRealWord } from '../utils/validation';
 import { semanticSimilarity } from '../utils/semanticSimilarity';
@@ -101,6 +103,17 @@ export function useGameActions(roomId: string) {
         }
       }
       await Promise.all(pairChecks);
+
+      // Auto-layout: re-run after every word addition so connected nodes
+      // cluster together and edges stay short / don't criss-cross.
+      if (toConnect.length > 0) {
+        const allEdges = await fetchEdges(roomId);
+        const layoutResult = forceDirectedLayout(
+          Object.values(freshNodes).map((n) => ({ id: n.id, x: n.x, y: n.y, fixed: n.isStart })),
+          Object.values(allEdges),
+        );
+        await batchUpdateNodePositions(roomId, layoutResult);
+      }
 
       const connectedIds = new Set(toConnect.map((s) => s.node.id));
       const scores: WordScoreEntry[] = similarities

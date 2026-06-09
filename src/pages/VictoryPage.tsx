@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { useRoomSubscription } from '../hooks/useRoomSubscription';
 import { restartGame } from '../services/roomService';
+import { getPlayerColorMap } from '../utils/playerColors';
 
 export default function VictoryPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -12,6 +13,9 @@ export default function VictoryPage() {
   const [restarting, setRestarting] = useState(false);
 
   useRoomSubscription(roomId);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const playerColorMap = useMemo(() => getPlayerColorMap(room?.players ?? {}), [room?.players]);
 
   // When host restarts, all players auto-navigate back to the game
   useEffect(() => {
@@ -33,20 +37,20 @@ export default function VictoryPage() {
   const wordB = gameState?.wordB ?? '?';
   const isHost = room.hostId === playerId;
 
-  // Resolve winning path to words
-  const pathWords: string[] = (winningPath ?? []).map(
-    (id) => nodes?.[id]?.word ?? id,
-  );
+  const path = winningPath ?? [];
 
   const handlePlayAgain = async () => {
     setRestarting(true);
     try {
       await restartGame(roomId!);
-      // navigation is handled by the useEffect above
     } catch {
       setRestarting(false);
     }
   };
+
+  // Sort scores descending
+  const roundEntries = Object.entries(room.roundScores ?? {}).sort(([, a], [, b]) => b - a);
+  const totalEntries = Object.entries(room.scores ?? {}).sort(([, a], [, b]) => b - a);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 to-sky-100 flex items-center justify-center p-4">
@@ -61,22 +65,82 @@ export default function VictoryPage() {
             <span className="font-bold text-gray-800 uppercase">{wordB}</span>
           </p>
 
-          {pathWords.length > 0 && (
+          {/* Winning path — each pill colored by the player who added it */}
+          {path.length > 0 && (
             <div className="w-full">
               <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
                 Winning Path
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2">
-                {pathWords.map((word, i) => (
-                  <span key={i} className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full bg-brand-50 border border-brand-500 text-brand-700 font-semibold text-sm uppercase">
-                      {word}
+                {path.map((nodeId, i) => {
+                  const node = nodes?.[nodeId];
+                  const color =
+                    node?.isStart
+                      ? '#0ea5e9'
+                      : (playerColorMap[node?.createdBy ?? ''] ?? '#94a3b8');
+                  return (
+                    <span key={nodeId} className="flex items-center gap-2">
+                      <span
+                        className="px-3 py-1 rounded-full border-2 font-semibold text-sm uppercase"
+                        style={{ borderColor: color, color, backgroundColor: `${color}18` }}
+                      >
+                        {node?.word ?? nodeId}
+                      </span>
+                      {i < path.length - 1 && (
+                        <span className="text-gray-400">→</span>
+                      )}
                     </span>
-                    {i < pathWords.length - 1 && (
-                      <span className="text-gray-400">→</span>
-                    )}
-                  </span>
-                ))}
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Round scores */}
+          {roundEntries.length > 0 && (
+            <div className="w-full">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                This Round
+              </p>
+              <div className="flex flex-col gap-1">
+                {roundEntries.map(([pid, pts]) => {
+                  const color = playerColorMap[pid] ?? '#94a3b8';
+                  const name = room.players?.[pid]?.name ?? pid;
+                  return (
+                    <div key={pid} className="flex items-center justify-between px-3 py-1 rounded-lg bg-gray-50">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                        <span className="text-sm text-gray-700">{name}</span>
+                      </span>
+                      <span className="text-sm font-bold text-green-600">+{pts} pt{pts !== 1 ? 's' : ''}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Cumulative scores */}
+          {totalEntries.length > 0 && (
+            <div className="w-full">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Total Scores
+              </p>
+              <div className="flex flex-col gap-1">
+                {totalEntries.map(([pid, pts], rank) => {
+                  const color = playerColorMap[pid] ?? '#94a3b8';
+                  const name = room.players?.[pid]?.name ?? pid;
+                  return (
+                    <div key={pid} className="flex items-center justify-between px-3 py-1 rounded-lg bg-gray-50">
+                      <span className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400 w-4">{rank + 1}.</span>
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                        <span className="text-sm text-gray-700">{name}</span>
+                      </span>
+                      <span className="text-sm font-bold text-gray-800">{pts}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

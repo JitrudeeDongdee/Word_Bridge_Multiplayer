@@ -74,6 +74,8 @@ export async function createRoom(hostName: string): Promise<{ room: Room; player
     winnerId: null,
     winningPath: null,
     lastWordScores: null,
+    scores: {},
+    roundScores: null,
   };
 
   await set(ref(db, `rooms/${roomId}`), room);
@@ -179,6 +181,8 @@ export async function restartGame(roomId: string): Promise<void> {
     [`rooms/${roomId}/winnerId`]: null,
     [`rooms/${roomId}/winningPath`]: null,
     [`rooms/${roomId}/lastWordScores`]: null,
+    [`rooms/${roomId}/roundScores`]: null,
+    // `scores` (cumulative) is intentionally not cleared
   };
 
   await update(ref(db), updates);
@@ -193,6 +197,8 @@ export async function resetToLobby(roomId: string): Promise<void> {
     winnerId: null,
     winningPath: null,
     lastWordScores: null,
+    roundScores: null,
+    // `scores` (cumulative) intentionally preserved
   });
 }
 
@@ -229,6 +235,20 @@ export async function updateNodePosition(
   y: number,
 ): Promise<void> {
   await update(ref(db, `rooms/${roomId}/nodes/${nodeId}`), { x, y });
+}
+
+export async function batchUpdateNodePositions(
+  roomId: string,
+  positions: Record<string, { x: number; y: number }>,
+): Promise<void> {
+  const updates: Record<string, number> = {};
+  for (const [nodeId, pos] of Object.entries(positions)) {
+    updates[`rooms/${roomId}/nodes/${nodeId}/x`] = pos.x;
+    updates[`rooms/${roomId}/nodes/${nodeId}/y`] = pos.y;
+  }
+  if (Object.keys(updates).length > 0) {
+    await update(ref(db), updates);
+  }
 }
 
 export async function deleteNode(roomId: string, nodeId: string): Promise<void> {
@@ -278,11 +298,23 @@ export async function markRoomWon(
   roomId: string,
   winnerId: string,
   winningPath: string[],
+  roundScores: Record<string, number>,
 ): Promise<void> {
+  // Read current cumulative scores and merge in round scores
+  const snapshot = await get(ref(db, `rooms/${roomId}/scores`));
+  const current: Record<string, number> = snapshot.exists()
+    ? (snapshot.val() as Record<string, number>)
+    : {};
+  const merged: Record<string, number> = { ...current };
+  for (const [pid, pts] of Object.entries(roundScores)) {
+    merged[pid] = (merged[pid] ?? 0) + pts;
+  }
   await update(ref(db, `rooms/${roomId}`), {
     status: 'won',
     winnerId,
     winningPath,
+    roundScores,
+    scores: merged,
   });
 }
 

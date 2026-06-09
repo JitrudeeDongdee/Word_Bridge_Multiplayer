@@ -7,6 +7,7 @@ interface WordNodeData {
   canDelete: boolean;
   onDelete: (id: string) => void;
   playerColor?: string;
+  isPathNode?: boolean;
 }
 
 interface WordNodeProps {
@@ -16,7 +17,7 @@ interface WordNodeProps {
 }
 
 function WordNode({ id, data, selected }: WordNodeProps) {
-  const { word, isStart, canDelete, onDelete, playerColor } = data;
+  const { word, isStart, canDelete, onDelete, playerColor, isPathNode } = data;
 
   const baseClass =
     'px-4 py-2 rounded-xl border-2 shadow-md select-none text-sm font-semibold uppercase tracking-wide transition-all';
@@ -42,11 +43,18 @@ function WordNode({ id, data, selected }: WordNodeProps) {
       <Handle id="s-right"  type="source" position={Position.Right}  style={invisibleHandle} />
       <Handle id="s-bottom" type="source" position={Position.Bottom} style={invisibleHandle} />
       <Handle id="s-left"   type="source" position={Position.Left}   style={invisibleHandle} />
-      {/* target handles — one per side */}
+      {/* Target handles — one per side */}
       <Handle id="t-top"    type="target" position={Position.Top}    style={invisibleHandle} />
       <Handle id="t-right"  type="target" position={Position.Right}  style={invisibleHandle} />
       <Handle id="t-bottom" type="target" position={Position.Bottom} style={invisibleHandle} />
       <Handle id="t-left"   type="target" position={Position.Left}   style={invisibleHandle} />
+      {/* Winning-path highlight ring */}
+      {isPathNode && (
+        <div
+          className="absolute inset-0 rounded-xl border-2 border-brand-400 animate-pulse pointer-events-none"
+          style={{ margin: '-3px' }}
+        />
+      )}
       <div
         className={`${baseClass} ${isStart ? startClass : normalClass}`}
         style={nodeStyle}

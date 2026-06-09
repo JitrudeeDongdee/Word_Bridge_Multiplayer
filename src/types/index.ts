@@ -53,4 +53,8 @@ export interface Room {
   winnerId: string | null;
   winningPath: string[] | null;
   lastWordScores: LastWordScores | null;
+  /** Cumulative points per player across all rounds in this room (playerId → pts) */
+  scores: Record<string, number>;
+  /** Points earned in the most recently completed round (playerId → pts) */
+  roundScores: Record<string, number> | null;
 }
