@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, type MutableRefObject } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
   ConnectionMode,
+  useReactFlow,
   type NodeChange,
   type EdgeChange,
   applyNodeChanges,
@@ -21,6 +22,15 @@ import type { Room } from '../types';
 import { useGameActions } from '../hooks/useGameActions';
 
 const nodeTypes = { wordNode: WordNode };
+
+/** Inner component to capture fitView — must live inside the ReactFlow context */
+function FitViewCapture({ fitViewRef }: { fitViewRef?: MutableRefObject<(() => void) | null> }) {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    if (fitViewRef) fitViewRef.current = () => fitView({ padding: 0.2 });
+  }, [fitView, fitViewRef]);
+  return null;
+}
 
 const NODE_GAP = 8; // minimum gap between nodes in pixels
 
@@ -41,9 +51,10 @@ interface GameCanvasProps {
   roomId: string;
   playerId: string;
   playerColorMap: Record<string, string>;
+  fitViewRef?: MutableRefObject<(() => void) | null>;
 }
 
-export default function GameCanvas({ room, roomId, playerId, playerColorMap }: GameCanvasProps) {
+export default function GameCanvas({ room, roomId, playerId, playerColorMap, fitViewRef }: GameCanvasProps) {
   const { handleDeleteNode, handleNodeDragStop } = useGameActions(roomId);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
@@ -88,6 +99,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap }: G
         isPathNode: pathIds.has(n.id),
         connectedWords: adjacencyWords.get(n.id) ?? [],
         isHighlighted: highlightedIds.has(n.id),
+        isNew: !!n.isNew,
       },
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -226,7 +238,8 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap }: G
       >
         <Background />
         <Controls />
-        <MiniMap nodeColor={(n) => (n.data.isStart ? '#0ea5e9' : ((n.data.playerColor as string) ?? '#e2e8f0'))} />
+        <MiniMap className="hidden md:block" nodeColor={(n) => (n.data.isStart ? '#0ea5e9' : ((n.data.playerColor as string) ?? '#e2e8f0'))} />
+        <FitViewCapture fitViewRef={fitViewRef} />
       </ReactFlow>
     </div>
   );

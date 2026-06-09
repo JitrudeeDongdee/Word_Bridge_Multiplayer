@@ -2,6 +2,13 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createRoom, joinRoom } from '../services/roomService';
 import { useGameStore } from '../store/useGameStore';
+import { usePresence } from '../hooks/usePresence';
+
+function randomName(): string {
+  const adj = ['Swift', 'Bright', 'Clever', 'Bold', 'Quick', 'Sharp', 'Witty', 'Calm'];
+  const noun = ['Fox', 'Owl', 'Lynx', 'Wolf', 'Hawk', 'Bear', 'Deer', 'Crow'];
+  return adj[Math.floor(Math.random() * adj.length)] + noun[Math.floor(Math.random() * noun.length)];
+}
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -9,10 +16,11 @@ export default function HomePage() {
   const setRoom = useGameStore((s) => s.setRoom);
 
   const [mode, setMode] = useState<'menu' | 'create' | 'join'>('menu');
-  const [name, setName] = useState('');
+  const [name, setName] = useState(randomName);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { onlineCount, totalCount } = usePresence();
 
   const { roomId: inviteRoomId } = useParams<{ roomId?: string }>();
 
@@ -101,15 +109,26 @@ export default function HomePage() {
               <h2 className="text-xl font-bold text-gray-800">Create a Room</h2>
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-gray-600">Your name</span>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your name"
-                  className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  maxLength={20}
-                  autoFocus
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="px-3 py-2 pr-8 w-full rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    maxLength={20}
+                    autoFocus
+                  />
+                  {name && (
+                    <button
+                      type="button"
+                      onClick={() => setName('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
               </label>
               {error && <p className="text-red-500 text-sm">{error}</p>}
               <button
@@ -134,15 +153,26 @@ export default function HomePage() {
               <h2 className="text-xl font-bold text-gray-800">Join a Room</h2>
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-gray-600">Your name</span>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your name"
-                  className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  maxLength={20}
-                  autoFocus
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="px-3 py-2 pr-8 w-full rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    maxLength={20}
+                    autoFocus
+                  />
+                  {name && (
+                    <button
+                      type="button"
+                      onClick={() => setName('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
               </label>
               {!inviteRoomId && (
                 <label className="flex flex-col gap-1">
@@ -176,6 +206,18 @@ export default function HomePage() {
               )}
             </form>
           )}
+        </div>
+
+        {/* Stats bar */}
+        <div className="flex justify-center gap-5 mt-5 text-sm">
+          <div className="flex items-center gap-1.5 text-emerald-600 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+            {onlineCount === null ? '…' : onlineCount} online now
+          </div>
+          <div className="text-gray-300">·</div>
+          <div className="text-gray-400">
+            {totalCount === null ? '…' : totalCount.toLocaleString()} total players
+          </div>
         </div>
       </div>
     </div>

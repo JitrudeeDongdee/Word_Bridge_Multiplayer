@@ -79,17 +79,17 @@ export default function LobbyPage() {
         <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6">
           <div>
             <h2 className="text-2xl font-black text-brand-600">Room Lobby</h2>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-gray-500 text-sm">Room code:</span>
-              <span className="font-mono font-bold text-lg tracking-widest text-gray-800">
+            <p className="text-xs text-gray-400 mt-1 mb-3">Share this code with friends to join</p>
+            <div className="flex items-center justify-center bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+              <span className="font-mono font-black text-2xl tracking-[0.35em] text-gray-800">
                 {roomId}
               </span>
             </div>
             <button
               onClick={handleCopyLink}
-              className="mt-2 text-xs text-brand-500 hover:text-brand-700 underline"
+              className="mt-2 w-full py-2.5 rounded-xl border-2 border-brand-200 bg-brand-50 text-brand-700 font-bold text-sm hover:bg-brand-100 active:bg-brand-200 transition-colors flex items-center justify-center gap-2"
             >
-              {copied ? '✓ Copied!' : '🔗 Copy invite link'}
+              {copied ? '✓ Copied!' : '🔗 Copy Invite Link'}
             </button>
           </div>
 

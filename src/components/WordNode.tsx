@@ -10,6 +10,7 @@ interface WordNodeData {
   isPathNode?: boolean;
   isHighlighted?: boolean;
   connectedWords?: string[];
+  isNew?: boolean;
 }
 
 interface WordNodeProps {
@@ -19,11 +20,11 @@ interface WordNodeProps {
 }
 
 function WordNode({ id, data, selected }: WordNodeProps) {
-  const { word, isStart, canDelete, onDelete, playerColor, isPathNode, isHighlighted } = data;
+  const { word, isStart, canDelete, onDelete, playerColor, isPathNode, isHighlighted, isNew } = data;
 
   const baseClass =
     'px-4 py-2 rounded-xl border-2 shadow-md select-none text-sm font-semibold uppercase tracking-wide transition-all';
-  const startClass = 'bg-brand-500 border-brand-700 text-white min-w-[90px] text-center';
+  const startClass = 'bg-brand-500 border-brand-700 text-white min-w-[110px] text-center text-base ring-4 ring-brand-200';
   const normalClass = selected
     ? 'bg-white border-brand-500 text-gray-800'
     : 'bg-white border-gray-300 text-gray-800';
@@ -50,6 +51,13 @@ function WordNode({ id, data, selected }: WordNodeProps) {
       <Handle id="t-right"  type="target" position={Position.Right}  style={invisibleHandle} />
       <Handle id="t-bottom" type="target" position={Position.Bottom} style={invisibleHandle} />
       <Handle id="t-left"   type="target" position={Position.Left}   style={invisibleHandle} />
+      {/* New-node arrival flash ring */}
+      {isNew && !isStart && (
+        <div
+          className="absolute inset-0 rounded-xl border-2 border-green-400 animate-ping pointer-events-none"
+          style={{ margin: '-3px' }}
+        />
+      )}
       {/* Winning-path highlight ring */}
       {isPathNode && (
         <div
@@ -70,7 +78,7 @@ function WordNode({ id, data, selected }: WordNodeProps) {
         {word}
         {!isStart && canDelete && (
           <button
-            className="absolute -top-2 -right-2 hidden group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs leading-none"
+            className="absolute -top-2 -right-2 flex md:hidden md:group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs leading-none"
             onClick={() => onDelete(id)}
             title="Delete node"
           >

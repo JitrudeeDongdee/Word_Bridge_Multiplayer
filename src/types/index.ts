@@ -16,6 +16,7 @@ export interface GameNode {
   y: number;
   createdBy: string;
   isStart: boolean;
+  isNew?: boolean;
 }
 
 export interface GameEdge {

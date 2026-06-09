@@ -291,8 +291,13 @@ export async function addNode(roomId: string, word: string, playerId: string): P
     y: 100 + Math.random() * 400,
     createdBy: playerId,
     isStart: false,
+    isNew: true,
   };
   await set(ref(db, `rooms/${roomId}/nodes/${nodeId}`), node);
+  // Clear the isNew flag after 2s so all clients see a brief flash
+  setTimeout(() => {
+    update(ref(db, `rooms/${roomId}/nodes/${nodeId}`), { isNew: null }).catch(() => {});
+  }, 2000);
   return nodeId;
 }
 

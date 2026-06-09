@@ -3,9 +3,10 @@ import { useGameActions } from '../hooks/useGameActions';
 
 interface AddWordPanelProps {
   roomId: string;
+  onSuccess?: () => void;
 }
 
-export default function AddWordPanel({ roomId }: AddWordPanelProps) {
+export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
   const [word, setWord] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,6 +22,7 @@ export default function AddWordPanel({ roomId }: AddWordPanelProps) {
       setError(result.error);
     } else {
       setWord('');
+      onSuccess?.();
     }
 
     setLoading(false);
@@ -34,10 +36,12 @@ export default function AddWordPanel({ roomId }: AddWordPanelProps) {
           value={word}
           onChange={(e) => setWord(e.target.value)}
           placeholder="Add a word…"
-          className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
           disabled={loading}
           maxLength={30}
           autoComplete="off"
+          inputMode="text"
+          enterKeyHint="done"
         />
         <button
           type="submit"

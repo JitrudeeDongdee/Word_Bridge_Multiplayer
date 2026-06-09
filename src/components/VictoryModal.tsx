@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import confetti from 'canvas-confetti';
 import type { Room } from '../types';
 import { restartGame } from '../services/roomService';
 
@@ -18,6 +19,21 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
   const isHost = room.hostId === playerId;
   const { gameState, nodes, winningPath } = room;
   const wordA = gameState?.wordA ?? '?';
+
+  useEffect(() => {
+    // Fire two bursts from the bottom corners
+    const fire = (x: number) =>
+      confetti({
+        particleCount: 80,
+        spread: 60,
+        origin: { x, y: 0.9 },
+        startVelocity: 55,
+        ticks: 200,
+      });
+    fire(0.2);
+    const t = setTimeout(() => fire(0.8), 150);
+    return () => clearTimeout(t);
+  }, []);
   const wordB = gameState?.wordB ?? '?';
   const path = winningPath ?? [];
 

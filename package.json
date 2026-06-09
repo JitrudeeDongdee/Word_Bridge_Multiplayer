@@ -10,10 +10,13 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build && gh-pages -d dist",
+    "prepare": "husky"
   },
   "dependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@xyflow/react": "^12.11.0",
+    "canvas-confetti": "^1.9.4",
     "firebase": "^12.14.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
@@ -36,6 +39,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "postcss": "^8.5.15",
     "prettier": "^3.8.3",

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { useRoomSubscription } from '../hooks/useRoomSubscription';
@@ -24,6 +24,23 @@ export default function GamePage() {
   const [leavingLobby, setLeavingLobby] = useState(false);
   const [showNewGameModal, setShowNewGameModal] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const fitViewRef = useRef<(() => void) | null>(null);
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}${window.location.pathname}#/join/${roomId}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   const playerColorMap = useMemo(
     () => getPlayerColorMap(room?.players ?? {}),
@@ -66,8 +83,11 @@ export default function GamePage() {
 
   if (!room || !roomId || !playerId) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Loading game…
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-gray-400">
+          <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin" />
+          <span className="text-sm">Connecting…</span>
+        </div>
       </div>
     );
   }
@@ -78,44 +98,78 @@ export default function GamePage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="font-black text-brand-600 text-xl">Word Bridge</span>
-          <span className="text-gray-300">|</span>
-          <span className="font-mono text-sm text-gray-500">{roomId}</span>
-        </div>
-        <div className="flex items-center gap-4 text-sm text-gray-600">
-          <span>
-            <span className="font-bold text-brand-500 uppercase">{wordA}</span>
-            <span className="mx-2 text-gray-400">→</span>
-            <span className="font-bold text-brand-500 uppercase">{wordB}</span>
-          </span>
-          <span className="text-gray-400">{nodeCount} nodes</span>
-          {isHost && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowNewGameModal(true)}
-                disabled={leavingLobby || leaving}
-                className="px-3 py-1 rounded-lg border border-brand-300 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50 transition-colors"
-              >
-                ↺ New Game
-              </button>
-              <button
-                onClick={handleBackToLobby}
-                disabled={leavingLobby || leaving}
-                className="px-3 py-1 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
-              >
-                {leavingLobby ? 'Returning…' : '← Back to Lobby'}
-              </button>
-            </div>
-          )}
-          <button
-            onClick={handleLeave}
-            disabled={leaving || leavingLobby}
-            className="px-3 py-1 rounded-lg border border-red-200 text-xs font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
-          >
-            {leaving ? 'Leaving…' : 'Leave Room'}
-          </button>
+      <header className="bg-white border-b border-gray-200 shadow-sm px-4 md:px-6 py-2 md:py-3">
+        <div className="flex items-center justify-between gap-2">
+          {/* Left: brand + room code */}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-black text-brand-600 text-lg md:text-xl whitespace-nowrap">Word Bridge</span>
+            <span className="hidden sm:inline text-gray-300">|</span>
+            <span className="hidden sm:inline font-mono text-xs text-gray-500 truncate">{roomId}</span>
+          </div>
+
+          {/* Center: word pair + node count — desktop only */}
+          <div className="hidden md:flex items-center gap-3 text-sm text-gray-600">
+            <span>
+              <span className="font-bold text-brand-500 uppercase">{wordA}</span>
+              <span className="mx-2 text-gray-400">→</span>
+              <span className="font-bold text-brand-500 uppercase">{wordB}</span>
+            </span>
+            <span className="text-gray-400 text-xs">{nodeCount} nodes</span>
+          </div>
+
+          {/* Right: host buttons (desktop) + leave + sidebar toggle */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {isHost && (
+              <div className="hidden md:flex items-center gap-2">
+                <button
+                  onClick={() => setShowNewGameModal(true)}
+                  disabled={leavingLobby || leaving}
+                  className="px-3 py-1 rounded-lg border border-brand-300 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50 transition-colors"
+                >
+                  ↺ New Game
+                </button>
+                <button
+                  onClick={handleBackToLobby}
+                  disabled={leavingLobby || leaving}
+                  className="px-3 py-1 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                >
+                  {leavingLobby ? 'Returning…' : '← Back to Lobby'}
+                </button>
+              </div>
+            )}
+            {/* Copy invite link — desktop */}
+            <button
+              onClick={handleCopyLink}
+              className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-lg border border-gray-200 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+            >
+              <span>{copied ? '✓' : '🔗'}</span>
+              <span>{copied ? 'Copied!' : 'Invite'}</span>
+            </button>
+            <button
+              onClick={handleLeave}
+              disabled={leaving || leavingLobby}
+              className="px-3 py-1 rounded-lg border border-red-200 text-xs font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
+            >
+              <span className="hidden sm:inline">{leaving ? 'Leaving…' : 'Leave'}</span>
+              <span className="sm:hidden text-base leading-none">✕</span>
+            </button>
+            {/* Sidebar toggle — mobile only */}
+            <button
+              onClick={() => setSidebarOpen((v) => !v)}
+              aria-label="Toggle panel"
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <span className="text-lg leading-none">☰</span>
+            </button>
+            {/* Fit view — mobile only */}
+            <button
+              onClick={() => fitViewRef.current?.()}
+              aria-label="Fit view"
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <span className="text-sm leading-none">⤢</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -123,7 +177,22 @@ export default function GamePage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Canvas */}
         <main className="flex-1 relative">
-          <GameCanvas room={room} roomId={roomId} playerId={playerId} playerColorMap={playerColorMap} />
+          <GameCanvas room={room} roomId={roomId} playerId={playerId} playerColorMap={playerColorMap} fitViewRef={fitViewRef} />
+
+          {/* Empty canvas hint — fades out once words are added */}
+          <div
+            className={[
+              'absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-500',
+              nodeCount <= 2 ? 'opacity-100' : 'opacity-0',
+            ].join(' ')}
+          >
+            <p className="text-gray-300 text-sm font-medium text-center px-8 select-none">
+              Type a word that bridges<br />
+              <span className="text-brand-300 font-bold uppercase">{wordA}</span>
+              <span className="mx-2">→</span>
+              <span className="text-brand-300 font-bold uppercase">{wordB}</span>
+            </p>
+          </div>
           {/* Victory modal — mounts when game is won, unmounts on restart */}
           {showNewGameModal && room.status === 'playing' && (
             <NewGameModal
@@ -142,9 +211,108 @@ export default function GamePage() {
               playerColorMap={playerColorMap}
             />
           )}
+
+          {/* FAB — mobile only, non-spectators only */}
+          {!isSpectator && (
+            <>
+              {fabOpen && (
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setFabOpen(false)}
+                />
+              )}
+              <div className="fixed bottom-6 right-6 z-20 md:hidden flex flex-col items-end gap-3">
+                {fabOpen && (
+                  <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 w-72">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Add Word</p>
+                    <AddWordPanel roomId={roomId} onSuccess={() => setFabOpen(false)} />
+                  </div>
+                )}
+                <button
+                  onClick={() => setFabOpen((v) => !v)}
+                  aria-label="Add word"
+                  className={[
+                    'w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white transition-all duration-200 active:scale-95',
+                    fabOpen ? 'bg-gray-400 hover:bg-gray-500' : 'bg-brand-500 hover:bg-brand-600',
+                  ].join(' ')}
+                >
+                  <span
+                    className={[
+                      'text-3xl font-light leading-none inline-block transition-transform duration-200',
+                      fabOpen ? 'rotate-45' : '',
+                    ].join(' ')}
+                  >
+                    +
+                  </span>
+                </button>
+              </div>
+            </>
+          )}
         </main>
-        {/* Sidebar */}
-        <aside className="w-64 bg-white border-l border-gray-200 flex flex-col gap-4 p-4 overflow-y-auto">
+
+        {/* Mobile backdrop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/40 z-30 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Sidebar — overlay on mobile, static column on desktop */}
+        <aside
+          className={[
+            'fixed top-0 right-0 bottom-0 z-40 w-72 bg-white border-l border-gray-200 flex flex-col gap-4 p-4 overflow-y-auto',
+            'transform transition-transform duration-300 ease-in-out',
+            sidebarOpen ? 'translate-x-0' : 'translate-x-full',
+            'md:relative md:w-64 md:translate-x-0 md:z-auto md:top-auto md:right-auto md:bottom-auto',
+          ].join(' ')}
+        >
+          {/* Mobile-only top section: word pair + host actions */}
+          <div className="md:hidden border-b border-gray-100 pb-3 flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold">
+                <span className="text-brand-500 uppercase">{wordA}</span>
+                <span className="mx-1.5 text-gray-400 font-normal">→</span>
+                <span className="text-brand-500 uppercase">{wordB}</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">{nodeCount} nodes</span>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  aria-label="Close panel"
+                  className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            {isHost && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setShowNewGameModal(true); setSidebarOpen(false); }}
+                  disabled={leavingLobby || leaving}
+                  className="flex-1 px-2 py-1.5 rounded-lg border border-brand-300 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50 transition-colors"
+                >
+                  ↺ New Game
+                </button>
+                <button
+                  onClick={handleBackToLobby}
+                  disabled={leavingLobby || leaving}
+                  className="flex-1 px-2 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                >
+                  {leavingLobby ? 'Returning…' : '← Lobby'}
+                </button>
+              </div>
+            )}
+            {/* Copy invite link — mobile sidebar */}
+            <button
+              onClick={handleCopyLink}
+              className="w-full py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <span>{copied ? '✓' : '🔗'}</span>
+              <span>{copied ? 'Copied!' : 'Copy Invite Link'}</span>
+            </button>
+          </div>
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Add Word
@@ -182,38 +350,35 @@ export default function GamePage() {
             />
           </div>
 
-          {/* Cumulative scores — visible once any player has earned points */}
-          {room.scores && Object.keys(room.scores).length > 0 && (
+          {/* Scores — cumulative leaderboard + last-word breakdown combined */}
+          {((room.scores && Object.keys(room.scores).length > 0) || room.lastWordScores) && (
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 Scores
               </p>
-              <div className="flex flex-col gap-1">
-                {Object.entries(room.scores)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(([pid, pts], rank) => {
-                    const color = playerColorMap[pid] ?? '#94a3b8';
-                    const name = room.players?.[pid]?.name ?? pid;
-                    return (
-                      <div key={pid} className="flex items-center justify-between py-0.5">
-                        <span className="flex items-center gap-1.5">
-                          <span className="text-xs text-gray-400 w-3">{rank + 1}.</span>
-                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                          <span className="text-xs text-gray-700 truncate max-w-[110px]">{name}</span>
-                        </span>
-                        <span className="text-xs font-bold text-gray-800">{pts}</span>
-                      </div>
-                    );
-                  })}
-              </div>
+              {room.scores && Object.keys(room.scores).length > 0 && (
+                <div className="flex flex-col gap-1 mb-3">
+                  {Object.entries(room.scores)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([pid, pts], rank) => {
+                      const color = playerColorMap[pid] ?? '#94a3b8';
+                      const name = room.players?.[pid]?.name ?? pid;
+                      return (
+                        <div key={pid} className="flex items-center justify-between py-0.5">
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-xs text-gray-400 w-3">{rank + 1}.</span>
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                            <span className="text-xs text-gray-700 truncate max-w-[110px]">{name}</span>
+                          </span>
+                          <span className="text-xs font-bold text-gray-800">{pts}</span>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+              <ScoreTable lastWordScores={room.lastWordScores ?? null} />
             </div>
           )}
-          <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Last Word Scores
-            </p>
-            <ScoreTable lastWordScores={room.lastWordScores ?? null} />
-          </div>
           <div className="mt-auto">
             <p className="text-xs text-gray-400">
               Drag nodes to rearrange.
