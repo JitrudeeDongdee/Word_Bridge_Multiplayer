@@ -141,7 +141,7 @@ export async function joinRoom(
     name: playerName,
     isHost: false,
     joinedAt: Date.now(),
-    spectator: room.status !== 'waiting' ? true : undefined,
+    ...(room.status !== 'waiting' ? { spectator: true } : {}),
   };
 
   await update(ref(db, `rooms/${roomId}/players`), { [playerId]: player });
