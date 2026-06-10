@@ -41,7 +41,7 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
         const data = (await res.json()) as Array<{ word: string }>;
         setSuggestions(data.map((d) => d.word));
         if (inputRef.current === document.activeElement) {
-          setDropdownRect(inputRef.current.getBoundingClientRect());
+          setDropdownRect(inputRef.current?.getBoundingClientRect() ?? null);
           setShowSuggestions(true);
         }
       } catch {
