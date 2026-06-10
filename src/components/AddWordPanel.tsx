@@ -14,10 +14,12 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const sugAbortRef = useRef<AbortController | null>(null);
   const suppressSugRef = useRef(false);
+  const listRef = useRef<HTMLUListElement>(null);
   const { handleAddWord } = useGameActions(roomId);
 
   // Fetch autocomplete suggestions with debounce
@@ -57,6 +59,37 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
     setWord(w);
     setSuggestions([]);
     setShowSuggestions(false);
+    setActiveIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((i) => {
+        const next = i < suggestions.length - 1 ? i + 1 : 0;
+        scrollSuggestionIntoView(next);
+        return next;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((i) => {
+        const next = i > 0 ? i - 1 : suggestions.length - 1;
+        scrollSuggestionIntoView(next);
+        return next;
+      });
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      selectSuggestion(suggestions[activeIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setActiveIndex(-1);
+    }
+  };
+
+  const scrollSuggestionIntoView = (index: number) => {
+    const item = listRef.current?.children[index] as HTMLElement | undefined;
+    item?.scrollIntoView({ block: 'nearest' });
   };
 
   const openSuggestions = () => {
@@ -105,9 +138,10 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
           ref={inputRef}
           type="text"
           value={word}
-          onChange={(e) => { setWord(e.target.value); setShowSuggestions(false); }}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+          onChange={(e) => { setWord(e.target.value); setShowSuggestions(false); setActiveIndex(-1); }}
+          onBlur={() => setTimeout(() => { setShowSuggestions(false); setActiveIndex(-1); }, 150)}
           onFocus={openSuggestions}
+          onKeyDown={handleKeyDown}
           placeholder="Add a word…"
           className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
           disabled={loading}
@@ -135,6 +169,7 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
         )}
         {showSuggestions && suggestions.length > 0 && !loading && dropdownRect && createPortal(
           <ul
+            ref={listRef}
             style={{
               position: 'fixed',
               top: dropdownRect.bottom + 4,
@@ -144,12 +179,16 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
             }}
             className="rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden"
           >
-            {suggestions.map((s) => (
+            {suggestions.map((s, i) => (
               <li key={s}>
                 <button
                   type="button"
                   onMouseDown={() => selectSuggestion(s)}
-                  className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-600 transition-colors"
+                  className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
+                    i === activeIndex
+                      ? 'bg-brand-100 text-brand-700'
+                      : 'text-gray-700 hover:bg-brand-50 hover:text-brand-600'
+                  }`}
                 >
                   {s}
                 </button>
