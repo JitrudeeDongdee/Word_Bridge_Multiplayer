@@ -1,4 +1,4 @@
-const TIMEOUT_MS = 5000;
+const TIMEOUT_MS = 3000;
 
 interface DatuseItem {
   word: string;
@@ -14,6 +14,10 @@ const relatedCache = new Map<string, Map<string, number>>();
 
 // Module-level cache: "word1|word2" → relatedness score
 const conceptNetCache = new Map<string, number>();
+
+// Circuit breaker: stop calling ConceptNet after 3 consecutive failures
+let cnFailCount = 0;
+const CN_FAIL_LIMIT = 3;
 
 async function fetchRelatedScores(
   word: string,
@@ -48,6 +52,8 @@ async function fetchRelatedScores(
 }
 
 async function fetchConceptNetRelatedness(a: string, b: string): Promise<number> {
+  if (cnFailCount >= CN_FAIL_LIMIT) return 0;
+
   const cacheKey = a < b ? `${a}|${b}` : `${b}|${a}`;
   if (conceptNetCache.has(cacheKey)) return conceptNetCache.get(cacheKey)!;
 
@@ -59,15 +65,19 @@ async function fetchConceptNetRelatedness(a: string, b: string): Promise<number>
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timer);
 
-    if (!res.ok) return 0;
+    if (!res.ok) {
+      cnFailCount++;
+      return 0;
+    }
 
+    cnFailCount = 0; // reset on success
     const data = (await res.json()) as ConceptNetRelatednessResponse;
-    // ConceptNet returns values roughly in [-1, 1]; clamp to [0, 1]
     const score = Math.max(0, data.value ?? 0);
     conceptNetCache.set(cacheKey, score);
     return score;
   } catch {
     clearTimeout(timer);
+    cnFailCount++;
     return 0;
   }
 }

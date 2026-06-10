@@ -30,18 +30,14 @@ export function useRoomSubscription(roomId: string | undefined): void {
       }
 
       if (room.status === 'playing') {
-        // Only redirect from lobby to game
-        const hash = window.location.hash;
-        if (hash.includes('/lobby')) {
-          navigate(`/game/${roomId}`);
-        }
+        navigate(`/game/${roomId}`, { replace: true });
       }
 
       if (room.status === 'waiting') {
-        // Redirect everyone back to lobby when host returns
+        // Redirect everyone back to lobby when host returns to waiting
         const hash = window.location.hash;
         if (hash.includes('/game') || hash.includes('/victory')) {
-          navigate(`/lobby/${roomId}`);
+          navigate(`/lobby/${roomId}`, { replace: true });
         }
       }
       // 'won' is handled as a modal overlay inside GamePage — no redirect needed
