@@ -89,18 +89,18 @@ export default function GamePage() {
     setRoom(joinedRoom);
   };
 
-  // No playerId → show join form
+  // No playerId at all → show join form
   if (roomId && !playerId) {
     return <JoinGameForm roomId={roomId} onJoined={handleJoined} />;
   }
 
-  // Still loading
+  // Still loading (playerId may be restored from localStorage — reconnecting)
   if (!room || !roomId || !playerId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-gray-400">
           <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin" />
-          <span className="text-sm">Connecting…</span>
+          <span className="text-sm">{playerId ? 'Reconnecting…' : 'Connecting…'}</span>
           <button
             onClick={() => navigate('/')}
             className="mt-2 text-sm text-brand-500 hover:text-brand-700 underline underline-offset-2"

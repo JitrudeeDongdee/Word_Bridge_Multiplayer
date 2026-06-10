@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Room, Player } from '../types';
 
 interface GameStore {
@@ -18,20 +19,32 @@ interface GameStore {
   clearSession: () => void;
 }
 
-export const useGameStore = create<GameStore>((set, get) => ({
-  playerId: null,
-  playerName: null,
-  room: null,
+export const useGameStore = create<GameStore>()(
+  persist(
+    (set, get) => ({
+      playerId: null,
+      playerName: null,
+      room: null,
 
-  get currentPlayer() {
-    const { room, playerId } = get();
-    if (!room || !playerId) return null;
-    return room.players?.[playerId] ?? null;
-  },
+      get currentPlayer() {
+        const { room, playerId } = get();
+        if (!room || !playerId) return null;
+        return room.players?.[playerId] ?? null;
+      },
 
-  setIdentity: (playerId, playerName) => set({ playerId, playerName }),
+      setIdentity: (playerId, playerName) => set({ playerId, playerName }),
 
-  setRoom: (room) => set({ room }),
+      setRoom: (room) => set({ room }),
 
-  clearSession: () => set({ playerId: null, playerName: null, room: null }),
-}));
+      clearSession: () => set({ playerId: null, playerName: null, room: null }),
+    }),
+    {
+      name: 'wb-session',
+      // Only persist identity — room data comes from Firebase on reconnect
+      partialize: (state) => ({
+        playerId: state.playerId,
+        playerName: state.playerName,
+      }),
+    },
+  ),
+);

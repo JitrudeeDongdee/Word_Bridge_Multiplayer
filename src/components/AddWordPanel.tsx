@@ -186,8 +186,8 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
                   onMouseDown={() => selectSuggestion(s)}
                   className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
                     i === activeIndex
-                      ? 'bg-brand-100 text-brand-700'
-                      : 'text-gray-700 hover:bg-brand-50 hover:text-brand-600'
+                      ? 'bg-gray-200 text-gray-900 font-medium'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
                   {s}
