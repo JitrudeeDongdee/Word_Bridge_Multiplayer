@@ -51,13 +51,15 @@ export type WordCheckResult = 'valid' | 'not_found' | 'network_error';
  * Checks whether a word exists in the English dictionary
  * using the free dictionaryapi.dev API.
  */
-export async function checkRealWord(word: string): Promise<WordCheckResult> {
+export async function checkRealWord(word: string, signal?: AbortSignal): Promise<WordCheckResult> {
   try {
     const res = await fetch(
       `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.toLowerCase())}`,
+      { signal },
     );
     return res.ok ? 'valid' : 'not_found';
-  } catch {
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') return 'network_error';
     return 'network_error';
   }
 }

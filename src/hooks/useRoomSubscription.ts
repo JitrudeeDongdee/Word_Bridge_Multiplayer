@@ -31,16 +31,16 @@ export function useRoomSubscription(roomId: string | undefined): void {
 
       if (room.status === 'playing') {
         // Only redirect from lobby to game
-        const path = window.location.pathname;
-        if (path.includes('/lobby')) {
+        const hash = window.location.hash;
+        if (hash.includes('/lobby')) {
           navigate(`/game/${roomId}`);
         }
       }
 
       if (room.status === 'waiting') {
         // Redirect everyone back to lobby when host returns
-        const path = window.location.pathname;
-        if (path.includes('/game') || path.includes('/victory')) {
+        const hash = window.location.hash;
+        if (hash.includes('/game') || hash.includes('/victory')) {
           navigate(`/lobby/${roomId}`);
         }
       }

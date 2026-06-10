@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef, type MutableRefObject } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ReactFlow,
   Background,
@@ -60,47 +61,97 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
   const { handleDeleteNode, handleNodeDragStop } = useGameActions(roomId);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
-  // Dictionary mode
+  // Dictionary
   const [dictMode, setDictMode] = useState(false);
-  const [dictEntry, setDictEntry] = useState<{ word: string; definition: string; partOfSpeech: string } | null>(null);
-  const [dictLoading, setDictLoading] = useState(false);
+  type DictCard = { word: string; definition: string; partOfSpeech: string };
+  const [dictChain, setDictChain] = useState<DictCard[]>([]);
+  const [dictChainLoading, setDictChainLoading] = useState(false);
+  const [dictSearch, setDictSearch] = useState('');
+  const [dictSuggestions, setDictSuggestions] = useState<string[]>([]);
+  const [showDictSuggestions, setShowDictSuggestions] = useState(false);
+  const [dictDropdownRect, setDictDropdownRect] = useState<DOMRect | null>(null);
+  const dictInputRef = useRef<HTMLInputElement>(null);
+  const sugAbortRef = useRef<AbortController | null>(null);
   const defCache = useRef(new Map<string, { definition: string; partOfSpeech: string }>());
 
-  const onNodeClick = useCallback(async (_e: React.MouseEvent, node: Node) => {
-    if (!dictMode) {
-      onNodeSelect?.(node.id);
-      return;
+  // Autocomplete suggestions for dict search
+  useEffect(() => {
+    const trimmed = dictSearch.trim();
+    if (trimmed.length < 2) { setDictSuggestions([]); return; }
+    const timer = setTimeout(async () => {
+      sugAbortRef.current?.abort();
+      const controller = new AbortController();
+      sugAbortRef.current = controller;
+      try {
+        const res = await fetch(
+          `https://api.datamuse.com/sug?s=${encodeURIComponent(trimmed)}&max=6`,
+          { signal: controller.signal },
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as Array<{ word: string }>;
+        setDictSuggestions(data.map((d) => d.word));
+      } catch { /* aborted */ }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [dictSearch]);
+
+  const fetchDictCard = useCallback(async (rawWord: string): Promise<DictCard> => {
+    const word = rawWord.trim().toLowerCase();
+    if (defCache.current.has(word)) return { word, ...defCache.current.get(word)! };
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    if (res.ok) {
+      const data = (await res.json()) as Array<{
+        meanings?: Array<{ partOfSpeech?: string; definitions?: Array<{ definition?: string }> }>;
+      }>;
+      const meaning = data[0]?.meanings?.[0];
+      const entry = {
+        definition: meaning?.definitions?.[0]?.definition ?? 'No definition found.',
+        partOfSpeech: meaning?.partOfSpeech ?? '',
+      };
+      defCache.current.set(word, entry);
+      return { word, ...entry };
     }
-    const word = (node.data.word as string).toLowerCase();
-    if (defCache.current.has(word)) {
-      setDictEntry({ word: node.data.word as string, ...defCache.current.get(word)! });
-      return;
-    }
-    setDictLoading(true);
-    setDictEntry(null);
+    return { word, definition: 'Definition not found.', partOfSpeech: '' };
+  }, []);
+
+  // Replace whole chain (search box / node click)
+  const fetchDefinition = useCallback(async (rawWord: string) => {
+    const word = rawWord.trim().toLowerCase();
+    if (!word) return;
+    setDictSearch(rawWord.trim());
+    setDictChainLoading(true);
+    setDictChain([]);
     try {
-      const res = await fetch(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
-      );
-      if (res.ok) {
-        const data = (await res.json()) as Array<{
-          meanings?: Array<{ partOfSpeech?: string; definitions?: Array<{ definition?: string }> }>;
-        }>;
-        const meaning = data[0]?.meanings?.[0];
-        const entry = {
-          definition: meaning?.definitions?.[0]?.definition ?? 'No definition found.',
-          partOfSpeech: meaning?.partOfSpeech ?? '',
-        };
-        defCache.current.set(word, entry);
-        setDictEntry({ word: node.data.word as string, ...entry });
-      } else {
-        setDictEntry({ word: node.data.word as string, definition: 'Definition not found.', partOfSpeech: '' });
-      }
+      const card = await fetchDictCard(word);
+      setDictChain([card]);
     } catch {
-      setDictEntry({ word: node.data.word as string, definition: 'Could not fetch definition.', partOfSpeech: '' });
+      setDictChain([{ word, definition: 'Could not fetch definition.', partOfSpeech: '' }]);
     }
-    setDictLoading(false);
-  }, [dictMode]);
+    setDictChainLoading(false);
+  }, [fetchDictCard]);
+
+  // Append to chain (clicking word inside a definition)
+  const appendDefinition = useCallback(async (rawWord: string) => {
+    const word = rawWord.trim().toLowerCase();
+    if (!word) return;
+    setDictChainLoading(true);
+    try {
+      const card = await fetchDictCard(word);
+      setDictChain((prev) => [...prev, card]);
+    } catch {
+      setDictChain((prev) => [...prev, { word, definition: 'Could not fetch definition.', partOfSpeech: '' }]);
+    }
+    setDictChainLoading(false);
+  }, [fetchDictCard]);
+
+  const removeFromChain = useCallback((index: number) => {
+    setDictChain((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const onNodeClick = useCallback((_e: React.MouseEvent, node: Node) => {
+    onNodeSelect?.(node.id);
+    if (dictMode) fetchDefinition(node.data.word as string);
+  }, [dictMode, fetchDefinition, onNodeSelect]);
 
   // Adjacency: nodeId → connected words list (for tooltip)
   const adjacencyWords = useMemo(() => {
@@ -286,7 +337,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
         <FitViewCapture fitViewRef={fitViewRef} />
         <Panel position="top-left" className="flex flex-col gap-2">
           <button
-            onClick={() => { setDictMode((d) => !d); setDictEntry(null); }}
+            onClick={() => { setDictMode((d) => !d); setDictChain([]); setDictSearch(''); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border transition-colors ${
               dictMode
                 ? 'bg-brand-500 border-brand-600 text-white'
@@ -295,18 +346,97 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
           >
             📖 Dict {dictMode ? 'ON' : 'OFF'}
           </button>
-          {dictMode && dictLoading && (
-            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-52">
-              <p className="text-xs text-gray-400">Loading…</p>
-            </div>
-          )}
-          {dictMode && dictEntry && !dictLoading && (
-            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-52">
-              <div className="font-semibold text-gray-800 capitalize text-sm">{dictEntry.word}</div>
-              {dictEntry.partOfSpeech && (
-                <div className="text-xs text-brand-500 italic mb-1">{dictEntry.partOfSpeech}</div>
+          {dictMode && (
+            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-56 flex flex-col gap-2 max-h-[70vh] overflow-y-auto">
+              <form
+                onSubmit={(e) => { e.preventDefault(); setShowDictSuggestions(false); fetchDefinition(dictSearch); }}
+                className="flex gap-1"
+              >
+                <input
+                  ref={dictInputRef}
+                  value={dictSearch}
+                  onChange={(e) => {
+                    setDictSearch(e.target.value);
+                    if (dictInputRef.current) setDictDropdownRect(dictInputRef.current.getBoundingClientRect());
+                    setShowDictSuggestions(true);
+                  }}
+                  onBlur={() => setTimeout(() => setShowDictSuggestions(false), 150)}
+                  onFocus={() => {
+                    if (dictSuggestions.length > 0 && dictInputRef.current) {
+                      setDictDropdownRect(dictInputRef.current.getBoundingClientRect());
+                      setShowDictSuggestions(true);
+                    }
+                  }}
+                  placeholder="Search word…"
+                  className="flex-1 min-w-0 px-2 py-1 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-400"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <button
+                  type="submit"
+                  disabled={!dictSearch.trim()}
+                  className="px-2 py-1 bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white text-xs rounded-md transition-colors shrink-0"
+                >
+                  Go
+                </button>
+              </form>
+              {showDictSuggestions && dictSuggestions.length > 0 && dictDropdownRect && createPortal(
+                <ul
+                  style={{
+                    position: 'fixed',
+                    top: dictDropdownRect.bottom + 4,
+                    left: dictDropdownRect.left,
+                    width: dictDropdownRect.width + 44, // include Go button width
+                    zIndex: 9999,
+                  }}
+                  className="rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden"
+                >
+                  {dictSuggestions.map((s) => (
+                    <li key={s} className="list-none">
+                      <button
+                        type="button"
+                        onMouseDown={() => { setDictSearch(s); setShowDictSuggestions(false); fetchDefinition(s); }}
+                        className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-brand-50 hover:text-brand-600 transition-colors"
+                      >
+                        {s}
+                      </button>
+                    </li>
+                  ))}
+                </ul>,
+                document.body,
               )}
-              <p className="text-xs text-gray-600 leading-relaxed">{dictEntry.definition}</p>
+
+              {dictChain.map((card, i) => (
+                <div key={`${card.word}-${i}`} className="relative rounded-lg border border-gray-100 bg-gray-50 p-2 flex flex-col gap-1">
+                  <button
+                    onClick={() => removeFromChain(i)}
+                    className="absolute top-1.5 right-1.5 text-gray-300 hover:text-gray-500 text-xs leading-none"
+                    title="Remove"
+                  >✕</button>
+                  <div className="font-semibold text-gray-800 capitalize text-sm pr-4">{card.word}</div>
+                  {card.partOfSpeech && (
+                    <div className="text-xs text-brand-500 italic">{card.partOfSpeech}</div>
+                  )}
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    {card.definition.split(/\b/).map((token, ti) => {
+                      const isWord = /^[a-zA-Z]{2,}$/.test(token);
+                      return isWord ? (
+                        <button
+                          key={ti}
+                          type="button"
+                          onClick={() => appendDefinition(token)}
+                          className="text-brand-600 hover:underline hover:text-brand-700 cursor-pointer bg-transparent border-none p-0 font-[inherit] text-[inherit]"
+                        >{token}</button>
+                      ) : token;
+                    })}
+                  </p>
+                </div>
+              ))}
+
+              {dictChainLoading && <p className="text-xs text-gray-400">Loading…</p>}
+              {!dictChainLoading && dictChain.length === 0 && (
+                <p className="text-xs text-gray-400">Click a word or type to search</p>
+              )}
             </div>
           )}
         </Panel>

@@ -34,8 +34,9 @@ export function useGameActions(roomId: string) {
   const playerId = useGameStore((s) => s.playerId);
 
   const handleAddWord = useCallback(
-    async (word: string): Promise<AddWordResult> => {
+    async (word: string, signal?: AbortSignal): Promise<AddWordResult> => {
       const fail = (error: string): AddWordResult => ({ error, scores: [] });
+      const aborted = () => signal?.aborted ?? false;
 
       if (!room || !playerId) return fail('Not connected to a room.');
 
@@ -43,13 +44,15 @@ export function useGameActions(roomId: string) {
       const result = validateWord(word, nodes);
       if (!result.valid) return fail(result.error ?? 'Invalid word.');
 
-      const wordCheck = await checkRealWord(word.trim());
+      const wordCheck = await checkRealWord(word.trim(), signal);
+      if (aborted()) return { error: null, scores: [] };
       if (wordCheck === 'not_found')
         return fail(`"${word.trim()}" wasn't found in the dictionary. Only common English words are allowed — proper nouns like place or person names are not supported.`);
       if (wordCheck === 'network_error')
         return fail('Could not verify the word. Please check your connection and try again.');
 
       const newNodeId = await addNode(roomId, word, playerId);
+      if (aborted()) { deleteNode(roomId, newNodeId).catch(() => {}); return { error: null, scores: [] }; }
 
       // Read fresh node/edge data from Firebase to avoid stale Zustand state
       const [freshNodes, freshEdges] = await Promise.all([

@@ -15,8 +15,6 @@ const SPRING_STRENGTH = 0.04;
 const IDEAL_LENGTH    = 190;
 const DAMPING         = 0.80;
 const MAX_SPEED       = 120;
-const MIN_X = 80;  const MAX_X = 920;
-const MIN_Y = 60;  const MAX_Y = 540;
 
 /**
  * Force-directed layout (Fruchterman–Reingold style).
@@ -97,8 +95,8 @@ export function forceDirectedLayout(
         v.vx = (v.vx / speed) * limit;
         v.vy = (v.vy / speed) * limit;
       }
-      p.x = Math.max(MIN_X, Math.min(MAX_X, p.x + v.vx));
-      p.y = Math.max(MIN_Y, Math.min(MAX_Y, p.y + v.vy));
+      p.x = p.x + v.vx;
+      p.y = p.y + v.vy;
     }
   }
 
