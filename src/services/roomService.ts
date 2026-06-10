@@ -17,6 +17,7 @@ import { generateRoomCode } from '../utils/generateRoomCode';
 // --- Room operations ---
 
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
 /** Deletes stale rooms to keep the database tidy. */
@@ -29,10 +30,13 @@ async function cleanOldRooms(): Promise<void> {
 
   const deleteOps = Object.values(rooms)
     .filter((room) => {
-      const age = now - (room.createdAt ?? 0);
+      if (room.lastActiveAt == null) return true;
+      const idleTime = now - room.lastActiveAt;
+      const totalAge = now - (room.createdAt ?? 0);
       return (
-        age > TWENTY_FOUR_HOURS_MS ||
-        (room.status === 'won' && age > THIRTY_MINUTES_MS)
+        totalAge > TWENTY_FOUR_HOURS_MS ||
+        (room.status === 'won' && idleTime > THIRTY_MINUTES_MS) ||
+        (room.status !== 'won' && idleTime > TWO_HOURS_MS)
       );
     })
     .map((room) => remove(ref(db, `rooms/${room.id}`)));
@@ -109,6 +113,7 @@ export async function createRoom(hostName: string): Promise<{ room: Room; player
     id: roomId,
     hostId: playerId,
     createdAt: Date.now(),
+    lastActiveAt: Date.now(),
     status: 'waiting',
     players: { [playerId]: host },
     nodes: {},
@@ -191,6 +196,7 @@ export async function startGame(roomId: string): Promise<void> {
       startedAt: serverTimestamp(),
     },
     [`rooms/${roomId}/usedPairs`]: updatedUsedPairs,
+    [`rooms/${roomId}/lastActiveAt`]: Date.now(),
   };
 
   await update(ref(db), updates);
@@ -242,6 +248,7 @@ export async function restartGame(roomId: string): Promise<void> {
     [`rooms/${roomId}/lastWordScores`]: null,
     [`rooms/${roomId}/roundScores`]: null,
     [`rooms/${roomId}/usedPairs`]: updatedUsedPairs,
+    [`rooms/${roomId}/lastActiveAt`]: Date.now(),
     // `scores` (cumulative) is intentionally not cleared
   };
 
@@ -292,7 +299,10 @@ export async function addNode(roomId: string, word: string, playerId: string): P
     createdBy: playerId,
     isStart: false,
   };
-  await set(ref(db, `rooms/${roomId}/nodes/${nodeId}`), node);
+  await Promise.all([
+    set(ref(db, `rooms/${roomId}/nodes/${nodeId}`), node),
+    update(ref(db, `rooms/${roomId}`), { lastActiveAt: Date.now() }),
+  ]);
   return nodeId;
 }
 
@@ -332,7 +342,10 @@ export async function addEdge(
 ): Promise<void> {
   const edgeId = uuidv4();
   const edge: GameEdge = { id: edgeId, source, target };
-  await set(ref(db, `rooms/${roomId}/edges/${edgeId}`), edge);
+  await Promise.all([
+    set(ref(db, `rooms/${roomId}/edges/${edgeId}`), edge),
+    update(ref(db, `rooms/${roomId}`), { lastActiveAt: Date.now() }),
+  ]);
 }
 
 export async function deleteEdge(roomId: string, edgeId: string): Promise<void> {
@@ -360,6 +373,15 @@ export async function saveWordScores(
 ): Promise<void> {
   const payload: LastWordScores = { addedWord, scores };
   await update(ref(db, `rooms/${roomId}`), { lastWordScores: payload });
+}
+
+/** Persists the similarity scores permanently on the node itself. */
+export async function updateNodeScores(
+  roomId: string,
+  nodeId: string,
+  scores: SharedWordScore[],
+): Promise<void> {
+  await update(ref(db, `rooms/${roomId}/nodes/${nodeId}`), { scores });
 }
 
 export async function markRoomWon(

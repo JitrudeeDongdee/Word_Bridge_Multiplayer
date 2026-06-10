@@ -45,18 +45,19 @@ export function validateWord(
   return { valid: true };
 }
 
+export type WordCheckResult = 'valid' | 'not_found' | 'network_error';
+
 /**
  * Checks whether a word exists in the English dictionary
  * using the free dictionaryapi.dev API.
  */
-export async function checkRealWord(word: string): Promise<boolean> {
+export async function checkRealWord(word: string): Promise<WordCheckResult> {
   try {
     const res = await fetch(
       `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.toLowerCase())}`,
     );
-    return res.ok;
+    return res.ok ? 'valid' : 'not_found';
   } catch {
-    // Network error — fail open so the game isn't blocked
-    return true;
+    return 'network_error';
   }
 }

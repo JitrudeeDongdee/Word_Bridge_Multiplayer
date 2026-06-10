@@ -10,7 +10,7 @@ import ScoreTable from '../components/ScoreTable';
 import VictoryModal from '../components/VictoryModal';
 import NewGameModal from '../components/NewGameModal';
 import { getPlayerColorMap } from '../utils/playerColors';
-import { resetToLobby, requestJoinGame, approveJoinRequest, denyJoinRequest, leaveRoom, joinRoom } from '../services/roomService';
+import { resetToLobby, requestJoinGame, approveJoinRequest, denyJoinRequest, leaveRoom, joinRoom, kickPlayer } from '../services/roomService';
 
 const ADJ = ['Swift', 'Bright', 'Clever', 'Bold', 'Quick', 'Sharp', 'Witty', 'Calm'];
 const NOUN = ['Fox', 'Owl', 'Lynx', 'Wolf', 'Hawk', 'Bear', 'Deer', 'Crow'];
@@ -39,6 +39,7 @@ export default function GamePage() {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const fitViewRef = useRef<(() => void) | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const handleCopyLink = () => {
     const url = `${window.location.origin}${window.location.pathname}#/join/${roomId}`;
@@ -268,7 +269,7 @@ export default function GamePage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Canvas */}
         <main className="flex-1 relative">
-          <GameCanvas room={room} roomId={roomId} playerId={playerId} playerColorMap={playerColorMap} fitViewRef={fitViewRef} />
+          <GameCanvas room={room} roomId={roomId} playerId={playerId} playerColorMap={playerColorMap} fitViewRef={fitViewRef} onNodeSelect={setSelectedNodeId} />
 
           {/* Empty canvas hint — fades out once words are added */}
           <div
@@ -430,11 +431,12 @@ export default function GamePage() {
               playerColorMap={playerColorMap}
               onApprove={isHost ? (pid) => approveJoinRequest(roomId, pid) : undefined}
               onDeny={isHost ? (pid) => denyJoinRequest(roomId, pid) : undefined}
+              onKick={isHost ? (pid) => kickPlayer(roomId, pid) : undefined}
             />
           </div>
 
-          {/* Scores — cumulative leaderboard + last-word breakdown combined */}
-          {((room.scores && Object.keys(room.scores).length > 0) || room.lastWordScores) && (
+          {/* Scores — cumulative leaderboard + all connected pairs */}
+          {((room.scores && Object.keys(room.scores).length > 0) || Object.keys(room.edges ?? {}).length > 0) && (
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 Scores
@@ -459,7 +461,12 @@ export default function GamePage() {
                     })}
                 </div>
               )}
-              <ScoreTable lastWordScores={room.lastWordScores ?? null} />
+              <ScoreTable
+                nodes={room.nodes ?? {}}
+                edges={room.edges ?? {}}
+                startWords={room.gameState ? [room.gameState.wordA, room.gameState.wordB] : []}
+                highlightNodeId={selectedNodeId}
+              />
             </div>
           )}
           <div className="mt-auto">

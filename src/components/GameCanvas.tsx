@@ -1,9 +1,10 @@
-import { useState, useCallback, useMemo, useEffect, type MutableRefObject } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, type MutableRefObject } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
+  Panel,
   ConnectionMode,
   useReactFlow,
   type NodeChange,
@@ -52,11 +53,54 @@ interface GameCanvasProps {
   playerId: string;
   playerColorMap: Record<string, string>;
   fitViewRef?: MutableRefObject<(() => void) | null>;
+  onNodeSelect?: (nodeId: string) => void;
 }
 
-export default function GameCanvas({ room, roomId, playerId, playerColorMap, fitViewRef }: GameCanvasProps) {
+export default function GameCanvas({ room, roomId, playerId, playerColorMap, fitViewRef, onNodeSelect }: GameCanvasProps) {
   const { handleDeleteNode, handleNodeDragStop } = useGameActions(roomId);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+
+  // Dictionary mode
+  const [dictMode, setDictMode] = useState(false);
+  const [dictEntry, setDictEntry] = useState<{ word: string; definition: string; partOfSpeech: string } | null>(null);
+  const [dictLoading, setDictLoading] = useState(false);
+  const defCache = useRef(new Map<string, { definition: string; partOfSpeech: string }>());
+
+  const onNodeClick = useCallback(async (_e: React.MouseEvent, node: Node) => {
+    if (!dictMode) {
+      onNodeSelect?.(node.id);
+      return;
+    }
+    const word = (node.data.word as string).toLowerCase();
+    if (defCache.current.has(word)) {
+      setDictEntry({ word: node.data.word as string, ...defCache.current.get(word)! });
+      return;
+    }
+    setDictLoading(true);
+    setDictEntry(null);
+    try {
+      const res = await fetch(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+      );
+      if (res.ok) {
+        const data = (await res.json()) as Array<{
+          meanings?: Array<{ partOfSpeech?: string; definitions?: Array<{ definition?: string }> }>;
+        }>;
+        const meaning = data[0]?.meanings?.[0];
+        const entry = {
+          definition: meaning?.definitions?.[0]?.definition ?? 'No definition found.',
+          partOfSpeech: meaning?.partOfSpeech ?? '',
+        };
+        defCache.current.set(word, entry);
+        setDictEntry({ word: node.data.word as string, ...entry });
+      } else {
+        setDictEntry({ word: node.data.word as string, definition: 'Definition not found.', partOfSpeech: '' });
+      }
+    } catch {
+      setDictEntry({ word: node.data.word as string, definition: 'Could not fetch definition.', partOfSpeech: '' });
+    }
+    setDictLoading(false);
+  }, [dictMode]);
 
   // Adjacency: nodeId → connected words list (for tooltip)
   const adjacencyWords = useMemo(() => {
@@ -218,7 +262,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
   void localEdges;
 
   return (
-    <div className="w-full h-full">
+    <div className={`w-full h-full${dictMode ? ' [&_.react-flow__node]:cursor-pointer' : ''}`}>
       <ReactFlow
         nodes={syncedNodes}
         edges={syncedEdges}
@@ -227,6 +271,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
         onNodeDragStop={onNodeDragStop}
         onNodeMouseEnter={onNodeMouseEnter}
         onNodeMouseLeave={onNodeMouseLeave}
+        onNodeClick={onNodeClick}
         connectOnClick={false}
         nodesConnectable={false}
         connectionMode={ConnectionMode.Loose}
@@ -239,6 +284,32 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
         <Controls />
         <MiniMap className="hidden md:block" nodeColor={(n) => (n.data.isStart ? '#0ea5e9' : ((n.data.playerColor as string) ?? '#e2e8f0'))} />
         <FitViewCapture fitViewRef={fitViewRef} />
+        <Panel position="top-left" className="flex flex-col gap-2">
+          <button
+            onClick={() => { setDictMode((d) => !d); setDictEntry(null); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border transition-colors ${
+              dictMode
+                ? 'bg-brand-500 border-brand-600 text-white'
+                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            📖 Dict {dictMode ? 'ON' : 'OFF'}
+          </button>
+          {dictMode && dictLoading && (
+            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-52">
+              <p className="text-xs text-gray-400">Loading…</p>
+            </div>
+          )}
+          {dictMode && dictEntry && !dictLoading && (
+            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-52">
+              <div className="font-semibold text-gray-800 capitalize text-sm">{dictEntry.word}</div>
+              {dictEntry.partOfSpeech && (
+                <div className="text-xs text-brand-500 italic mb-1">{dictEntry.partOfSpeech}</div>
+              )}
+              <p className="text-xs text-gray-600 leading-relaxed">{dictEntry.definition}</p>
+            </div>
+          )}
+        </Panel>
       </ReactFlow>
     </div>
   );

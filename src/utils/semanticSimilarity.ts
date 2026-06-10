@@ -5,8 +5,15 @@ interface DatuseItem {
   score: number;
 }
 
+interface ConceptNetRelatednessResponse {
+  value: number;
+}
+
 // Module-level cache: "<rel>:<word>" → Map<relatedWord, normalizedScore>
 const relatedCache = new Map<string, Map<string, number>>();
+
+// Module-level cache: "word1|word2" → relatedness score
+const conceptNetCache = new Map<string, number>();
 
 async function fetchRelatedScores(
   word: string,
@@ -24,7 +31,6 @@ async function fetchRelatedScores(
     clearTimeout(timer);
 
     if (!res.ok) {
-      // Don't cache HTTP errors — allow a retry on the next call
       return new Map();
     }
 
@@ -33,37 +39,66 @@ async function fetchRelatedScores(
     const scores = new Map<string, number>(
       data.map((item) => [item.word.toLowerCase(), item.score / maxScore]),
     );
-    // Cache successful results (including genuine empty-200 responses)
     relatedCache.set(key, scores);
     return scores;
   } catch {
     clearTimeout(timer);
-    // Don't cache timeouts / network errors — allow a retry on the next call
     return new Map();
   }
 }
 
+async function fetchConceptNetRelatedness(a: string, b: string): Promise<number> {
+  const cacheKey = a < b ? `${a}|${b}` : `${b}|${a}`;
+  if (conceptNetCache.has(cacheKey)) return conceptNetCache.get(cacheKey)!;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const url = `https://api.conceptnet.io/relatedness?node1=/c/en/${encodeURIComponent(a)}&node2=/c/en/${encodeURIComponent(b)}`;
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+
+    if (!res.ok) return 0;
+
+    const data = (await res.json()) as ConceptNetRelatednessResponse;
+    // ConceptNet returns values roughly in [-1, 1]; clamp to [0, 1]
+    const score = Math.max(0, data.value ?? 0);
+    conceptNetCache.set(cacheKey, score);
+    return score;
+  } catch {
+    clearTimeout(timer);
+    return 0;
+  }
+}
+
 /**
- * Returns semantic relatedness [0, 1] between two English words
- * using the Datamuse API (bidirectional "means-like" + "triggers").
- * Results are cached in memory so each word is only fetched once per session.
+ * Returns semantic relatedness [0, 1] between two English words.
+ * Combines Datamuse API (means-like + triggers) with ConceptNet relatedness
+ * for broader conceptual coverage (e.g. "war" ↔ "dead").
+ * Results are cached in memory so each pair is only fetched once per session.
  */
 export async function semanticSimilarity(a: string, b: string): Promise<number> {
   const wa = a.toLowerCase();
   const wb = b.toLowerCase();
 
-  const [mlA, trgA, mlB, trgB] = await Promise.all([
+  const [mlA, trgA, mlB, trgB, cnScore] = await Promise.all([
     fetchRelatedScores(wa, 'ml'),
     fetchRelatedScores(wa, 'rel_trg'),
     fetchRelatedScores(wb, 'ml'),
     fetchRelatedScores(wb, 'rel_trg'),
+    fetchConceptNetRelatedness(wa, wb),
   ]);
 
-  return Math.max(
+  const datuseScore = Math.max(
     mlA.get(wb) ?? 0,
     trgA.get(wb) ?? 0,
     mlB.get(wa) ?? 0,
     trgB.get(wa) ?? 0,
   );
+
+  // Weight ConceptNet at 0.8 so it can connect conceptually related pairs
+  // without making the threshold trivially easy to hit
+  return Math.max(datuseScore, cnScore * 0.8);
 }
 

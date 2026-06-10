@@ -16,6 +16,8 @@ export interface GameNode {
   y: number;
   createdBy: string;
   isStart: boolean;
+  /** Similarity scores against every other node at the time this word was added */
+  scores?: SharedWordScore[];
 }
 
 export interface GameEdge {
@@ -61,4 +63,6 @@ export interface Room {
   roundScores: Record<string, number> | null;
   /** History of used pairs stored as "wordA/wordB" — used to avoid repetition */
   usedPairs?: string[];
+  /** Timestamp of the last meaningful activity in this room */
+  lastActiveAt?: number;
 }

@@ -5,6 +5,7 @@ import {
   fetchNodes,
   fetchEdges,
   saveWordScores,
+  updateNodeScores,
   deleteNode,
   deleteEdgesForNode,
   updateNodePosition,
@@ -42,8 +43,11 @@ export function useGameActions(roomId: string) {
       const result = validateWord(word, nodes);
       if (!result.valid) return fail(result.error ?? 'Invalid word.');
 
-      const isReal = await checkRealWord(word.trim());
-      if (!isReal) return fail(`"${word.trim()}" is not a real English word.`);
+      const wordCheck = await checkRealWord(word.trim());
+      if (wordCheck === 'not_found')
+        return fail(`"${word.trim()}" wasn't found in the dictionary. Only common English words are allowed — proper nouns like place or person names are not supported.`);
+      if (wordCheck === 'network_error')
+        return fail('Could not verify the word. Please check your connection and try again.');
 
       const newNodeId = await addNode(roomId, word, playerId);
 
@@ -112,10 +116,16 @@ export function useGameActions(roomId: string) {
 
       // Auto-layout: re-run after every word addition so connected nodes
       // cluster together and edges stay short / don't criss-cross.
+      // Re-fetch nodes here (not freshNodes) to avoid writing positions to
+      // paths of nodes that were deleted while similarity checks were running —
+      // which would recreate ghost nodes with incomplete Firebase data.
       if (toConnect.length > 0) {
-        const allEdges = await fetchEdges(roomId);
+        const [currentNodes, allEdges] = await Promise.all([
+          fetchNodes(roomId),
+          fetchEdges(roomId),
+        ]);
         const layoutResult = forceDirectedLayout(
-          Object.values(freshNodes).map((n) => ({ id: n.id, x: n.x, y: n.y, fixed: n.isStart })),
+          Object.values(currentNodes).map((n) => ({ id: n.id, x: n.x, y: n.y, fixed: n.isStart })),
           Object.values(allEdges),
         );
         await batchUpdateNodePositions(roomId, layoutResult);
@@ -130,8 +140,11 @@ export function useGameActions(roomId: string) {
         }))
         .sort((a, b) => b.score - a.score);
 
-      // Persist scores to Firebase so all players see the same table
-      await saveWordScores(roomId, newWord, scores);
+      // Persist scores to Firebase: shared last-word table + permanently on the node
+      await Promise.all([
+        saveWordScores(roomId, newWord, scores),
+        updateNodeScores(roomId, newNodeId, scores),
+      ]);
 
       return { error: null, scores };
     },
