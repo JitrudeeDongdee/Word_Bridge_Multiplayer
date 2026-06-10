@@ -54,10 +54,11 @@ interface GameCanvasProps {
   playerId: string;
   playerColorMap: Record<string, string>;
   fitViewRef?: MutableRefObject<(() => void) | null>;
-  onNodeSelect?: (nodeId: string) => void;
+  onNodeSelect?: (nodeId: string | null) => void;
+  selectedNodeId?: string | null;
 }
 
-export default function GameCanvas({ room, roomId, playerId, playerColorMap, fitViewRef, onNodeSelect }: GameCanvasProps) {
+export default function GameCanvas({ room, roomId, playerId, playerColorMap, fitViewRef, onNodeSelect, selectedNodeId }: GameCanvasProps) {
   const { handleDeleteNode, handleNodeDragStop } = useGameActions(roomId);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
@@ -149,9 +150,14 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
   }, []);
 
   const onNodeClick = useCallback((_e: React.MouseEvent, node: Node) => {
-    onNodeSelect?.(node.id);
+    // Toggle: click selected node again to deselect
+    onNodeSelect?.(node.id === selectedNodeId ? null : node.id);
     if (dictMode) fetchDefinition(node.data.word as string);
-  }, [dictMode, fetchDefinition, onNodeSelect]);
+  }, [dictMode, fetchDefinition, onNodeSelect, selectedNodeId]);
+
+  const onPaneClick = useCallback(() => {
+    onNodeSelect?.(null);
+  }, [onNodeSelect]);
 
   // Adjacency: nodeId → connected words list (for tooltip)
   const adjacencyWords = useMemo(() => {
@@ -323,6 +329,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
         onNodeMouseEnter={onNodeMouseEnter}
         onNodeMouseLeave={onNodeMouseLeave}
         onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
         connectOnClick={false}
         nodesConnectable={false}
         connectionMode={ConnectionMode.Loose}

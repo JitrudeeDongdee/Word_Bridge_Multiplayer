@@ -154,12 +154,23 @@ export async function joinRoom(
   return { room: updated, playerId };
 }
 
+/** Read usedPairs from Firebase — stored as a pipe-separated string to avoid
+ *  Firebase's array→object conversion quirks that can corrupt the history. */
+function parseUsedPairs(snap: { exists: () => boolean; val: () => unknown }): string[] {
+  if (!snap.exists()) return [];
+  const raw = snap.val();
+  // New format: pipe-separated string  "fire/snow|ocean/mountain|..."
+  if (typeof raw === 'string') return raw ? raw.split('|') : [];
+  // Legacy format: Firebase array/object  {0: "fire/snow", ...} or ["fire/snow", ...]
+  if (Array.isArray(raw)) return (raw as string[]).filter(Boolean);
+  if (typeof raw === 'object' && raw !== null) return Object.values(raw as Record<string, string>).filter(Boolean);
+  return [];
+}
+
 export async function startGame(roomId: string): Promise<void> {
   // Read history to avoid repeating recent pairs / categories
   const histSnap = await get(ref(db, `rooms/${roomId}/usedPairs`));
-  const usedPairs: string[] = histSnap.exists()
-    ? (Object.values(histSnap.val() as Record<string, string>))
-    : [];
+  const usedPairs = parseUsedPairs(histSnap);
 
   const [wordA, wordB] = pickWordPair(usedPairs);
   const updatedUsedPairs = [...usedPairs, `${wordA}/${wordB}`].slice(-90);
@@ -195,7 +206,7 @@ export async function startGame(roomId: string): Promise<void> {
       wordBNodeId,
       startedAt: serverTimestamp(),
     },
-    [`rooms/${roomId}/usedPairs`]: updatedUsedPairs,
+    [`rooms/${roomId}/usedPairs`]: updatedUsedPairs.join('|'),
     [`rooms/${roomId}/lastActiveAt`]: Date.now(),
   };
 
@@ -205,9 +216,7 @@ export async function startGame(roomId: string): Promise<void> {
 export async function restartGame(roomId: string): Promise<void> {
   // Read history to avoid repeating recent pairs / categories
   const histSnap = await get(ref(db, `rooms/${roomId}/usedPairs`));
-  const usedPairs: string[] = histSnap.exists()
-    ? (Object.values(histSnap.val() as Record<string, string>))
-    : [];
+  const usedPairs = parseUsedPairs(histSnap);
 
   const [wordA, wordB] = pickWordPair(usedPairs);
   const updatedUsedPairs = [...usedPairs, `${wordA}/${wordB}`].slice(-90);
@@ -247,7 +256,7 @@ export async function restartGame(roomId: string): Promise<void> {
     [`rooms/${roomId}/winningPath`]: null,
     [`rooms/${roomId}/lastWordScores`]: null,
     [`rooms/${roomId}/roundScores`]: null,
-    [`rooms/${roomId}/usedPairs`]: updatedUsedPairs,
+    [`rooms/${roomId}/usedPairs`]: updatedUsedPairs.join('|'),
     [`rooms/${roomId}/lastActiveAt`]: Date.now(),
     // `scores` (cumulative) is intentionally not cleared
   };

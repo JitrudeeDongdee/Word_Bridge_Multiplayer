@@ -29,7 +29,7 @@ export default function NewGameModal({
     setRestarting(true);
     try {
       await restartGame(roomId);
-      // modal unmounts automatically when status → 'playing'
+      onClose();
     } catch {
       setRestarting(false);
     }

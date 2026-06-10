@@ -33,9 +33,7 @@ export const useGameStore = create<GameStore>()(
       },
 
       setIdentity: (playerId, playerName) => set({ playerId, playerName }),
-
       setRoom: (room) => set({ room }),
-
       clearSession: () => set({ playerId: null, playerName: null, room: null }),
     }),
     {

@@ -12,6 +12,7 @@ import GameHeader from '../components/GameHeader';
 import GameSidebar from '../components/GameSidebar';
 import { getPlayerColorMap } from '../utils/playerColors';
 import { resetToLobby, requestJoinGame, leaveRoom } from '../services/roomService';
+import { useHasHydrated } from '../hooks/useHasHydrated';
 import type { Room } from '../types';
 
 export default function GamePage() {
@@ -19,6 +20,7 @@ export default function GamePage() {
   const navigate = useNavigate();
   const room = useGameStore((s) => s.room);
   const playerId = useGameStore((s) => s.playerId);
+  const hasHydrated = useHasHydrated();
   const setIdentity = useGameStore((s) => s.setIdentity);
   const setRoom = useGameStore((s) => s.setRoom);
 
@@ -89,8 +91,8 @@ export default function GamePage() {
     setRoom(joinedRoom);
   };
 
-  // No playerId at all → show join form
-  if (roomId && !playerId) {
+  // No playerId at all → show join form (wait for hydration first)
+  if (hasHydrated && roomId && !playerId) {
     return <JoinGameForm roomId={roomId} onJoined={handleJoined} />;
   }
 
@@ -144,6 +146,7 @@ export default function GamePage() {
             playerColorMap={playerColorMap}
             fitViewRef={fitViewRef}
             onNodeSelect={setSelectedNodeId}
+            selectedNodeId={selectedNodeId}
           />
 
           {/* Empty canvas hint */}
