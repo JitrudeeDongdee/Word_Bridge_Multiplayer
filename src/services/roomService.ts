@@ -162,7 +162,7 @@ export async function startGame(roomId: string): Promise<void> {
     : [];
 
   const [wordA, wordB] = pickWordPair(usedPairs);
-  const updatedUsedPairs = [...usedPairs, `${wordA}/${wordB}`].slice(-30);
+  const updatedUsedPairs = [...usedPairs, `${wordA}/${wordB}`].slice(-90);
   const wordANodeId = uuidv4();
   const wordBNodeId = uuidv4();
 
@@ -210,7 +210,7 @@ export async function restartGame(roomId: string): Promise<void> {
     : [];
 
   const [wordA, wordB] = pickWordPair(usedPairs);
-  const updatedUsedPairs = [...usedPairs, `${wordA}/${wordB}`].slice(-30);
+  const updatedUsedPairs = [...usedPairs, `${wordA}/${wordB}`].slice(-90);
   const wordANodeId = uuidv4();
   const wordBNodeId = uuidv4();
 

@@ -66,3 +66,11 @@ export interface Room {
   /** Timestamp of the last meaningful activity in this room */
   lastActiveAt?: number;
 }
+
+export interface ChatMessage {
+  id: string;
+  playerId: string;
+  playerName: string;
+  text: string;
+  sentAt: number;
+}
