@@ -96,7 +96,7 @@ export async function denyJoinRequest(roomId: string, playerId: string): Promise
   await update(ref(db, `rooms/${roomId}/players/${playerId}`), { joinRequest: null });
 }
 
-export async function createRoom(hostName: string): Promise<{ room: Room; playerId: string }> {
+export async function createRoom(hostName: string, hostIp?: string): Promise<{ room: Room; playerId: string }> {
   // Clean up stale rooms before creating a new one (best-effort; don't block on failure)
   await cleanOldRooms().catch(() => {});
 
@@ -108,6 +108,7 @@ export async function createRoom(hostName: string): Promise<{ room: Room; player
     name: hostName,
     isHost: true,
     joinedAt: Date.now(),
+    ...(hostIp ? { ip: hostIp } : {}),
   };
 
   const room: Room = {
@@ -134,6 +135,7 @@ export async function createRoom(hostName: string): Promise<{ room: Room; player
 export async function joinRoom(
   roomId: string,
   playerName: string,
+  playerIp?: string,
 ): Promise<{ room: Room; playerId: string } | null> {
   const snapshot = await get(ref(db, `rooms/${roomId}`));
   if (!snapshot.exists()) return null;
@@ -147,6 +149,7 @@ export async function joinRoom(
     name: playerName,
     isHost: false,
     joinedAt: Date.now(),
+    ...(playerIp ? { ip: playerIp } : {}),
     ...(room.status !== 'waiting' ? { spectator: true } : {}),
   };
 

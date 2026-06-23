@@ -5,6 +5,7 @@ export interface Player {
   name: string;
   isHost: boolean;
   joinedAt: number;
+  ip?: string;
   spectator?: boolean;
   joinRequest?: boolean;
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createRoom, joinRoom } from '../services/roomService';
+import { getPublicIP } from '../utils/network';
 import { useGameStore } from '../store/useGameStore';
 import { usePresence } from '../hooks/usePresence';
 
@@ -38,7 +39,8 @@ export default function HomePage() {
     setError(null);
 
     try {
-      const { room, playerId } = await createRoom(name.trim());
+      const hostIp = await getPublicIP();
+      const { room, playerId } = await createRoom(name.trim(), hostIp);
       setIdentity(playerId, name.trim());
       setRoom(room);
       navigate(`/lobby/${room.id}`);
@@ -56,7 +58,8 @@ export default function HomePage() {
     setError(null);
 
     try {
-      const result = await joinRoom(code.trim().toUpperCase(), name.trim());
+      const playerIp = await getPublicIP();
+      const result = await joinRoom(code.trim().toUpperCase(), name.trim(), playerIp);
       if (!result) {
         setError('Room not found.');
         setLoading(false);
