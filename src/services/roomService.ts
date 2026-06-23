@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from './firebase';
 import type { Room, Player, GameNode, GameEdge, SharedWordScore, LastWordScores } from '../types';
 import { pickWordPair } from '../utils/wordPairs';
+import { getCustomWords } from './customWordsService';
 import { generateRoomCode } from '../utils/generateRoomCode';
 
 // --- Room operations ---
@@ -172,7 +173,15 @@ export async function startGame(roomId: string): Promise<void> {
   const histSnap = await get(ref(db, `rooms/${roomId}/usedPairs`));
   const usedPairs = parseUsedPairs(histSnap);
 
-  const [wordA, wordB] = pickWordPair(usedPairs);
+  // Try to include custom words pool when picking the starting pair
+  let customPool: string[] | undefined;
+  try {
+    customPool = await getCustomWords();
+  } catch {
+    customPool = undefined;
+  }
+
+  const [wordA, wordB] = pickWordPair(usedPairs, customPool);
   const updatedUsedPairs = [...usedPairs, `${wordA}/${wordB}`].slice(-90);
   const wordANodeId = uuidv4();
   const wordBNodeId = uuidv4();
@@ -218,7 +227,15 @@ export async function restartGame(roomId: string): Promise<void> {
   const histSnap = await get(ref(db, `rooms/${roomId}/usedPairs`));
   const usedPairs = parseUsedPairs(histSnap);
 
-  const [wordA, wordB] = pickWordPair(usedPairs);
+  // Try to include custom words pool when picking the starting pair
+  let customPool: string[] | undefined;
+  try {
+    customPool = await getCustomWords();
+  } catch {
+    customPool = undefined;
+  }
+
+  const [wordA, wordB] = pickWordPair(usedPairs, customPool);
   const updatedUsedPairs = [...usedPairs, `${wordA}/${wordB}`].slice(-90);
   const wordANodeId = uuidv4();
   const wordBNodeId = uuidv4();

@@ -117,7 +117,7 @@ export const WORD_PAIRS: [string, string][] = WORD_PAIRS_DATA.map((e) => e.pair)
  * Picks a word pair that avoids recently-used pairs and recently-used categories.
  * @param usedPairs  History of used pairs stored as "wordA/wordB" strings (oldest → newest).
  */
-export function pickWordPair(usedPairs: string[] = []): [string, string] {
+export function pickWordPair(usedPairs: string[] = [], customWords?: string[]): [string, string] {
   const usedSet = new Set(usedPairs);
 
   // Determine categories used in the last 3 rounds so we can rotate away from them
@@ -127,6 +127,23 @@ export function pickWordPair(usedPairs: string[] = []): [string, string] {
       .map((p) => WORD_PAIRS_DATA.find((e) => `${e.pair[0]}/${e.pair[1]}` === p)?.category)
       .filter((c): c is PairCategory => c !== undefined),
   );
+
+  // If a custom word pool is provided and has >= 2 words, prefer picking two from it
+  if (customWords && customWords.length >= 2) {
+    // Attempt to pick two distinct words from customWords that haven't been used together recently
+    const pool = Array.from(new Set(customWords.map((w) => w.toLowerCase())));
+    const attempts = Math.min(20, pool.length * 2);
+    for (let i = 0; i < attempts; i++) {
+      const a = pool[Math.floor(Math.random() * pool.length)];
+      let b = pool[Math.floor(Math.random() * pool.length)];
+      // ensure distinct
+      if (a === b) continue;
+      // avoid recently used pair in either order
+      if (usedSet.has(`${a}/${b}`) || usedSet.has(`${b}/${a}`)) continue;
+      return [a, b];
+    }
+    // If we couldn't find a fresh pair, fall through to curated list
+  }
 
   // 1st preference: unused pair from a fresh category
   let candidates = WORD_PAIRS_DATA.filter(

@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "rooms": { ".read": true, ".write": true },
+    "presence": { ".read": true, ".write": true },
+    "stats": { ".read": true, ".write": true },
+    "globalCustomWords": { ".read": true, ".write": true }
+  }
+}

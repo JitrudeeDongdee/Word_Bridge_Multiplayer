@@ -22,6 +22,7 @@ import '@xyflow/react/dist/style.css';
 import WordNode from './WordNode';
 import type { Room } from '../types';
 import { useGameActions } from '../hooks/useGameActions';
+import { useCustomWordsSubscription } from '../hooks/useCustomWordsSubscription';
 
 const nodeTypes = { wordNode: WordNode };
 
@@ -61,6 +62,7 @@ interface GameCanvasProps {
 export default function GameCanvas({ room, roomId, playerId, playerColorMap, fitViewRef, onNodeSelect, selectedNodeId }: GameCanvasProps) {
   const { handleDeleteNode, handleNodeDragStop } = useGameActions(roomId);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const customWords = useCustomWordsSubscription();
 
   // Dictionary
   const [dictMode, setDictMode] = useState(false);
@@ -90,11 +92,19 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
         );
         if (!res.ok) return;
         const data = (await res.json()) as Array<{ word: string }>;
-        setDictSuggestions(data.map((d) => d.word));
+        const apiSuggestions = data.map((d) => d.word);
+        
+        // Merge with custom words (custom words first, then API suggestions)
+        const merged = [
+          ...customWords.filter((w) => w.startsWith(trimmed.toLowerCase())),
+          ...apiSuggestions.filter((w) => !customWords.includes(w)),
+        ];
+        
+        setDictSuggestions(merged);
       } catch { /* aborted */ }
     }, 250);
     return () => clearTimeout(timer);
-  }, [dictSearch]);
+  }, [dictSearch, customWords]);
 
   const fetchDictCard = useCallback(async (rawWord: string): Promise<DictCard> => {
     const word = rawWord.trim().toLowerCase();
