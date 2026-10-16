@@ -39,9 +39,24 @@ If the model fails to load, Datamuse alone is used (a warning is logged).
   20 unrelated pairs 0.123–0.342. The margin at 0.35 is thin — re-calibrate with more
   pairs if false connections show up.
 
-### Next steps (proposed, not started)
-1. LLM judge for borderline pairs behind a small backend (Cloud Function / Worker),
-   cached per pair.
+### Next steps
+**Layer 3 — LLM judge: on hold** (decided 2026-10-17: let players use layers 1–2 first and
+see whether related pairs are still missed often enough to justify the API cost).
+
+Decisions already made for when it resumes:
+- **Backend:** Cloudflare Worker holds the Claude API key (never in the client) and caches
+  each pair's verdict in Workers KV, so a pair is asked at most once. Firebase Cloud
+  Functions ruled out: the project is on the Spark plan and Functions need Blaze (billing).
+- **When to ask:** only borderline pairs — final score roughly 0.08–0.15 (just under
+  `AUTO_BRIDGE_THRESHOLD`). Clear yes/no pairs never call the API.
+
+Still open:
+- **Model:** Claude Opus 5.5 (~$2–5 per 1,000 new pairs) vs Claude Haiku 5.5
+  (~$0.05–0.15 per 1,000 new pairs). Rough estimates, not measured.
+- Abuse protection for a public Worker endpoint (per-IP rate limit, daily call cap) so the
+  API bill can't be run up.
+- Who owns the Cloudflare account and the Anthropic API key (set as a Worker secret by
+  the owner, not committed).
 
 ## Known issues
 - 📖 Dict mode definitions still come only from `api.dictionaryapi.dev`; while it is down
