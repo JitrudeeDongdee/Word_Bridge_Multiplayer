@@ -15,6 +15,8 @@ import { forceDirectedLayout } from '../utils/graphLayout';
 import { useGameStore } from '../store/useGameStore';
 import { validateWord, checkRealWord } from '../utils/validation';
 import { semanticSimilarity, AUTO_BRIDGE_THRESHOLD } from '../utils/semanticSimilarity';
+import { castPairVote, pairKey, PAIR_VOTE_THRESHOLD } from '../services/pairVotesService';
+import { useLearnedPairs } from './useLearnedPairs';
 
 export interface WordScoreEntry {
   word: string;
@@ -27,9 +29,40 @@ export interface AddWordResult {
   scores: WordScoreEntry[];
 }
 
+export interface VotePairResult {
+  error: string | null;
+  count: number;
+  threshold: number;
+  linked: boolean;
+}
+
+/** Re-runs the force layout so newly connected nodes cluster together. */
+async function relayout(roomId: string): Promise<void> {
+  // Re-fetch nodes here (not cached state) to avoid writing positions to
+  // paths of nodes that were deleted in the meantime — which would recreate
+  // ghost nodes with incomplete Firebase data.
+  const [currentNodes, allEdges] = await Promise.all([
+    fetchNodes(roomId),
+    fetchEdges(roomId),
+  ]);
+  const layoutResult = forceDirectedLayout(
+    Object.values(currentNodes).map((n) => ({ id: n.id, x: n.x, y: n.y, fixed: n.isStart })),
+    Object.values(allEdges),
+  );
+  await batchUpdateNodePositions(roomId, layoutResult);
+}
+
 export function useGameActions(roomId: string) {
   const room = useGameStore((s) => s.room);
   const playerId = useGameStore((s) => s.playerId);
+  const learnedPairs = useLearnedPairs();
+
+  // Pairs players voted in are always connected; everything else goes by similarity
+  const scorePair = useCallback(
+    async (a: string, b: string): Promise<number> =>
+      learnedPairs.has(pairKey(a, b)) ? 1 : semanticSimilarity(a, b),
+    [learnedPairs],
+  );
 
   const handleAddWord = useCallback(
     async (word: string, signal?: AbortSignal): Promise<AddWordResult> => {
@@ -77,7 +110,7 @@ export function useGameActions(roomId: string) {
       const similarities = await Promise.all(
         existingNodes.map(async (node) => ({
           node,
-          sim: await semanticSimilarity(newWord, node.word.toLowerCase()),
+          sim: await scorePair(newWord, node.word.toLowerCase()),
         })),
       );
 
@@ -103,7 +136,7 @@ export function useGameActions(roomId: string) {
             (a.id === wordBNodeId && b.id === wordANodeId)
           ) continue;
           pairChecks.push(
-            semanticSimilarity(a.word.toLowerCase(), b.word.toLowerCase()).then(
+            scorePair(a.word.toLowerCase(), b.word.toLowerCase()).then(
               (sim) => {
                 if (sim >= AUTO_BRIDGE_THRESHOLD) {
                   return addEdge(roomId, a.id, b.id);
@@ -117,20 +150,7 @@ export function useGameActions(roomId: string) {
 
       // Auto-layout: re-run after every word addition so connected nodes
       // cluster together and edges stay short / don't criss-cross.
-      // Re-fetch nodes here (not freshNodes) to avoid writing positions to
-      // paths of nodes that were deleted while similarity checks were running —
-      // which would recreate ghost nodes with incomplete Firebase data.
-      if (toConnect.length > 0) {
-        const [currentNodes, allEdges] = await Promise.all([
-          fetchNodes(roomId),
-          fetchEdges(roomId),
-        ]);
-        const layoutResult = forceDirectedLayout(
-          Object.values(currentNodes).map((n) => ({ id: n.id, x: n.x, y: n.y, fixed: n.isStart })),
-          Object.values(allEdges),
-        );
-        await batchUpdateNodePositions(roomId, layoutResult);
-      }
+      if (toConnect.length > 0) await relayout(roomId);
 
       const connectedIds = new Set(toConnect.map((s) => s.node.id));
       const scores: WordScoreEntry[] = similarities
@@ -148,6 +168,54 @@ export function useGameActions(roomId: string) {
       ]);
 
       return { error: null, scores };
+    },
+    [room, playerId, roomId, scorePair],
+  );
+
+  /**
+   * Votes that two words on the canvas should be connected. When enough distinct
+   * players have voted for the pair (across all rooms) it becomes a learned pair:
+   * it is linked here right away and auto-bridged in every future game.
+   */
+  const handleVotePair = useCallback(
+    async (nodeAId: string, nodeBId: string): Promise<VotePairResult> => {
+      const fail = (error: string): VotePairResult => ({
+        error, count: 0, threshold: PAIR_VOTE_THRESHOLD, linked: false,
+      });
+      if (!room || !playerId || !room.gameState) return fail('Not connected to a room.');
+      if (room.status !== 'playing') return fail('Voting is only open during a game.');
+
+      const a = room.nodes?.[nodeAId];
+      const b = room.nodes?.[nodeBId];
+      if (!a || !b || a.id === b.id) return fail('Pick two different words.');
+
+      const { wordANodeId, wordBNodeId } = room.gameState;
+      if (
+        (a.id === wordANodeId && b.id === wordBNodeId) ||
+        (a.id === wordBNodeId && b.id === wordANodeId)
+      ) return fail("The two goal words can't be linked directly.");
+
+      const alreadyLinked = Object.values(room.edges ?? {}).some(
+        (e) => (e.source === a.id && e.target === b.id) || (e.source === b.id && e.target === a.id),
+      );
+      if (alreadyLinked) return fail('These words are already connected.');
+
+      const ip = room.players?.[playerId]?.ip;
+      const { count, learned } = await castPairVote(a.word, b.word, playerId, ip);
+
+      if (learned) {
+        // Re-check against fresh edges: another player may have linked it meanwhile
+        const freshEdges = Object.values(await fetchEdges(roomId));
+        const exists = freshEdges.some(
+          (e) => (e.source === a.id && e.target === b.id) || (e.source === b.id && e.target === a.id),
+        );
+        if (!exists) {
+          await addEdge(roomId, a.id, b.id);
+          await relayout(roomId);
+        }
+      }
+
+      return { error: null, count, threshold: PAIR_VOTE_THRESHOLD, linked: learned };
     },
     [room, playerId, roomId],
   );
@@ -173,5 +241,5 @@ export function useGameActions(roomId: string) {
     [roomId],
   );
 
-  return { handleAddWord, handleDeleteNode, handleNodeDragStop };
+  return { handleAddWord, handleVotePair, handleDeleteNode, handleNodeDragStop };
 }

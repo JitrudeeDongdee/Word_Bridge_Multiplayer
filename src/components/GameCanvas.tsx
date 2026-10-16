@@ -23,6 +23,7 @@ import WordNode from './WordNode';
 import type { Room } from '../types';
 import { useGameActions } from '../hooks/useGameActions';
 import { useCustomWordsSubscription } from '../hooks/useCustomWordsSubscription';
+import { getPairVoteCount, pairKey, PAIR_VOTE_THRESHOLD } from '../services/pairVotesService';
 
 const nodeTypes = { wordNode: WordNode };
 
@@ -60,9 +61,19 @@ interface GameCanvasProps {
 }
 
 export default function GameCanvas({ room, roomId, playerId, playerColorMap, fitViewRef, onNodeSelect, selectedNodeId }: GameCanvasProps) {
-  const { handleDeleteNode, handleNodeDragStop } = useGameActions(roomId);
+  const { handleDeleteNode, handleNodeDragStop, handleVotePair } = useGameActions(roomId);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const customWords = useCustomWordsSubscription();
+
+  // Link voting: pick two words, then vote that they should be connected
+  const [linkMode, setLinkMode] = useState(false);
+  const [linkPicks, setLinkPicks] = useState<string[]>([]);
+  // count null = the vote count couldn't be loaded
+  const [linkVoteInfo, setLinkVoteInfo] = useState<{ key: string; count: number | null } | null>(null);
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkMessage, setLinkMessage] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
+
+  const resetLink = useCallback(() => setLinkPicks([]), []);
 
   // Dictionary
   const [dictMode, setDictMode] = useState(false);
@@ -160,10 +171,60 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
   }, []);
 
   const onNodeClick = useCallback((_e: React.MouseEvent, node: Node) => {
+    if (linkMode) {
+      setLinkMessage(null);
+      setLinkPicks((picks) => {
+        if (picks.includes(node.id)) return picks.filter((id) => id !== node.id);
+        if (picks.length >= 2) return [node.id];
+        return [...picks, node.id];
+      });
+      return;
+    }
     // Toggle: click selected node again to deselect
     onNodeSelect?.(node.id === selectedNodeId ? null : node.id);
     if (dictMode) fetchDefinition(node.data.word as string);
-  }, [dictMode, fetchDefinition, onNodeSelect, selectedNodeId]);
+  }, [linkMode, dictMode, fetchDefinition, onNodeSelect, selectedNodeId]);
+
+  const linkWords = linkPicks.map((id) => room.nodes?.[id]?.word).filter(Boolean) as string[];
+
+  const linkKey = linkWords.length === 2 ? pairKey(linkWords[0], linkWords[1]) : null;
+  const linkVoteInfoForPair = linkKey && linkVoteInfo?.key === linkKey ? linkVoteInfo : null;
+
+  // Show how many players already voted for the picked pair
+  useEffect(() => {
+    if (!linkKey) return;
+    let cancelled = false;
+    const [w1, w2] = linkKey.split('|');
+    getPairVoteCount(w1, w2)
+      .then((count) => { if (!cancelled) setLinkVoteInfo({ key: linkKey, count }); })
+      .catch(() => { if (!cancelled) setLinkVoteInfo({ key: linkKey, count: null }); });
+    return () => { cancelled = true; };
+  }, [linkKey]);
+
+  const submitLinkVote = useCallback(async () => {
+    if (linkPicks.length !== 2) return;
+    const [w1, w2] = linkWords;
+    setLinkBusy(true);
+    try {
+      const res = await handleVotePair(linkPicks[0], linkPicks[1]);
+      if (res.error) {
+        setLinkMessage({ text: res.error, tone: 'error' });
+      } else if (res.linked) {
+        setLinkMessage({ text: `Linked! Players taught the game that ${w1} ↔ ${w2}.`, tone: 'ok' });
+        resetLink();
+      } else {
+        const left = res.threshold - res.count;
+        setLinkMessage({
+          text: `Vote saved (${res.count}/${res.threshold}). ${left} more player${left === 1 ? '' : 's'} needed to link ${w1} ↔ ${w2}.`,
+          tone: 'ok',
+        });
+        resetLink();
+      }
+    } catch {
+      setLinkMessage({ text: 'Could not save your vote. Please try again.', tone: 'error' });
+    }
+    setLinkBusy(false);
+  }, [handleVotePair, linkPicks, linkWords, resetLink]);
 
   const onPaneClick = useCallback(() => {
     onNodeSelect?.(null);
@@ -210,10 +271,11 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
         isPathNode: pathIds.has(n.id),
         connectedWords: adjacencyWords.get(n.id) ?? [],
         isHighlighted: highlightedIds.has(n.id),
+        isLinkPick: linkPicks.includes(n.id),
       },
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room.nodes, room.winningPath, room.status, playerId, playerColorMap, adjacencyWords, highlightedIds]);
+  }, [room.nodes, room.winningPath, room.status, playerId, playerColorMap, adjacencyWords, highlightedIds, linkPicks]);
 
   // Build React Flow edges from Firebase state
   const rfEdges: Edge[] = useMemo(() => {
@@ -329,7 +391,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
   void localEdges;
 
   return (
-    <div className={`w-full h-full${dictMode ? ' [&_.react-flow__node]:cursor-pointer' : ''}`}>
+    <div className={`w-full h-full${dictMode || linkMode ? ' [&_.react-flow__node]:cursor-pointer' : ''}`}>
       <ReactFlow
         nodes={syncedNodes}
         edges={syncedEdges}
@@ -353,8 +415,25 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
         <MiniMap className="hidden md:block" nodeColor={(n) => (n.data.isStart ? '#0ea5e9' : ((n.data.playerColor as string) ?? '#e2e8f0'))} />
         <FitViewCapture fitViewRef={fitViewRef} />
         <Panel position="top-left" className="flex flex-col gap-2">
+          {room.status === 'playing' && (
+            <button
+              onClick={() => {
+                setLinkMode((m) => !m);
+                setDictMode(false);
+                resetLink();
+                setLinkMessage(null);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border transition-colors ${
+                linkMode
+                  ? 'bg-amber-500 border-amber-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              🔗 Vote link {linkMode ? 'ON' : 'OFF'}
+            </button>
+          )}
           <button
-            onClick={() => { setDictMode((d) => !d); setDictChain([]); setDictSearch(''); }}
+            onClick={() => { setDictMode((d) => !d); setLinkMode(false); resetLink(); setDictChain([]); setDictSearch(''); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border transition-colors ${
               dictMode
                 ? 'bg-brand-500 border-brand-600 text-white'
@@ -457,6 +536,54 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
             </div>
           )}
         </Panel>
+        {linkMode && (
+          <Panel position="bottom-center" className="!mb-4">
+            <div className="bg-white border border-amber-300 rounded-xl shadow-lg px-4 py-3 w-[min(22rem,calc(100vw-2rem))] flex flex-col gap-2 text-sm">
+              {linkWords.length < 2 ? (
+                <p className="text-gray-600">
+                  {linkWords.length === 0
+                    ? 'Tap two words that should be connected.'
+                    : <>Picked <b className="uppercase">{linkWords[0]}</b> — now tap the second word.</>}
+                </p>
+              ) : (
+                <>
+                  <p className="text-gray-700">
+                    Link <b className="uppercase">{linkWords[0]}</b> ↔ <b className="uppercase">{linkWords[1]}</b>?
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {!linkVoteInfoForPair
+                      ? 'Checking votes…'
+                      : linkVoteInfoForPair.count === null
+                        ? "Couldn't load the vote count."
+                        : `${linkVoteInfoForPair.count}/${PAIR_VOTE_THRESHOLD} players voted.`}{' '}
+                    Once {PAIR_VOTE_THRESHOLD} different players agree, these words connect in every game.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={submitLinkVote}
+                      disabled={linkBusy}
+                      className="flex-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-semibold transition-colors"
+                    >
+                      {linkBusy ? 'Saving…' : 'Vote to link'}
+                    </button>
+                    <button
+                      onClick={resetLink}
+                      disabled={linkBusy}
+                      className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs font-semibold transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+              {linkMessage && (
+                <p className={`text-xs ${linkMessage.tone === 'error' ? 'text-red-500' : 'text-emerald-600'}`}>
+                  {linkMessage.text}
+                </p>
+              )}
+            </div>
+          </Panel>
+        )}
       </ReactFlow>
     </div>
   );
