@@ -13,6 +13,7 @@ import GameSidebar from '../components/GameSidebar';
 import { getPlayerColorMap } from '../utils/playerColors';
 import { resetToLobby, requestJoinGame, leaveRoom } from '../services/roomService';
 import { useHasHydrated } from '../hooks/useHasHydrated';
+import { preloadEmbeddingModel } from '../utils/embeddingSimilarity';
 import type { Room } from '../types';
 
 export default function GamePage() {
@@ -35,6 +36,11 @@ export default function GamePage() {
   const [copied, setCopied] = useState(false);
   const fitViewRef = useRef<(() => void) | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  // Download the word-similarity model in the background so the first word isn't slow
+  useEffect(() => {
+    preloadEmbeddingModel();
+  }, []);
 
   // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
