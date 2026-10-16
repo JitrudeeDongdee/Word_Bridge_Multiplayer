@@ -1,23 +1,23 @@
+import { embeddingSimilarity } from './embeddingSimilarity';
+
 const TIMEOUT_MS = 3000;
+
+/** Score (on the [0, 1] scale returned by semanticSimilarity) at which two words get auto-bridged. */
+export const AUTO_BRIDGE_THRESHOLD = 0.15;
+
+// Cosine similarity at which two words count as related. Calibrated in-browser
+// on 2026-10-17 with all-MiniLM-L6-v2: 25 related pairs scored 0.357–0.803
+// (coffee–morning 0.357, war–dead 0.384, sun–summer 0.476), 20 unrelated pairs
+// scored 0.123–0.342 (bottle–elephant 0.342).
+export const EMBEDDING_RELATED_COSINE = 0.35;
 
 interface DatuseItem {
   word: string;
   score: number;
 }
 
-interface ConceptNetRelatednessResponse {
-  value: number;
-}
-
 // Module-level cache: "<rel>:<word>" → Map<relatedWord, normalizedScore>
 const relatedCache = new Map<string, Map<string, number>>();
-
-// Module-level cache: "word1|word2" → relatedness score
-const conceptNetCache = new Map<string, number>();
-
-// Circuit breaker: stop calling ConceptNet after 3 consecutive failures
-let cnFailCount = 0;
-const CN_FAIL_LIMIT = 3;
 
 async function fetchRelatedScores(
   word: string,
@@ -51,53 +51,37 @@ async function fetchRelatedScores(
   }
 }
 
-async function fetchConceptNetRelatedness(a: string, b: string): Promise<number> {
-  if (cnFailCount >= CN_FAIL_LIMIT) return 0;
-
-  const cacheKey = a < b ? `${a}|${b}` : `${b}|${a}`;
-  if (conceptNetCache.has(cacheKey)) return conceptNetCache.get(cacheKey)!;
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-  try {
-    const url = `https://api.conceptnet.io/relatedness?node1=/c/en/${encodeURIComponent(a)}&node2=/c/en/${encodeURIComponent(b)}`;
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-
-    if (!res.ok) {
-      cnFailCount++;
-      return 0;
-    }
-
-    cnFailCount = 0; // reset on success
-    const data = (await res.json()) as ConceptNetRelatednessResponse;
-    const score = Math.max(0, data.value ?? 0);
-    conceptNetCache.set(cacheKey, score);
-    return score;
-  } catch {
-    clearTimeout(timer);
-    cnFailCount++;
-    return 0;
+/**
+ * Maps cosine similarity onto the same [0, 1] scale as the Datamuse score,
+ * piecewise-linearly, so EMBEDDING_RELATED_COSINE lands exactly on
+ * AUTO_BRIDGE_THRESHOLD and 1.0 stays 1.0.
+ */
+export function normalizeCosine(cos: number): number {
+  if (cos <= 0) return 0;
+  if (cos < EMBEDDING_RELATED_COSINE) {
+    return (cos / EMBEDDING_RELATED_COSINE) * AUTO_BRIDGE_THRESHOLD;
   }
+  const t = (cos - EMBEDDING_RELATED_COSINE) / (1 - EMBEDDING_RELATED_COSINE);
+  return Math.min(1, AUTO_BRIDGE_THRESHOLD + t * (1 - AUTO_BRIDGE_THRESHOLD));
 }
 
 /**
  * Returns semantic relatedness [0, 1] between two English words.
- * Combines Datamuse API (means-like + triggers) with ConceptNet relatedness
- * for broader conceptual coverage (e.g. "war" ↔ "dead").
+ * Combines an in-browser embedding model (a continuous score for any pair)
+ * with Datamuse API (means-like + triggers), taking whichever is higher.
+ * If the model fails to load, Datamuse alone is used.
  * Results are cached in memory so each pair is only fetched once per session.
  */
 export async function semanticSimilarity(a: string, b: string): Promise<number> {
   const wa = a.toLowerCase();
   const wb = b.toLowerCase();
 
-  const [mlA, trgA, mlB, trgB, cnScore] = await Promise.all([
+  const [mlA, trgA, mlB, trgB, cos] = await Promise.all([
     fetchRelatedScores(wa, 'ml'),
     fetchRelatedScores(wa, 'rel_trg'),
     fetchRelatedScores(wb, 'ml'),
     fetchRelatedScores(wb, 'rel_trg'),
-    fetchConceptNetRelatedness(wa, wb),
+    embeddingSimilarity(wa, wb),
   ]);
 
   const datuseScore = Math.max(
@@ -107,8 +91,6 @@ export async function semanticSimilarity(a: string, b: string): Promise<number> 
     trgB.get(wa) ?? 0,
   );
 
-  // Weight ConceptNet at 0.8 so it can connect conceptually related pairs
-  // without making the threshold trivially easy to hit
-  return Math.max(datuseScore, cnScore * 0.8);
+  const embeddingScore = cos === null ? 0 : normalizeCosine(cos);
+  return Math.max(datuseScore, embeddingScore);
 }
-

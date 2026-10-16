@@ -14,9 +14,7 @@ import {
 import { forceDirectedLayout } from '../utils/graphLayout';
 import { useGameStore } from '../store/useGameStore';
 import { validateWord, checkRealWord } from '../utils/validation';
-import { semanticSimilarity } from '../utils/semanticSimilarity';
-
-const AUTO_BRIDGE_THRESHOLD = 0.15;
+import { semanticSimilarity, AUTO_BRIDGE_THRESHOLD } from '../utils/semanticSimilarity';
 
 export interface WordScoreEntry {
   word: string;
