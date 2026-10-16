@@ -17,6 +17,20 @@ Score = `max(datamuse, embedding)` — `src/utils/semanticSimilarity.ts`
 
 If the model fails to load, Datamuse alone is used (a warning is logged).
 
+### Crowd-taught pairs (link voting)
+- "🔗 Vote link" on the canvas → pick two words → "Vote to link".
+- Vote stored at `pairVotes/{a|b}/voters/{voterKey}`; voterKey = public IP
+  (fallback: player ID), so one network = one vote. `src/services/pairVotesService.ts`
+- At `PAIR_VOTE_THRESHOLD` (3) distinct voters the pair is written to `learnedPairs/{a|b}`:
+  linked immediately in the voter's room, and scored 1.0 (always bridged) in every game
+  after (`useLearnedPairs` → `scorePair` in `useGameActions`).
+- Not allowed: the two goal words, pairs already connected, voting outside `playing`.
+- Integrity is best-effort only: the database has no auth and open rules, so anyone with
+  the client can write votes directly. Players on the same network count as one voter.
+- Rules for `pairVotes` / `learnedPairs` (from `firebase.rules.json`) were published in the
+  Firebase Console on 2026-10-17. Without them reads/writes get "Permission denied" and the
+  UI shows "Could not save your vote".
+
 ### Decisions
 - **2026-10-17** — ConceptNet removed: `api.conceptnet.io` returns 502. Embedding added
   because Datamuse alone gave 0 to obviously related pairs (sun–summer, war–dead,
@@ -26,9 +40,7 @@ If the model fails to load, Datamuse alone is used (a warning is logged).
   pairs if false connections show up.
 
 ### Next steps (proposed, not started)
-1. Crowd-confirmed pairs: a "request link" action, votes stored in Firebase, pairs with
-   enough distinct voters override the model score.
-2. LLM judge for borderline pairs behind a small backend (Cloud Function / Worker),
+1. LLM judge for borderline pairs behind a small backend (Cloud Function / Worker),
    cached per pair.
 
 ## Known issues

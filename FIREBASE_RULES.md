@@ -9,10 +9,27 @@
   "rules": {
     "rooms": { ".read": true, ".write": true },
     "presence": { ".read": true, ".write": true },
-    "stats": { ".read": true, ".write": true }
+    "stats": { ".read": true, ".write": true },
+    "globalCustomWords": { ".read": true, ".write": true },
+    "pairVotes": {
+      ".read": true,
+      ".write": true,
+      "$pair": {
+        "voters": {
+          "$voter": { ".validate": "newData.hasChildren(['playerId', 'at'])" }
+        }
+      }
+    },
+    "learnedPairs": {
+      ".read": true,
+      ".write": true,
+      "$pair": { ".validate": "newData.val() === true" }
+    }
   }
 }
 ```
+
+(ต้นฉบับอยู่ที่ `firebase.rules.json` — แก้ที่ไฟล์นั้นแล้ว copy มาวางใน Console)
 
 ## โครงสร้าง Database
 
@@ -21,6 +38,9 @@
 | `rooms/` | ข้อมูลห้องเกมทั้งหมด |
 | `presence/` | ติดตาม session ที่ online อยู่ (ลบอัตโนมัติเมื่อ disconnect) |
 | `stats/totalPlayers` | counter สะสมจำนวนผู้เล่นทั้งหมดตลอดกาล |
+| `globalCustomWords/` | คำที่ผู้เล่นเพิ่ม ใช้สุ่มคู่คำในเกมถัดไป |
+| `pairVotes/{a\|b}` | โหวต "สองคำนี้ควรเชื่อมกัน" — `voters/{ip_… หรือ p_playerId}` หนึ่งเครือข่ายนับหนึ่งเสียง |
+| `learnedPairs/{a\|b}` | คู่ที่โหวตครบ 3 เสียงแล้ว — เชื่อมอัตโนมัติทุกเกม |
 
 ## ทำไมไม่ใช้กฎเก่า `rooms/$roomId`
 
