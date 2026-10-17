@@ -355,12 +355,13 @@ export async function addEdge(
   target: string,
   createdBy: string,
   via: 'auto' | 'vote',
-  score?: number,
+  /** For auto edges: the similarity that created the link */
+  sim?: { score: number; datamuse: number },
 ): Promise<void> {
   const edgeId = uuidv4();
   const edge: GameEdge = {
     id: edgeId, source, target, createdBy, createdAt: Date.now(), via,
-    ...(score !== undefined ? { score } : {}),
+    ...(sim ? { score: sim.score, datamuse: sim.datamuse } : {}),
   };
   await Promise.all([
     set(ref(db, `rooms/${roomId}/edges/${edgeId}`), edge),

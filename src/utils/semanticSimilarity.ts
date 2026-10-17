@@ -5,11 +5,14 @@ const TIMEOUT_MS = 3000;
 /** Score (on the [0, 1] scale returned by semanticSimilarity) at which two words get auto-bridged. */
 export const AUTO_BRIDGE_THRESHOLD = 0.15;
 
-// Cosine similarity at which two words count as related. Calibrated in-browser
-// on 2026-10-17 with all-MiniLM-L6-v2: 25 related pairs scored 0.357–0.803
-// (coffee–morning 0.357, war–dead 0.384, sun–summer 0.476), 20 unrelated pairs
-// scored 0.123–0.342 (bottle–elephant 0.342).
-export const EMBEDDING_RELATED_COSINE = 0.35;
+// Cosine similarity at which the embedding alone counts two words as related.
+// all-MiniLM-L6-v2 is weak on single words: any two common nouns tend to score
+// 0.35–0.45 (measured 2026-10-17 on 1,500 random start-word pairs: 11% reach 0.35,
+// 4.3% reach 0.40, 1.5% reach 0.45; dog–king 0.392, puppet–dog 0.418). 0.35 let
+// generic words like "rock" bridge 58% of start pairs in one word, so the bar is
+// 0.45. Real but weaker associations (coffee–morning 0.357) must come from Datamuse
+// or player votes. bge-small and gte-small separated no better.
+export const EMBEDDING_RELATED_COSINE = 0.45;
 
 interface DatuseItem {
   word: string;
@@ -65,14 +68,24 @@ export function normalizeCosine(cos: number): number {
   return Math.min(1, AUTO_BRIDGE_THRESHOLD + t * (1 - AUTO_BRIDGE_THRESHOLD));
 }
 
+export interface PairScore {
+  /** Final relatedness [0, 1]: the higher of the two sources */
+  score: number;
+  /** Datamuse score [0, 1]; 0 when Datamuse knows no relation */
+  datamuse: number;
+  /** Raw embedding cosine, or null if the model is unavailable */
+  embedding: number | null;
+}
+
 /**
- * Returns semantic relatedness [0, 1] between two English words.
- * Combines an in-browser embedding model (a continuous score for any pair)
- * with Datamuse API (means-like + triggers), taking whichever is higher.
+ * Semantic relatedness of two English words with the score from each source.
+ * Combines Datamuse API (means-like + triggers; precise, but only knows listed
+ * associations) with an in-browser embedding model (any pair, but noisy — see
+ * EMBEDDING_RELATED_COSINE), taking whichever is higher.
  * If the model fails to load, Datamuse alone is used.
  * Results are cached in memory so each pair is only fetched once per session.
  */
-export async function semanticSimilarity(a: string, b: string): Promise<number> {
+export async function semanticScores(a: string, b: string): Promise<PairScore> {
   const wa = a.toLowerCase();
   const wb = b.toLowerCase();
 
@@ -92,5 +105,10 @@ export async function semanticSimilarity(a: string, b: string): Promise<number> 
   );
 
   const embeddingScore = cos === null ? 0 : normalizeCosine(cos);
-  return Math.max(datuseScore, embeddingScore);
+  return { score: Math.max(datuseScore, embeddingScore), datamuse: datuseScore, embedding: cos };
+}
+
+/** Semantic relatedness [0, 1] between two English words (see semanticScores). */
+export async function semanticSimilarity(a: string, b: string): Promise<number> {
+  return (await semanticScores(a, b)).score;
 }

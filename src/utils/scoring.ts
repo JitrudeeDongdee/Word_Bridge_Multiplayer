@@ -8,7 +8,10 @@ const MIN_POT = 2;
 export const FINISHER_BONUS = 2;
 /** Bonus per bridge word whose link is valid but not obvious. */
 export const CREATIVE_BONUS = 1;
-/** Link scores in [MIN, MAX) count as creative: above the auto-bridge threshold, below "obvious". */
+/**
+ * A link is creative when Datamuse confirms it (datamuse >= MIN) but its final score stays
+ * below MAX. Embedding-only links never count: the model's weak range is mostly noise.
+ */
 export const CREATIVE_SCORE_MIN = 0.15;
 export const CREATIVE_SCORE_MAX = 0.3;
 
@@ -34,21 +37,6 @@ function bfsDistances(from: string, adjacency: Map<string, string[]>): Map<strin
   return dist;
 }
 
-/**
- * Similarity score of a link: stored on the edge when it was created, falling back to the
- * scores saved on the nodes (edges from before scoring v2). The node scores are written only
- * after all edges, so they can be missing for the word that just completed the bridge.
- */
-function linkScore(edge: GameEdge, a: GameNode | undefined, b: GameNode | undefined): number | null {
-  if (edge.score !== undefined) return edge.score;
-  if (!a || !b) return null;
-  return (
-    a.scores?.find((s) => s.word.toLowerCase() === b.word.toLowerCase())?.score ??
-    b.scores?.find((s) => s.word.toLowerCase() === a.word.toLowerCase())?.score ??
-    null
-  );
-}
-
 export interface RoundResult {
   roundScores: Record<string, number>;
   breakdown: RoundBreakdown;
@@ -59,7 +47,7 @@ export interface RoundResult {
  * - The bridge = every word on any shortest path from A to B. Shorter bridges make a
  *   bigger pot, split equally between those words' owners (ties share one pot).
  * - +FINISHER_BONUS to whoever created the newest edge on the bridge.
- * - +CREATIVE_BONUS per bridge word with an auto-bridged link scoring in the creative range.
+ * - +CREATIVE_BONUS per bridge word with a Datamuse-confirmed, non-obvious auto link.
  * Returns null when A and B aren't connected.
  */
 export function computeRoundScores(
@@ -116,13 +104,17 @@ export function computeRoundScores(
   const finisherId = newest?.createdBy ?? null;
   if (finisherId) add(finisherId, FINISHER_BONUS);
 
-  // Creative: a bridge word with a non-obvious auto-bridged link (vote links don't count)
+  // Creative: a bridge word with a Datamuse-confirmed but non-obvious auto link.
+  // Vote links and edges without a stored Datamuse score (older rooms) don't count.
   const creativeNodeIds = bridgeNodeIds.filter((id) =>
-    bridgeEdges.some((e) => {
-      if (e.via === 'vote' || (e.source !== id && e.target !== id)) return false;
-      const score = linkScore(e, nodes[e.source], nodes[e.target]);
-      return score !== null && score >= CREATIVE_SCORE_MIN && score < CREATIVE_SCORE_MAX;
-    }),
+    bridgeEdges.some(
+      (e) =>
+        e.via !== 'vote' &&
+        (e.source === id || e.target === id) &&
+        e.datamuse !== undefined &&
+        e.datamuse >= CREATIVE_SCORE_MIN &&
+        (e.score ?? e.datamuse) < CREATIVE_SCORE_MAX,
+    ),
   );
   for (const id of creativeNodeIds) {
     const owner = nodes[id]?.createdBy;

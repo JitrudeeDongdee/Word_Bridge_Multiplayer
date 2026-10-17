@@ -14,7 +14,7 @@ import {
 import { forceDirectedLayout } from '../utils/graphLayout';
 import { useGameStore } from '../store/useGameStore';
 import { validateWord, checkRealWord } from '../utils/validation';
-import { semanticSimilarity, AUTO_BRIDGE_THRESHOLD } from '../utils/semanticSimilarity';
+import { semanticScores, AUTO_BRIDGE_THRESHOLD, type PairScore } from '../utils/semanticSimilarity';
 import { castPairVote, pairKey, PAIR_VOTE_THRESHOLD } from '../services/pairVotesService';
 import { useLearnedPairs } from './useLearnedPairs';
 
@@ -59,8 +59,10 @@ export function useGameActions(roomId: string) {
 
   // Pairs players voted in are always connected; everything else goes by similarity
   const scorePair = useCallback(
-    async (a: string, b: string): Promise<number> =>
-      learnedPairs.has(pairKey(a, b)) ? 1 : semanticSimilarity(a, b),
+    async (a: string, b: string): Promise<PairScore> =>
+      learnedPairs.has(pairKey(a, b))
+        ? { score: 1, datamuse: 0, embedding: null }
+        : semanticScores(a, b),
     [learnedPairs],
   );
 
@@ -114,7 +116,7 @@ export function useGameActions(roomId: string) {
         })),
       );
 
-      const toConnect = similarities.filter((s) => s.sim >= AUTO_BRIDGE_THRESHOLD);
+      const toConnect = similarities.filter((s) => s.sim.score >= AUTO_BRIDGE_THRESHOLD);
       await Promise.all(
         toConnect
           .filter((s) => !hasEdge(newNodeId, s.node.id))
@@ -138,7 +140,7 @@ export function useGameActions(roomId: string) {
           pairChecks.push(
             scorePair(a.word.toLowerCase(), b.word.toLowerCase()).then(
               (sim) => {
-                if (sim >= AUTO_BRIDGE_THRESHOLD) {
+                if (sim.score >= AUTO_BRIDGE_THRESHOLD) {
                   return addEdge(roomId, a.id, b.id, playerId, 'auto', sim);
                 }
               },
@@ -156,7 +158,7 @@ export function useGameActions(roomId: string) {
       const scores: WordScoreEntry[] = similarities
         .map((s) => ({
           word: s.node.word,
-          score: s.sim,
+          score: s.sim.score,
           connected: connectedIds.has(s.node.id),
         }))
         .sort((a, b) => b.score - a.score);

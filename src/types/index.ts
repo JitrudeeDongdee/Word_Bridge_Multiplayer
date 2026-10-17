@@ -32,6 +32,8 @@ export interface GameEdge {
   via?: 'auto' | 'vote';
   /** Similarity score that created an auto edge */
   score?: number;
+  /** Datamuse part of that score (0 = linked by the embedding model alone) */
+  datamuse?: number;
 }
 
 /**
