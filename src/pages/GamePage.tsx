@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { useRoomSubscription } from '../hooks/useRoomSubscription';
@@ -113,9 +114,9 @@ export default function GamePage() {
           <span className="text-sm">{playerId ? 'Reconnecting…' : 'Connecting…'}</span>
           <button
             onClick={() => navigate('/')}
-            className="mt-2 text-sm text-brand-500 hover:text-brand-700 underline underline-offset-2"
+            className="mt-2 inline-flex items-center gap-1 text-sm text-brand-500 hover:text-brand-700 underline underline-offset-2"
           >
-            ← Back to Home
+            <ArrowLeft className="w-3.5 h-3.5" aria-hidden /> Back to Home
           </button>
         </div>
       </div>
@@ -166,9 +167,11 @@ export default function GamePage() {
           >
             <p className="text-gray-300 text-sm font-medium text-center px-8 select-none">
               Type a word that bridges<br />
-              <span className="text-brand-300 font-bold uppercase">{wordA}</span>
-              <span className="mx-2">→</span>
-              <span className="text-brand-300 font-bold uppercase">{wordB}</span>
+              <span className="inline-flex items-center gap-2">
+                <span className="text-brand-300 font-bold uppercase">{wordA}</span>
+                <ArrowRight className="w-4 h-4" aria-label="to" />
+                <span className="text-brand-300 font-bold uppercase">{wordB}</span>
+              </span>
             </p>
           </div>
 

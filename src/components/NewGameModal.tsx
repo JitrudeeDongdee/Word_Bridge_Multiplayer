@@ -1,3 +1,4 @@
+import { ArrowRight, RotateCcw, X } from 'lucide-react';
 import { useState } from 'react';
 import type { Room } from '../types';
 import { restartGame } from '../services/roomService';
@@ -48,16 +49,19 @@ export default function NewGameModal({
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-6 pb-3 flex-shrink-0">
           <div>
-            <p className="text-2xl font-black text-gray-800">↺ New Game?</p>
+            <p className="text-2xl font-black text-gray-800 flex items-center gap-2">
+              <RotateCcw className="w-6 h-6" aria-hidden /> New Game?
+            </p>
             <p className="text-sm text-gray-500 mt-1">
               The current board will be cleared.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors text-xl leading-none flex-shrink-0"
+            aria-label="Close"
+            className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors flex-shrink-0"
           >
-            ×
+            <X className="w-5 h-5" aria-hidden />
           </button>
         </div>
 
@@ -66,7 +70,7 @@ export default function NewGameModal({
           {/* Current game info */}
           <div className="bg-gray-50 rounded-xl px-4 py-3 flex items-center gap-2">
             <span className="font-bold uppercase text-brand-500 text-sm">{wordA}</span>
-            <span className="text-gray-400 text-xs">→</span>
+            <ArrowRight className="w-3.5 h-3.5 text-gray-400" aria-label="to" />
             <span className="font-bold uppercase text-brand-500 text-sm">{wordB}</span>
             <span className="ml-auto text-xs text-gray-400">{nodeCount} nodes</span>
           </div>
@@ -115,9 +119,9 @@ export default function NewGameModal({
           <button
             onClick={handleConfirm}
             disabled={restarting || !isHost}
-            className="flex-1 py-2.5 rounded-xl bg-brand-500 text-white font-bold text-sm hover:bg-brand-600 disabled:opacity-60 transition-colors"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-brand-500 text-white font-bold text-sm hover:bg-brand-600 disabled:opacity-60 transition-colors"
           >
-            {restarting ? 'Starting…' : '↺ New Game'}
+            {restarting ? 'Starting…' : <><RotateCcw className="w-4 h-4" aria-hidden /> New Game</>}
           </button>
         </div>
       </div>

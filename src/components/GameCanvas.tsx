@@ -1,3 +1,4 @@
+import { ArrowLeftRight, BookOpen, Image as ImageIcon, Link2, X } from 'lucide-react';
 import { useState, useCallback, useMemo, useEffect, useRef, type MutableRefObject } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -214,12 +215,12 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
       if (res.error) {
         setLinkMessage({ text: res.error, tone: 'error' });
       } else if (res.linked) {
-        setLinkMessage({ text: `Linked! Players taught the game that ${w1} ↔ ${w2}.`, tone: 'ok' });
+        setLinkMessage({ text: `Linked! Players taught the game that ${w1} and ${w2} belong together.`, tone: 'ok' });
         resetLink();
       } else {
         const left = res.threshold - res.count;
         setLinkMessage({
-          text: `Vote saved (${res.count}/${res.threshold}). ${left} more player${left === 1 ? '' : 's'} needed to link ${w1} ↔ ${w2}.`,
+          text: `Vote saved (${res.count}/${res.threshold}). ${left} more player${left === 1 ? '' : 's'} needed to link ${w1} and ${w2}.`,
           tone: 'ok',
         });
         resetLink();
@@ -431,24 +432,26 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
                 resetLink();
                 setLinkMessage(null);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border transition-colors ${
+              className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border transition-colors ${
                 linkMode
                   ? 'bg-amber-500 border-amber-600 text-white'
                   : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
               }`}
             >
-              🔗 Vote link {linkMode ? 'ON' : 'OFF'}
+              <Link2 className="w-3.5 h-3.5" aria-hidden />
+              Vote link {linkMode ? 'ON' : 'OFF'}
             </button>
           )}
           <button
             onClick={() => { setDictMode((d) => !d); setLinkMode(false); resetLink(); setDictChain([]); setDictSearch(''); }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border transition-colors ${
+            className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border transition-colors ${
               dictMode
                 ? 'bg-brand-500 border-brand-600 text-white'
                 : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
-            📖 Dict {dictMode ? 'ON' : 'OFF'}
+            <BookOpen className="w-3.5 h-3.5" aria-hidden />
+            Dict {dictMode ? 'ON' : 'OFF'}
           </button>
           {dictMode && (
             <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-56 flex flex-col gap-2 max-h-[70vh] overflow-y-auto">
@@ -456,13 +459,14 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
                 type="button"
                 onClick={toggleDictImages}
                 aria-pressed={dictImages}
-                className={`self-start px-2 py-0.5 rounded-md border text-[11px] font-medium transition-colors ${
+                className={`self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-medium transition-colors ${
                   dictImages
                     ? 'bg-brand-50 border-brand-300 text-brand-600'
                     : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
                 }`}
               >
-                🖼 Images {dictImages ? 'ON' : 'OFF'}
+                <ImageIcon className="w-3 h-3" aria-hidden />
+                Images {dictImages ? 'ON' : 'OFF'}
               </button>
               <form
                 onSubmit={(e) => { e.preventDefault(); setShowDictSuggestions(false); fetchDefinition(dictSearch); }}
@@ -526,9 +530,10 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
                 <div key={`${card.word}-${i}`} className="relative rounded-lg border border-gray-100 bg-gray-50 p-2 flex flex-col gap-1">
                   <button
                     onClick={() => removeFromChain(i)}
-                    className="absolute top-1.5 right-1.5 text-gray-300 hover:text-gray-500 text-xs leading-none"
+                    className="absolute top-1.5 right-1.5 text-gray-300 hover:text-gray-500"
                     title="Remove"
-                  >✕</button>
+                    aria-label="Remove"
+                  ><X className="w-3.5 h-3.5" aria-hidden /></button>
                   <div className="font-semibold text-gray-800 capitalize text-sm pr-4">{card.word}</div>
                   {dictImages && <DictImage word={card.word} />}
                   {card.partOfSpeech && (
@@ -569,7 +574,9 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
               ) : (
                 <>
                   <p className="text-gray-700">
-                    Link <b className="uppercase">{linkWords[0]}</b> ↔ <b className="uppercase">{linkWords[1]}</b>?
+                    Link <b className="uppercase">{linkWords[0]}</b>{' '}
+                    <ArrowLeftRight className="inline w-3.5 h-3.5 text-gray-400 align-[-2px]" aria-label="and" />{' '}
+                    <b className="uppercase">{linkWords[1]}</b>?
                   </p>
                   <p className="text-xs text-gray-500">
                     {!linkVoteInfoForPair

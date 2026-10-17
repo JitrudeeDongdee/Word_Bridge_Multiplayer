@@ -17,6 +17,11 @@
       ".read": true,
       ".write": true,
       "$pair": { ".validate": "newData.val() === true" }
+    },
+    "roomIndex": {
+      ".read": true,
+      ".write": true,
+      "$room": { ".validate": "newData.hasChildren(['id', 'name', 'playerCount', 'status', 'hasPassword'])" }
     }
   }
 }

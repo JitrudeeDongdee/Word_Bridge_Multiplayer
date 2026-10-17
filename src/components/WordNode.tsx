@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 
@@ -82,11 +83,12 @@ function WordNode({ id, data, selected }: WordNodeProps) {
         {word}
         {!isStart && canDelete && (
           <button
-            className="absolute -top-2 -right-2 flex md:hidden md:group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs leading-none"
+            className="absolute -top-2 -right-2 flex md:hidden md:group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white"
             onClick={() => onDelete(id)}
             title="Delete node"
+            aria-label="Delete word"
           >
-            ×
+            <X className="w-3 h-3" strokeWidth={3} aria-hidden />
           </button>
         )}
       </div>

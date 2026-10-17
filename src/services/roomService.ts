@@ -13,6 +13,8 @@ import { db } from './firebase';
 import type { Room, Player, GameNode, GameEdge, SharedWordScore, LastWordScores, RoundBreakdown } from '../types';
 import { pickWordPair } from '../utils/wordPairs';
 import { generateRoomCode } from '../utils/generateRoomCode';
+import { newPasswordSalt, hashRoomPassword, checkRoomPassword } from '../utils/roomPassword';
+import { syncRoomIndex, removeFromRoomIndex, findOrphanIndexIds } from './roomIndexService';
 
 // --- Room operations ---
 
@@ -39,17 +41,22 @@ async function cleanOldRooms(): Promise<void> {
         (room.status !== 'won' && idleTime > TWO_HOURS_MS)
       );
     })
-    .map((room) => remove(ref(db, `rooms/${room.id}`)));
+    .map((room) => room.id);
 
-  await Promise.all(deleteOps);
+  await Promise.all(deleteOps.map((id) => remove(ref(db, `rooms/${id}`))));
+  // Drop their public summaries too, plus summaries of rooms that are already gone
+  const remaining = new Set(Object.keys(rooms).filter((id) => !deleteOps.includes(id)));
+  await removeFromRoomIndex([...deleteOps, ...(await findOrphanIndexIds(remaining))]);
 }
 
 export async function deleteRoom(roomId: string): Promise<void> {
   await remove(ref(db, `rooms/${roomId}`));
+  await removeFromRoomIndex([roomId]);
 }
 
 export async function kickPlayer(roomId: string, playerId: string): Promise<void> {
   await remove(ref(db, `rooms/${roomId}/players/${playerId}`));
+  await syncRoomIndex(roomId);
 }
 
 export async function leaveRoom(
@@ -62,6 +69,7 @@ export async function leaveRoom(
   if (remaining.length === 0) {
     // Last player leaving — delete the room entirely
     await remove(ref(db, `rooms/${roomId}`));
+    await removeFromRoomIndex([roomId]);
     return;
   }
 
@@ -78,6 +86,7 @@ export async function leaveRoom(
   }
 
   await update(ref(db), updates);
+  await syncRoomIndex(roomId);
 }
 
 export async function requestJoinGame(roomId: string, playerId: string): Promise<void> {
@@ -95,7 +104,18 @@ export async function denyJoinRequest(roomId: string, playerId: string): Promise
   await update(ref(db, `rooms/${roomId}/players/${playerId}`), { joinRequest: null });
 }
 
-export async function createRoom(hostName: string, hostIp?: string): Promise<{ room: Room; playerId: string }> {
+export interface CreateRoomOptions {
+  /** Shown in the public room list; defaults to "<host>'s room" */
+  name?: string;
+  /** Join password (separate from the room code); empty = open room */
+  password?: string;
+}
+
+export async function createRoom(
+  hostName: string,
+  hostIp?: string,
+  options: CreateRoomOptions = {},
+): Promise<{ room: Room; playerId: string }> {
   // Clean up stale rooms before creating a new one (best-effort; don't block on failure)
   await cleanOldRooms().catch(() => {});
 
@@ -127,20 +147,39 @@ export async function createRoom(hostName: string, hostIp?: string): Promise<{ r
     roundScores: null,
   };
 
+  const name = options.name?.trim();
+  if (name) room.name = name.slice(0, 30);
+  const password = options.password ?? '';
+  if (password) {
+    room.passwordSalt = newPasswordSalt();
+    room.passwordHash = await hashRoomPassword(password, room.passwordSalt);
+  }
+
   await set(ref(db, `rooms/${roomId}`), room);
+  await syncRoomIndex(roomId);
   return { room, playerId };
 }
+
+export type JoinRoomResult =
+  | { ok: true; room: Room; playerId: string }
+  | { ok: false; reason: 'not_found' | 'password_required' | 'wrong_password' };
 
 export async function joinRoom(
   roomId: string,
   playerName: string,
   playerIp?: string,
-): Promise<{ room: Room; playerId: string } | null> {
+  password?: string,
+): Promise<JoinRoomResult> {
   const snapshot = await get(ref(db, `rooms/${roomId}`));
-  if (!snapshot.exists()) return null;
+  if (!snapshot.exists()) return { ok: false, reason: 'not_found' };
 
   const room = snapshot.val() as Room;
-  if (room.status === 'won') return null;
+  if (room.passwordHash && room.passwordSalt) {
+    if (!password) return { ok: false, reason: 'password_required' };
+    if (!(await checkRoomPassword(password, room.passwordSalt, room.passwordHash))) {
+      return { ok: false, reason: 'wrong_password' };
+    }
+  }
 
   const playerId = uuidv4();
   const player: Player = {
@@ -153,8 +192,9 @@ export async function joinRoom(
   };
 
   await update(ref(db, `rooms/${roomId}/players`), { [playerId]: player });
+  await syncRoomIndex(roomId);
   const updated = { ...room, players: { ...room.players, [playerId]: player } };
-  return { room: updated, playerId };
+  return { ok: true, room: updated, playerId };
 }
 
 /** Read usedPairs from Firebase — stored as a pipe-separated string to avoid
@@ -214,6 +254,7 @@ export async function startGame(roomId: string): Promise<void> {
   };
 
   await update(ref(db), updates);
+  await syncRoomIndex(roomId);
 }
 
 export async function restartGame(roomId: string): Promise<void> {
@@ -274,6 +315,7 @@ export async function restartGame(roomId: string): Promise<void> {
   }
 
   await update(ref(db), updates);
+  await syncRoomIndex(roomId);
 }
 
 export async function resetToLobby(roomId: string): Promise<void> {
@@ -289,6 +331,7 @@ export async function resetToLobby(roomId: string): Promise<void> {
     roundBreakdown: null,
     // `scores` (cumulative) intentionally preserved
   });
+  await syncRoomIndex(roomId);
 }
 
 // --- Node operations ---
@@ -456,6 +499,7 @@ export async function markRoomWon(
     roundBreakdown,
     scores: merged,
   });
+  await syncRoomIndex(roomId);
 }
 
 // --- Subscriptions ---

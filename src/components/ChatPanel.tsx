@@ -1,3 +1,4 @@
+import { ArrowUp } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { ChatMessage } from '../types';
 
@@ -103,9 +104,10 @@ export default function ChatPanel({ messages, sendMessage, playerId, playerColor
         <button
           type="submit"
           disabled={sending || !input.trim()}
+          aria-label="Send"
           className="px-2.5 py-1.5 bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white text-xs rounded-lg transition-colors shrink-0 font-semibold"
         >
-          ↑
+          <ArrowUp className="w-4 h-4" aria-hidden />
         </button>
       </form>
     </div>

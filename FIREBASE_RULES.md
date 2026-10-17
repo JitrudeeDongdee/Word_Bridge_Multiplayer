@@ -24,6 +24,11 @@
       ".read": true,
       ".write": true,
       "$pair": { ".validate": "newData.val() === true" }
+    },
+    "roomIndex": {
+      ".read": true,
+      ".write": true,
+      "$room": { ".validate": "newData.hasChildren(['id', 'name', 'playerCount', 'status', 'hasPassword'])" }
     }
   }
 }
@@ -41,6 +46,7 @@
 | `globalCustomWords/` | คำที่ผู้เล่นเพิ่ม ใช้สุ่มคู่คำในเกมถัดไป |
 | `pairVotes/{a\|b}` | โหวต "สองคำนี้ควรเชื่อมกัน" — `voters/{ip_… หรือ p_playerId}` หนึ่งเครือข่ายนับหนึ่งเสียง |
 | `learnedPairs/{a\|b}` | คู่ที่โหวตครบ 3 เสียงแล้ว — เชื่อมอัตโนมัติทุกเกม |
+| `roomIndex/{roomId}` | สรุปห้องสำหรับ lobby กลาง (ชื่อ, host, จำนวนคน, สถานะ, มีรหัสไหม) — ไม่มีรหัสผ่าน |
 
 ## ทำไมไม่ใช้กฎเก่า `rooms/$roomId`
 

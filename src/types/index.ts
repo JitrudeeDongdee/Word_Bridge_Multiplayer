@@ -78,6 +78,14 @@ export interface Room {
   id: string;
   hostId: string;
   createdAt: number;
+  /** Display name set by the host (shown in the public room list) */
+  name?: string;
+  /**
+   * Optional join password, stored as SHA-256(salt:password). Separate from the room code
+   * (`id`), which is only for finding the room. Client-side check only: rooms are readable.
+   */
+  passwordHash?: string;
+  passwordSalt?: string;
   status: GameStatus;
   players: Record<string, Player>;
   nodes: Record<string, GameNode>;
@@ -104,4 +112,15 @@ export interface ChatMessage {
   playerName: string;
   text: string;
   sentAt: number;
+}
+
+/** Public summary of a room for the central lobby (`roomIndex/{id}`) */
+export interface RoomIndexEntry {
+  id: string;
+  name: string;
+  hostName: string;
+  playerCount: number;
+  status: GameStatus;
+  hasPassword: boolean;
+  lastActiveAt: number;
 }
