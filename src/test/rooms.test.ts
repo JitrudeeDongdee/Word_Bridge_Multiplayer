@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { hashRoomPassword, checkRoomPassword, newPasswordSalt } from '../utils/roomPassword';
-import { toIndexEntry, sortRoomList, ROOM_LIST_MAX_IDLE_MS } from '../services/roomIndexService';
+import { toIndexEntry, sortRoomList, filterRooms, ROOM_LIST_MAX_IDLE_MS } from '../services/roomIndexService';
 import type { Room, RoomIndexEntry } from '../types';
 
 // In-memory stand-in for the Realtime Database
@@ -63,6 +63,24 @@ describe('room index', () => {
       e('idle', 'waiting', ROOM_LIST_MAX_IDLE_MS + 1), e('empty', 'waiting', 1, 0),
     ], now);
     expect(sorted.map((r) => r.id)).toEqual(['waiting-new', 'waiting-old', 'playing-new']);
+  });
+});
+
+describe('filterRooms', () => {
+  const e = (id: string, name: string, hostName: string): RoomIndexEntry =>
+    ({ id, name, hostName, playerCount: 1, status: 'waiting', hasPassword: false, lastActiveAt: 0 });
+  const rooms = [e('ABC123', 'Friday crew', 'BoldFox'), e('XYZ789', 'ห้องเพื่อน ม.6', 'QuickOwl'), e('QQQ111', "cookie's room", 'cookie')];
+
+  it('matches room name, host name and room code, ignoring case and spaces', () => {
+    expect(filterRooms(rooms, 'friday').map((r) => r.id)).toEqual(['ABC123']);
+    expect(filterRooms(rooms, '  quickowl ').map((r) => r.id)).toEqual(['XYZ789']);
+    expect(filterRooms(rooms, 'qqq1').map((r) => r.id)).toEqual(['QQQ111']);
+    expect(filterRooms(rooms, 'ห้องเพื่อน').map((r) => r.id)).toEqual(['XYZ789']);
+  });
+
+  it('returns everything for an empty query and nothing for no match', () => {
+    expect(filterRooms(rooms, '')).toHaveLength(3);
+    expect(filterRooms(rooms, 'zzz')).toEqual([]);
   });
 });
 
