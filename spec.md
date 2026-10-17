@@ -116,6 +116,8 @@ UI uses `lucide-react` icons (no emoji or symbol glyphs in components); decorati
   desktop, a bottom sheet on mobile.
 - Vote-link confirm panel sits top-center; MiniMap top-right (desktop only); zoom controls
   hidden on mobile (pinch zoom). `minZoom` 0.2 so both goal words fit on a phone.
+- Arrow keys pan the board (Shift = 3× step, 80 px base). Ignored while a field with text
+  is focused or another handler used the key (suggestion list), so typing is unaffected.
 
 ## Scoring (competitive, v2 — `src/utils/scoring.ts`)
 Points are awarded only when the round is won (`useWinDetection`, host's client).
