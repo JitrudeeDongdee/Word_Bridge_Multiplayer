@@ -11,6 +11,8 @@ interface WordNodeData {
   isHighlighted?: boolean;
   /** Picked as one end of a link vote */
   isLinkPick?: boolean;
+  /** On the board but still being checked (dictionary + links) */
+  isPending?: boolean;
   connectedWords?: string[];
 }
 
@@ -21,7 +23,7 @@ interface WordNodeProps {
 }
 
 function WordNode({ id, data, selected }: WordNodeProps) {
-  const { word, isStart, canDelete, onDelete, playerColor, isPathNode, isHighlighted, isLinkPick } = data;
+  const { word, isStart, canDelete, onDelete, playerColor, isPathNode, isHighlighted, isLinkPick, isPending } = data;
 
   const baseClass =
     'px-4 py-2 rounded-xl border-2 shadow-md select-none text-sm font-semibold uppercase tracking-wide transition-all';
@@ -72,10 +74,12 @@ function WordNode({ id, data, selected }: WordNodeProps) {
         />
       )}
       <div
-        className={`${baseClass} ${isStart ? startClass : normalClass}`}
+        className={`${baseClass} ${isStart ? startClass : normalClass}${isPending ? ' border-dashed opacity-60 animate-pulse' : ''}`}
         style={nodeStyle}
+        title={isPending ? 'Checking word…' : undefined}
       >
         {word}
+        {isPending && <span className="ml-1.5 text-[10px] font-normal normal-case text-gray-500">checking…</span>}
         {!isStart && canDelete && (
           <button
             className="absolute -top-2 -right-2 flex md:hidden md:group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs leading-none"

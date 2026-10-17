@@ -98,15 +98,28 @@ Ideas not done: semantic "progress" scoring; moving win detection off the host's
 (if the host's tab is closed, a win isn't recorded).
 
 ## Known issues
+- Fixed 2026-10-17: every page reload logged the player out of their room. The store's
+  `get currentPlayer()` getter made zustand-persist hydration throw (silently), so the
+  first write after load saved `playerId: null`. Test: `src/test/sessionStore.test.ts`.
 - 📖 Dict mode definitions still come only from `api.dictionaryapi.dev`; while it is down
   they show "Definition not found." (word validation has a fallback, see below).
 
-## Word validation
-`checkRealWord` (`src/utils/validation.ts`) asks `api.dictionaryapi.dev` first (3s
-timeout). Only a JSON response is trusted (200 = valid, 404 = not found); a timeout,
-HTML error page or 5xx falls through to Datamuse (`/words?sp=<word>&md=dp`, 5s):
-valid = exact spelling + at least one definition + not tagged `prop` (proper noun).
-"Network error" is shown only when both are unreachable.
+## Word validation & definitions (`src/services/dictionary.ts`)
+`checkRealWord` and `lookupDefinition` (📖 Dict panel) share one lookup per word:
+- Both sources are asked **in parallel**: `api.dictionaryapi.dev` (3s timeout; only JSON
+  trusted — 200 found, 404 not found) and Datamuse (`/words?sp=<word>&md=dp`, 5s: exact
+  spelling + a definition + not tagged `prop`). First source to find the word wins;
+  not found only when no source found it and at least one answered.
+- Results are cached per word (network failures aren't cached, so they can be retried).
+- A source failing twice in a row is skipped for 5 minutes.
+
+## Adding a word (`handleAddWord`)
+1. Instant: format / duplicate / per-player cap checks, then the node is written with
+   `pending: true` (`placeNode`, id generated locally — no wait for the server ack).
+   The input clears immediately; the node shows "checking…" and can't be deleted.
+2. Background: dictionary check → if invalid the node (and any edges) is removed and the
+   error floats above the input; if valid → autocomplete pool, scoring + edges (pending
+   nodes of others are skipped), relayout, then `pending` is cleared.
 - **2026-10-17 hotfix** — dictionaryapi.dev timed out on every request, so no word could
   be added and the game was unplayable.
 - `npm run lint` has 9 pre-existing problems on `main`.
