@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { validateWord, checkRealWord } from '../utils/validation';
+import { validateWord, checkRealWord, wordsLeft, MAX_WORDS_PER_PLAYER } from '../utils/validation';
 import type { GameNode } from '../types';
 
 const node = (word: string): GameNode => ({
@@ -124,5 +124,21 @@ describe('checkRealWord', () => {
     await vi.advanceTimersByTimeAsync(3000);
     expect(await pending).toBe('valid');
     vi.useRealTimers();
+  });
+});
+
+describe('per-player word cap', () => {
+  const own = (word: string, createdBy = 'me'): GameNode => ({ ...node(word), id: word, createdBy });
+
+  it('counts only the player\'s own non-start words', () => {
+    const nodes = [own('a'), own('b'), own('c', 'other'), { ...own('goal'), isStart: true }];
+    expect(wordsLeft(nodes, 'me')).toBe(MAX_WORDS_PER_PLAYER - 2);
+  });
+
+  it(`rejects a ${MAX_WORDS_PER_PLAYER + 1}th word but allows other players`, () => {
+    const nodes = Array.from({ length: MAX_WORDS_PER_PLAYER }, (_, i) => own(`w${i}`));
+    expect(validateWord('extra', nodes, 'me').valid).toBe(false);
+    expect(validateWord('extra', nodes, 'other').valid).toBe(true);
+    expect(validateWord('extra', nodes).valid).toBe(true); // no player → no cap
   });
 });

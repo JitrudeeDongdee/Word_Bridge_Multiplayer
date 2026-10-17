@@ -4,6 +4,14 @@ const WORD_REGEX = /^[a-zA-Z]+$/;
 const MIN_LENGTH = 2;
 const MAX_LENGTH = 30;
 const MAX_NODES = 50;
+/** Words each player may have on the canvas per round (deleting one frees a slot) */
+export const MAX_WORDS_PER_PLAYER = 5;
+
+/** How many more words this player may add this round. */
+export function wordsLeft(existingNodes: GameNode[], playerId: string): number {
+  const used = existingNodes.filter((n) => !n.isStart && n.createdBy === playerId).length;
+  return Math.max(0, MAX_WORDS_PER_PLAYER - used);
+}
 
 export interface ValidationResult {
   valid: boolean;
@@ -13,6 +21,7 @@ export interface ValidationResult {
 export function validateWord(
   word: string,
   existingNodes: GameNode[],
+  playerId?: string,
 ): ValidationResult {
   const trimmed = word.trim();
 
@@ -40,6 +49,13 @@ export function validateWord(
 
   if (existingNodes.length >= MAX_NODES) {
     return { valid: false, error: `Maximum of ${MAX_NODES} nodes reached.` };
+  }
+
+  if (playerId && wordsLeft(existingNodes, playerId) === 0) {
+    return {
+      valid: false,
+      error: `You've used all ${MAX_WORDS_PER_PLAYER} words this round. Delete one of yours to add another.`,
+    };
   }
 
   return { valid: true };

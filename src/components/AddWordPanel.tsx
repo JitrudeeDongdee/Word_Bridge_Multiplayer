@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { useGameActions } from '../hooks/useGameActions';
 import { useCustomWordsSubscription } from '../hooks/useCustomWordsSubscription';
 import { addCustomWord } from '../services/customWordsService';
-import { checkRealWord } from '../utils/validation';
+import { checkRealWord, wordsLeft, MAX_WORDS_PER_PLAYER } from '../utils/validation';
+import { useGameStore } from '../store/useGameStore';
 
 interface AddWordPanelProps {
   roomId: string;
@@ -28,6 +29,9 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
   const listRef = useRef<HTMLUListElement>(null);
   const { handleAddWord } = useGameActions(roomId);
   const customWords = useCustomWordsSubscription();
+  const nodes = useGameStore((s) => s.room?.nodes);
+  const playerId = useGameStore((s) => s.playerId);
+  const left = playerId ? wordsLeft(Object.values(nodes ?? {}), playerId) : MAX_WORDS_PER_PLAYER;
 
   // Fetch autocomplete suggestions with debounce
   useEffect(() => {
@@ -165,6 +169,10 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
       setError('Word cannot be empty.');
       return;
     }
+    if (left === 0) {
+      setError(`You've used all ${MAX_WORDS_PER_PLAYER} words this round. Delete one of yours to add another.`);
+      return;
+    }
 
     // Step 1: Check if word exists in dictionary (custom validation)
     setValidating(true);
@@ -247,7 +255,7 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
           onBlur={() => setTimeout(() => { setShowSuggestions(false); setActiveIndex(-1); }, 150)}
           onFocus={openSuggestions}
           onKeyDown={handleKeyDown}
-          placeholder="Add a word…"
+          placeholder={left > 0 ? `Add a word… (${left} left)` : 'No words left this round'}
           className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
           disabled={loading}
           maxLength={30}
