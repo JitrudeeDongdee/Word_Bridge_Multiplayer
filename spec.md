@@ -93,8 +93,12 @@ Still open:
   already in the room stay; the password only applies to new joiners. A host who lost their
   identity (other device / cleared browser) can't recover — needs accounts.
 - Requires the `roomIndex` rule (published 2026-10-17).
-- **Accounts: not built yet.** `AccountButtons` (home + main lobby) shows "Playing as guest"
-  with disabled Log in / Sign up ("Soon") as the placeholder for a future sign-up system.
+- **Accounts: UI preview only.** `AccountButtons` (home + main lobby) links to `/login` and
+  `/signup` (`AuthPage`): Continue with Google, Continue with Facebook, and phone number →
+  6-digit code. Every action ends in a "coming soon" notice — no provider is contacted, no
+  SMS is sent, nothing is stored (verified: zero external requests). To make it real:
+  Firebase Auth (Google / Facebook / Phone providers, Blaze plan needed for phone SMS),
+  then tie `playerId` to the auth uid.
 
 ## Icons
 UI uses `lucide-react` icons (no emoji or symbol glyphs in components); decorative icons are
