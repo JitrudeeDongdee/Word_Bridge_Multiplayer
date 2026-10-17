@@ -13,6 +13,11 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
+        env:
+          # onnxruntime-node (pulled in by @huggingface/transformers) downloads a large
+          # GPU package from nuget.org on install. The game only runs the model in the
+          # browser (onnxruntime-web), so skip it; that download timed out on 2026-10-17.
+          ONNXRUNTIME_NODE_INSTALL: skip
       - run: npm run build
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
