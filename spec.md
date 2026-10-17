@@ -24,7 +24,9 @@ If the model fails to load, Datamuse alone is used (a warning is logged).
 - At `PAIR_VOTE_THRESHOLD` (3) distinct voters the pair is written to `learnedPairs/{a|b}`:
   linked immediately in the voter's room, and scored 1.0 (always bridged) in every game
   after (`useLearnedPairs` → `scorePair` in `useGameActions`).
-- Not allowed: the two goal words, pairs already connected, voting outside `playing`.
+- Not allowed: the two goal words, pairs already connected. Voting is open while playing
+  and after the round ends (`won`, board viewed via "See the board"); a link added after
+  the round doesn't change its score.
 - Integrity is best-effort only: the database has no auth and open rules, so anyone with
   the client can write votes directly. Players on the same network count as one voter.
 - Rules for `pairVotes` / `learnedPairs` (from `firebase.rules.json`) were published in the
