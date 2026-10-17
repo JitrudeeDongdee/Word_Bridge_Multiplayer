@@ -161,6 +161,10 @@ Ideas not done: semantic "progress" scoring; moving win detection off the host's
 - When on, each card shows the thumbnail from the Wikipedia page summary API (no key,
   CORS) with an "‹Title› · Wikipedia" link as attribution. Disambiguation pages (e.g. "run")
   and pages without an image show nothing; lookups are cached per word, 4s timeout.
+- **Pronunciation**: a speaker button next to each card's word (`SpeakButton`,
+  `utils/speech.ts`) reads it aloud with the browser's `speechSynthesis` (en-US voice, rate
+  0.9, cancels any speech in progress). Hidden when the browser has no speech synthesis.
+  Synthetic voice — differs by device; iPhone silent mode can mute it.
 - Images are not screened (no safe-search flag in the API). The image matches the
   word's main article, not necessarily the sense used in the game ("bank" → a bank).
 
