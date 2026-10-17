@@ -4,6 +4,9 @@ import { createRoom, joinRoom } from '../services/roomService';
 import { getPublicIP } from '../utils/network';
 import { useGameStore } from '../store/useGameStore';
 import { usePresence } from '../hooks/usePresence';
+import RoomList from '../components/RoomList';
+import { defaultRoomName, joinErrorMessage } from '../services/roomIndexService';
+import type { RoomIndexEntry } from '../types';
 
 function randomName(): string {
   const adj = ['Swift', 'Bright', 'Clever', 'Bold', 'Quick', 'Sharp', 'Witty', 'Calm'];
@@ -19,6 +22,12 @@ export default function HomePage() {
   const [mode, setMode] = useState<'menu' | 'create' | 'join'>('menu');
   const [name, setName] = useState(randomName);
   const [code, setCode] = useState('');
+  const [roomName, setRoomName] = useState('');
+  const [createPassword, setCreatePassword] = useState('');
+  const [joinPassword, setJoinPassword] = useState('');
+  /** Room picked from the public list (for its name and lock state) */
+  const [joinTarget, setJoinTarget] = useState<RoomIndexEntry | null>(null);
+  const [needsPassword, setNeedsPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { onlineCount, totalCount } = usePresence();
@@ -40,7 +49,10 @@ export default function HomePage() {
 
     try {
       const hostIp = await getPublicIP();
-      const { room, playerId } = await createRoom(name.trim(), hostIp);
+      const { room, playerId } = await createRoom(name.trim(), hostIp, {
+        name: roomName,
+        password: createPassword,
+      });
       setIdentity(playerId, name.trim());
       setRoom(room);
       navigate(`/lobby/${room.id}`);
@@ -59,9 +71,10 @@ export default function HomePage() {
 
     try {
       const playerIp = await getPublicIP();
-      const result = await joinRoom(code.trim().toUpperCase(), name.trim(), playerIp);
-      if (!result) {
-        setError('Room not found.');
+      const result = await joinRoom(code.trim().toUpperCase(), name.trim(), playerIp, joinPassword || undefined);
+      if (!result.ok) {
+        if (result.reason !== 'not_found') setNeedsPassword(true);
+        setError(joinErrorMessage(result.reason));
         setLoading(false);
         return;
       }
@@ -76,6 +89,23 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const pickRoom = (room: RoomIndexEntry) => {
+    setJoinTarget(room);
+    setCode(room.id);
+    setNeedsPassword(room.hasPassword);
+    setJoinPassword('');
+    setError(null);
+    setMode('join');
+  };
+
+  const backToMenu = () => {
+    setMode('menu');
+    setError(null);
+    setJoinTarget(null);
+    setNeedsPassword(false);
+    setJoinPassword('');
   };
 
   return (
@@ -133,6 +163,32 @@ export default function HomePage() {
                   )}
                 </div>
               </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm text-gray-600">Room name <span className="text-gray-400">(optional)</span></span>
+                <input
+                  type="text"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  placeholder={defaultRoomName(name.trim() || 'Your')}
+                  className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  maxLength={30}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm text-gray-600">🔒 Password <span className="text-gray-400">(optional)</span></span>
+                <input
+                  type="password"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                  placeholder="Leave empty for an open room"
+                  className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  maxLength={40}
+                  autoComplete="new-password"
+                />
+                <span className="text-xs text-gray-400">
+                  Players need it to join. It's separate from the room code, which is only for finding the room.
+                </span>
+              </label>
               {error && <p className="text-red-500 text-sm">{error}</p>}
               <button
                 type="submit"
@@ -143,7 +199,7 @@ export default function HomePage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setMode('menu'); setError(null); }}
+                onClick={backToMenu}
                 className="text-sm text-gray-400 hover:text-gray-600"
               >
                 ← Back
@@ -153,7 +209,15 @@ export default function HomePage() {
 
           {mode === 'join' && (
             <form onSubmit={handleJoin} className="flex flex-col gap-4">
-              <h2 className="text-xl font-bold text-gray-800">Join a Room</h2>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Join a Room</h2>
+                {joinTarget && (
+                  <p className="text-sm text-gray-500 mt-1 truncate">
+                    {joinTarget.hasPassword && '🔒 '}<b>{joinTarget.name}</b> · 👥 {joinTarget.playerCount}
+                    {joinTarget.status !== 'waiting' && ' · in progress — you’ll watch until the next round'}
+                  </p>
+                )}
+              </div>
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-gray-600">Your name</span>
                 <div className="relative">
@@ -177,7 +241,7 @@ export default function HomePage() {
                   )}
                 </div>
               </label>
-              {!inviteRoomId && (
+              {!inviteRoomId && !joinTarget && (
                 <label className="flex flex-col gap-1">
                   <span className="text-sm text-gray-600">Room code</span>
                   <input
@@ -190,10 +254,24 @@ export default function HomePage() {
                   />
                 </label>
               )}
+              {needsPassword && (
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm text-gray-600">🔒 Room password</span>
+                  <input
+                    type="password"
+                    value={joinPassword}
+                    onChange={(e) => setJoinPassword(e.target.value)}
+                    placeholder="Ask the host"
+                    className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    maxLength={40}
+                    autoComplete="off"
+                  />
+                </label>
+              )}
               {error && <p className="text-red-500 text-sm">{error}</p>}
               <button
                 type="submit"
-                disabled={loading || !name.trim() || code.trim().length < 6}
+                disabled={loading || !name.trim() || code.trim().length < 6 || (needsPassword && !joinPassword)}
                 className="py-2.5 rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 disabled:opacity-50 transition-colors"
               >
                 {loading ? 'Joining…' : 'Join Room'}
@@ -201,7 +279,7 @@ export default function HomePage() {
               {!inviteRoomId && (
                 <button
                   type="button"
-                  onClick={() => { setMode('menu'); setError(null); }}
+                  onClick={backToMenu}
                   className="text-sm text-gray-400 hover:text-gray-600"
                 >
                   ← Back
@@ -210,6 +288,12 @@ export default function HomePage() {
             </form>
           )}
         </div>
+
+        {mode === 'menu' && (
+          <div className="mt-5">
+            <RoomList onPick={pickRoom} />
+          </div>
+        )}
 
         {/* Stats bar */}
         <div className="flex justify-center gap-5 mt-5 text-sm">

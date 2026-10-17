@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { joinRoom } from '../services/roomService';
+import { joinErrorMessage } from '../services/roomIndexService';
 import { useGameStore } from '../store/useGameStore';
 import type { Room } from '../types';
 
@@ -22,6 +23,9 @@ export default function JoinGameForm({ roomId, onJoined }: JoinGameFormProps) {
   const [joinName, setJoinName] = useState(randomName);
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+  // Shown once the room turns out to be locked
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [password, setPassword] = useState('');
 
   const handleJoin = async (e: FormEvent) => {
     e.preventDefault();
@@ -29,9 +33,10 @@ export default function JoinGameForm({ roomId, onJoined }: JoinGameFormProps) {
     setJoining(true);
     setJoinError(null);
     try {
-      const result = await joinRoom(roomId, joinName.trim());
-      if (!result) {
-        setJoinError('Room not found or game has already ended.');
+      const result = await joinRoom(roomId, joinName.trim(), undefined, password || undefined);
+      if (!result.ok) {
+        if (result.reason !== 'not_found') setNeedsPassword(true);
+        setJoinError(joinErrorMessage(result.reason));
         setJoining(false);
         return;
       }
@@ -74,6 +79,21 @@ export default function JoinGameForm({ roomId, onJoined }: JoinGameFormProps) {
                 enterKeyHint="go"
               />
             </label>
+            {needsPassword && (
+              <label className="flex flex-col gap-1">
+                <span className="text-sm text-gray-600">🔒 Room password</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Ask the host"
+                  className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  maxLength={40}
+                  autoFocus
+                  disabled={joining}
+                />
+              </label>
+            )}
             {joinError && <p className="text-red-500 text-xs">{joinError}</p>}
             <button
               type="submit"

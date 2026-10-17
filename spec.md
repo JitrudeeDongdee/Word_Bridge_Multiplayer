@@ -65,6 +65,23 @@ Still open:
 - Who owns the Cloudflare account and the Anthropic API key (set as a Worker secret by
   the owner, not committed).
 
+## Rooms: public list, names, passwords
+- **Central lobby** (home page, `RoomList`): live list from `roomIndex/{roomId}` — a public
+  summary (name, host, player count, status, hasPassword, lastActiveAt) kept in sync by
+  `syncRoomIndex` after every change to a room's players / status / name (create, join,
+  leave, kick, start, restart, back to lobby, win; delete removes it). Waiting rooms first,
+  then by recent activity; empty or >2h idle rooms hidden. `cleanOldRooms` also removes
+  index entries of deleted or missing rooms. Rooms in progress can be joined as a spectator
+  (including between rounds).
+- **Room name**: set by the host at creation (≤30 chars), default "<host>'s room".
+- **Password** (optional, set at creation) is separate from the 6-char room code (which is
+  only for finding the room). Stored as `passwordHash` = SHA-256(`passwordSalt`:password);
+  `joinRoom` returns `password_required` / `wrong_password`. Asked on every join path (code,
+  list, invite link, direct game link). Soft lock: rooms are readable and writable by
+  anyone, so it only stops joining through the game UI.
+- Requires the `roomIndex` rule (published 2026-10-17).
+- Player counts include players who closed the tab without leaving (no disconnect cleanup).
+
 ## Game screen layout
 - Canvas takes the full width. Players, scores and the edge score table live in a drawer
   (`GameSidebar`), opened from the header ("👥 Players & Scores" / ☰ on mobile).

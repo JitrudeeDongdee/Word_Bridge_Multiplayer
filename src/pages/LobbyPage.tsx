@@ -4,6 +4,7 @@ import { useRoomSubscription } from '../hooks/useRoomSubscription';
 import { startGame, deleteRoom, kickPlayer, leaveRoom } from '../services/roomService';
 import PlayerList from '../components/PlayerList';
 import { useState } from 'react';
+import { defaultRoomName } from '../services/roomIndexService';
 
 export default function LobbyPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -78,8 +79,18 @@ export default function LobbyPage() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6">
           <div>
-            <h2 className="text-2xl font-black text-brand-600">Room Lobby</h2>
-            <p className="text-xs text-gray-400 mt-1 mb-3">Share this code with friends to join</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Room Lobby</p>
+            <h2 className="text-2xl font-black text-brand-600 break-words">
+              {room.name || defaultRoomName(players[room.hostId]?.name ?? 'Someone')}
+            </h2>
+            <p className="text-xs text-gray-400 mt-1 mb-3">
+              Room code — friends use it to find this room
+              {room.passwordHash && (
+                <span className="block mt-0.5 text-amber-600">
+                  🔒 Locked: they'll also need the password you set (not the code)
+                </span>
+              )}
+            </p>
             <div className="flex items-center justify-center bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
               <span className="font-mono font-black text-2xl tracking-[0.35em] text-gray-800">
                 {roomId}
