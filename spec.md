@@ -76,7 +76,11 @@ Still open:
   then by recent activity; empty or >2h idle rooms hidden. `cleanOldRooms` also removes
   index entries of deleted or missing rooms. Rooms in progress can be joined as a spectator
   (including between rounds).
-- **Room name**: set by the host at creation (≤30 chars), default "<host>'s room".
+- **Room lobby → main lobby**: "Main lobby" (top-left of the room lobby) leaves the room —
+  host passes to the next player, or the room closes after a confirm if you're alone — and
+  opens `/rooms`. Visitors who aren't in the room just navigate.
+- **Room name**: set by the host at creation (≤30 chars), default "<host>'s room" (follows
+  the current host when no name was set).
 - **Password** (optional, set at creation) is separate from the 6-char room code (which is
   only for finding the room). Stored as `passwordHash` = SHA-256(`passwordSalt`:password);
   `joinRoom` returns `password_required` / `wrong_password`. Asked on every join path (code,
