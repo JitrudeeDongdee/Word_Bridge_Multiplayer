@@ -1,3 +1,4 @@
+import { Check, Link2, Lock } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { useRoomSubscription } from '../hooks/useRoomSubscription';
@@ -86,8 +87,9 @@ export default function LobbyPage() {
             <p className="text-xs text-gray-400 mt-1 mb-3">
               Room code — friends use it to find this room
               {room.passwordHash && (
-                <span className="block mt-0.5 text-amber-600">
-                  🔒 Locked: they'll also need the password you set (not the code)
+                <span className="flex items-center gap-1 mt-0.5 text-amber-600">
+                  <Lock className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />
+                  Locked: they'll also need the password you set (not the code)
                 </span>
               )}
             </p>
@@ -100,7 +102,11 @@ export default function LobbyPage() {
               onClick={handleCopyLink}
               className="mt-2 w-full py-2.5 rounded-xl border-2 border-brand-200 bg-brand-50 text-brand-700 font-bold text-sm hover:bg-brand-100 active:bg-brand-200 transition-colors flex items-center justify-center gap-2"
             >
-              {copied ? '✓ Copied!' : '🔗 Copy Invite Link'}
+              {copied ? (
+                <><Check className="w-4 h-4" aria-hidden /> Copied!</>
+              ) : (
+                <><Link2 className="w-4 h-4" aria-hidden /> Copy Invite Link</>
+              )}
             </button>
           </div>
 

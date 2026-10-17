@@ -1,3 +1,4 @@
+import { Lock, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { subscribeRoomIndex } from '../services/roomIndexService';
 import type { RoomIndexEntry } from '../types';
@@ -53,16 +54,18 @@ export default function RoomList({ onPick }: RoomListProps) {
                   className="w-full text-left flex items-center gap-3 rounded-xl border border-gray-200 px-3 py-2.5 hover:border-brand-300 hover:bg-brand-50 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-800 text-sm truncate">
-                      {r.hasPassword && <span title="Password required">🔒 </span>}
-                      {r.name}
+                    <p className="font-semibold text-gray-800 text-sm flex items-center gap-1 min-w-0">
+                      {r.hasPassword && (
+                        <Lock className="w-3.5 h-3.5 flex-shrink-0 text-amber-600" aria-label="Password required" />
+                      )}
+                      <span className="truncate">{r.name}</span>
                     </p>
                     <p className="text-xs text-gray-400 truncate">
                       Host {r.hostName} · <span className="font-mono">{r.id}</span>
                     </p>
                   </div>
-                  <span className="flex-shrink-0 text-xs text-gray-600" title="Players in the room">
-                    👥 {r.playerCount}
+                  <span className="flex-shrink-0 inline-flex items-center gap-1 text-xs text-gray-600" title="Players in the room">
+                    <Users className="w-3.5 h-3.5" aria-hidden /> {r.playerCount}
                   </span>
                   <span className={`flex-shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${status.className}`}>
                     {status.text}

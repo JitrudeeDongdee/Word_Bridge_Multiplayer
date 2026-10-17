@@ -1,3 +1,4 @@
+import { ArrowLeft, ArrowRight, Lock } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { joinRoom } from '../services/roomService';
@@ -81,7 +82,9 @@ export default function JoinGameForm({ roomId, onJoined }: JoinGameFormProps) {
             </label>
             {needsPassword && (
               <label className="flex flex-col gap-1">
-                <span className="text-sm text-gray-600">🔒 Room password</span>
+                <span className="text-sm text-gray-600 inline-flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5" aria-hidden /> Room password
+                </span>
                 <input
                   type="password"
                   value={password}
@@ -100,14 +103,14 @@ export default function JoinGameForm({ roomId, onJoined }: JoinGameFormProps) {
               disabled={joining || !joinName.trim()}
               className="w-full py-3 rounded-xl bg-brand-500 text-white font-bold text-lg hover:bg-brand-600 disabled:opacity-60 transition-colors"
             >
-              {joining ? 'Joining…' : 'Join Game →'}
+              {joining ? 'Joining…' : <span className="inline-flex items-center gap-1.5">Join Game <ArrowRight className="w-5 h-5" aria-hidden /></span>}
             </button>
             <button
               type="button"
               onClick={() => navigate('/')}
               className="text-sm text-gray-400 hover:text-gray-600 transition-colors text-center"
             >
-              ← Back to home
+              <span className="inline-flex items-center gap-1"><ArrowLeft className="w-3.5 h-3.5" aria-hidden /> Back to home</span>
             </button>
           </form>
         </div>

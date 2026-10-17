@@ -66,7 +66,8 @@ Still open:
   the owner, not committed).
 
 ## Rooms: public list, names, passwords
-- **Central lobby** (home page, `RoomList`): live list from `roomIndex/{roomId}` — a public
+- **Main lobby** (`/rooms`, `RoomsPage` + `RoomList`; home page has "Go to main lobby"):
+  live list from `roomIndex/{roomId}` — a public
   summary (name, host, player count, status, hasPassword, lastActiveAt) kept in sync by
   `syncRoomIndex` after every change to a room's players / status / name (create, join,
   leave, kick, start, restart, back to lobby, win; delete removes it). Waiting rooms first,
@@ -80,6 +81,12 @@ Still open:
   list, invite link, direct game link). Soft lock: rooms are readable and writable by
   anyone, so it only stops joining through the game UI.
 - Requires the `roomIndex` rule (published 2026-10-17).
+- **Accounts: not built yet.** `AccountButtons` (home + main lobby) shows "Playing as guest"
+  with disabled Log in / Sign up ("Soon") as the placeholder for a future sign-up system.
+
+## Icons
+UI uses `lucide-react` icons (no emoji or symbol glyphs in components); decorative icons are
+`aria-hidden`, icon-only buttons have an `aria-label`.
 - Player counts include players who closed the tab without leaving (no disconnect cleanup).
 
 ## Game screen layout

@@ -1,3 +1,4 @@
+import { ArrowRight, Flag, PartyPopper, Sparkles, Trophy, X, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
@@ -63,7 +64,7 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
         onClick={() => setMinimized(false)}
         className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-white border-2 border-brand-400 rounded-2xl shadow-2xl text-brand-600 font-bold text-sm hover:bg-brand-50 transition-all"
       >
-        🎉 View Results
+        <Trophy className="w-4 h-4" aria-hidden /> View Results
       </button>
     );
   }
@@ -82,19 +83,22 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-6 pb-3 flex-shrink-0">
           <div>
-            <p className="text-3xl font-black text-brand-600">🎉 You Win!</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-3xl font-black text-brand-600 flex items-center gap-2">
+              <PartyPopper className="w-7 h-7" aria-hidden /> You Win!
+            </p>
+            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
               <span className="font-bold uppercase text-gray-800">{wordA}</span>
-              <span className="mx-1.5 text-gray-400">→</span>
+              <ArrowRight className="w-3.5 h-3.5 text-gray-400" aria-label="to" />
               <span className="font-bold uppercase text-gray-800">{wordB}</span>
             </p>
           </div>
           <button
             onClick={() => setMinimized(true)}
             title="See the board"
-            className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors text-xl leading-none flex-shrink-0"
+            aria-label="See the board"
+            className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors flex-shrink-0"
           >
-            ×
+            <X className="w-5 h-5" aria-hidden />
           </button>
         </div>
 
@@ -103,20 +107,25 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
           {/* How this round was scored */}
           {breakdown && (
             <div className="flex flex-col gap-1.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-xs">
-              <p className="font-bold text-amber-700">
-                ⚡ {breakdown.intermediates}-word bridge → {breakdown.pot} pts
+              <p className="font-bold text-amber-700 flex flex-wrap items-center gap-x-1">
+                <Zap className="w-3.5 h-3.5" aria-hidden />
+                {breakdown.intermediates}-word bridge
+                <ArrowRight className="w-3 h-3" aria-label="gives" />
+                {breakdown.pot} pts
                 {bridgeIds.length > 1 && (
                   <span className="font-normal text-amber-600"> · {breakdown.perWord} per word</span>
                 )}
               </p>
               {breakdown.finisherId && (
-                <p className="text-amber-700">
-                  🏁 Finisher +{breakdown.finisherBonus}: <b>{nameOf(breakdown.finisherId)}</b>
+                <p className="text-amber-700 flex items-center gap-1">
+                  <Flag className="w-3.5 h-3.5" aria-hidden />
+                  <span>Finisher +{breakdown.finisherBonus}: <b>{nameOf(breakdown.finisherId)}</b></span>
                 </p>
               )}
               {creativeIds.length > 0 && (
-                <p className="text-amber-700">
-                  ✨ Creative link +{breakdown.creativeBonus}:{' '}
+                <p className="text-amber-700 flex flex-wrap items-center gap-x-1">
+                  <Sparkles className="w-3.5 h-3.5" aria-hidden />
+                  Creative link +{breakdown.creativeBonus}:{' '}
                   <b className="uppercase">
                     {creativeIds.map((id) => nodes?.[id]?.word ?? '?').join(', ')}
                   </b>
@@ -145,7 +154,7 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
                         {node?.word ?? nodeId}
                       </span>
                       {i < path.length - 1 && (
-                        <span className="text-gray-300 text-xs">→</span>
+                        <ArrowRight className="w-3 h-3 text-gray-300" aria-hidden />
                       )}
                     </span>
                   );

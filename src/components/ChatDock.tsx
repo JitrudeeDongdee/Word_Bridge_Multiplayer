@@ -1,3 +1,4 @@
+import { MessageCircle, X } from 'lucide-react';
 import { useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import ChatPanel from './ChatPanel';
@@ -55,7 +56,7 @@ export default function ChatDock({ roomId, playerId, playerName, playerColorMap,
                 aria-label="Close chat"
                 className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100"
               >
-                ✕
+                <X className="w-4 h-4" aria-hidden />
               </button>
             </div>
             <ChatPanel
@@ -72,11 +73,11 @@ export default function ChatDock({ roomId, playerId, playerName, playerColorMap,
         onClick={toggle}
         aria-label={unread > 0 ? `Chat, ${unread} unread` : 'Chat'}
         className={[
-          'relative flex-shrink-0 w-12 h-12 rounded-2xl border shadow-lg flex items-center justify-center text-xl transition-colors',
-          open ? 'bg-brand-500 border-brand-600 text-white' : 'bg-white border-gray-200 hover:bg-gray-50',
+          'relative flex-shrink-0 w-12 h-12 rounded-2xl border shadow-lg flex items-center justify-center transition-colors',
+          open ? 'bg-brand-500 border-brand-600 text-white' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50',
         ].join(' ')}
       >
-        💬
+        <MessageCircle className="w-5 h-5" aria-hidden />
         {unread > 0 && (
           <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] font-bold leading-5 text-center animate-bounce">
             {unread > 9 ? '9+' : unread}

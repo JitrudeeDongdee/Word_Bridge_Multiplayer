@@ -1,3 +1,4 @@
+import { Check, Star } from 'lucide-react';
 import type { GameNode, GameEdge } from '../types';
 
 interface EdgePair {
@@ -89,7 +90,7 @@ export default function ScoreTable({
 
           const barColor  = p.isGoal ? 'bg-amber-400' : 'bg-green-400';
           const wordColor = p.isGoal ? 'text-amber-600' : 'text-green-600';
-          const badge     = p.isGoal ? '★' : '✓';
+          const Badge     = p.isGoal ? Star : Check;
 
           return (
             <div key={p.key}>
@@ -98,7 +99,7 @@ export default function ScoreTable({
                   <span>{left.toUpperCase()}</span>
                   <span className="text-gray-300">—</span>
                   <span>{right.toUpperCase()}</span>
-                  <span className="font-bold">{badge}</span>
+                  <Badge className="w-3 h-3" strokeWidth={3} aria-label={p.isGoal ? 'goal word' : 'linked'} />
                 </span>
                 <span className="tabular-nums text-gray-500">{label}</span>
               </div>

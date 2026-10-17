@@ -1,10 +1,11 @@
+import { ArrowLeft, LayoutList, Lock, Users, X } from 'lucide-react';
 import { useState, useEffect, type FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { createRoom, joinRoom } from '../services/roomService';
 import { getPublicIP } from '../utils/network';
 import { useGameStore } from '../store/useGameStore';
 import { usePresence } from '../hooks/usePresence';
-import RoomList from '../components/RoomList';
+import AccountButtons from '../components/AccountButtons';
 import { defaultRoomName, joinErrorMessage } from '../services/roomIndexService';
 import type { RoomIndexEntry } from '../types';
 
@@ -19,15 +20,18 @@ export default function HomePage() {
   const setIdentity = useGameStore((s) => s.setIdentity);
   const setRoom = useGameStore((s) => s.setRoom);
 
-  const [mode, setMode] = useState<'menu' | 'create' | 'join'>('menu');
+  // The main lobby (/rooms) links here with the picked room, or asks for the create form
+  const navState = useLocation().state as { room?: RoomIndexEntry; mode?: 'create' } | null;
+  const fromLobby = navState?.room ?? null;
+  const [mode, setMode] = useState<'menu' | 'create' | 'join'>(navState?.mode === 'create' ? 'create' : 'menu');
   const [name, setName] = useState(randomName);
   const [code, setCode] = useState('');
   const [roomName, setRoomName] = useState('');
   const [createPassword, setCreatePassword] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
   /** Room picked from the public list (for its name and lock state) */
-  const [joinTarget, setJoinTarget] = useState<RoomIndexEntry | null>(null);
-  const [needsPassword, setNeedsPassword] = useState(false);
+  const [joinTarget, setJoinTarget] = useState<RoomIndexEntry | null>(fromLobby);
+  const [needsPassword, setNeedsPassword] = useState(fromLobby?.hasPassword ?? false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { onlineCount, totalCount } = usePresence();
@@ -91,15 +95,6 @@ export default function HomePage() {
     }
   };
 
-  const pickRoom = (room: RoomIndexEntry) => {
-    setJoinTarget(room);
-    setCode(room.id);
-    setNeedsPassword(room.hasPassword);
-    setJoinPassword('');
-    setError(null);
-    setMode('join');
-  };
-
   const backToMenu = () => {
     setMode('menu');
     setError(null);
@@ -110,6 +105,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 to-sky-100 flex items-center justify-center p-4">
+      {/* Accounts placeholder (sign up / log in are coming later) */}
+      <div className="fixed top-3 right-4 z-10">
+        <AccountButtons />
+      </div>
       <div className="w-full max-w-md">
         {/* Logo / Title */}
         <div className="text-center mb-10">
@@ -134,6 +133,12 @@ export default function HomePage() {
               >
                 Join Room
               </button>
+              <button
+                onClick={() => navigate('/rooms')}
+                className="w-full py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-semibold hover:bg-gray-100 transition-colors inline-flex items-center justify-center gap-2"
+              >
+                <LayoutList className="w-5 h-5" aria-hidden /> Go to main lobby
+              </button>
             </div>
           )}
 
@@ -156,9 +161,10 @@ export default function HomePage() {
                     <button
                       type="button"
                       onClick={() => setName('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+                      aria-label="Clear name"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
-                      ×
+                      <X className="w-4 h-4" aria-hidden />
                     </button>
                   )}
                 </div>
@@ -175,7 +181,9 @@ export default function HomePage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-sm text-gray-600">🔒 Password <span className="text-gray-400">(optional)</span></span>
+                <span className="text-sm text-gray-600 inline-flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5" aria-hidden /> Password <span className="text-gray-400">(optional)</span>
+                </span>
                 <input
                   type="password"
                   value={createPassword}
@@ -200,9 +208,9 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={backToMenu}
-                className="text-sm text-gray-400 hover:text-gray-600"
+                className="inline-flex items-center justify-center gap-1 text-sm text-gray-400 hover:text-gray-600"
               >
-                ← Back
+                <ArrowLeft className="w-3.5 h-3.5" aria-hidden /> Back
               </button>
             </form>
           )}
@@ -212,8 +220,12 @@ export default function HomePage() {
               <div>
                 <h2 className="text-xl font-bold text-gray-800">Join a Room</h2>
                 {joinTarget && (
-                  <p className="text-sm text-gray-500 mt-1 truncate">
-                    {joinTarget.hasPassword && '🔒 '}<b>{joinTarget.name}</b> · 👥 {joinTarget.playerCount}
+                  <p className="text-sm text-gray-500 mt-1 flex items-center gap-1 min-w-0">
+                    {joinTarget.hasPassword && <Lock className="w-3.5 h-3.5 flex-shrink-0" aria-label="Locked" />}
+                    <b className="truncate">{joinTarget.name}</b>
+                    <span className="flex-shrink-0">·</span>
+                    <Users className="w-3.5 h-3.5 flex-shrink-0" aria-label="Players" />
+                    <span className="flex-shrink-0">{joinTarget.playerCount}</span>
                     {joinTarget.status !== 'waiting' && ' · in progress — you’ll watch until the next round'}
                   </p>
                 )}
@@ -234,9 +246,10 @@ export default function HomePage() {
                     <button
                       type="button"
                       onClick={() => setName('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+                      aria-label="Clear name"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
-                      ×
+                      <X className="w-4 h-4" aria-hidden />
                     </button>
                   )}
                 </div>
@@ -256,7 +269,9 @@ export default function HomePage() {
               )}
               {needsPassword && (
                 <label className="flex flex-col gap-1">
-                  <span className="text-sm text-gray-600">🔒 Room password</span>
+                  <span className="text-sm text-gray-600 inline-flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5" aria-hidden /> Room password
+                  </span>
                   <input
                     type="password"
                     value={joinPassword}
@@ -276,24 +291,18 @@ export default function HomePage() {
               >
                 {loading ? 'Joining…' : 'Join Room'}
               </button>
-              {!inviteRoomId && (
+              {(!inviteRoomId || fromLobby) && (
                 <button
                   type="button"
-                  onClick={backToMenu}
-                  className="text-sm text-gray-400 hover:text-gray-600"
+                  onClick={fromLobby ? () => navigate('/rooms') : backToMenu}
+                  className="inline-flex items-center justify-center gap-1 text-sm text-gray-400 hover:text-gray-600"
                 >
-                  ← Back
+                  <ArrowLeft className="w-3.5 h-3.5" aria-hidden /> Back
                 </button>
               )}
             </form>
           )}
         </div>
-
-        {mode === 'menu' && (
-          <div className="mt-5">
-            <RoomList onPick={pickRoom} />
-          </div>
-        )}
 
         {/* Stats bar */}
         <div className="flex justify-center gap-5 mt-5 text-sm">

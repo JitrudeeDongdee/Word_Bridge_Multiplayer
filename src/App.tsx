@@ -1,9 +1,11 @@
+import { X } from 'lucide-react';
 import { useState } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
 import VictoryPage from './pages/VictoryPage';
+import RoomsPage from './pages/RoomsPage';
 import { useVersionCheck } from './hooks/useVersionCheck';
 
 /**
@@ -31,9 +33,9 @@ function UpdateBanner() {
         <button
           onClick={() => setDismissed(true)}
           aria-label="Dismiss"
-          className="flex-shrink-0 text-white/80 hover:text-white text-base leading-none"
+          className="flex-shrink-0 text-white/80 hover:text-white"
         >
-          ✕
+          <X className="w-4 h-4" aria-hidden />
         </button>
       </div>
     </div>
@@ -46,6 +48,7 @@ export default function App() {
       <HashRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/rooms" element={<RoomsPage />} />
           <Route path="/join/:roomId" element={<HomePage />} />
           <Route path="/lobby/:roomId" element={<LobbyPage />} />
           <Route path="/game/:roomId" element={<GamePage />} />

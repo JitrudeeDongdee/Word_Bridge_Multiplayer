@@ -1,3 +1,4 @@
+import { ArrowLeft, ArrowRight, Check, Link2, RotateCcw, X } from 'lucide-react';
 import PlayerList from './PlayerList';
 import ScoreTable from './ScoreTable';
 import type { Room } from '../types';
@@ -43,9 +44,9 @@ export default function GameSidebar({
       {/* Top section: word pair + close; host actions on mobile (desktop has them in the header) */}
       <div className="border-b border-gray-100 pb-3 flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold">
+          <span className="text-sm font-bold inline-flex items-center gap-1.5">
             <span className="text-brand-500 uppercase">{wordA}</span>
-            <span className="mx-1.5 text-gray-400 font-normal">→</span>
+            <ArrowRight className="w-3.5 h-3.5 text-gray-400" aria-label="to" />
             <span className="text-brand-500 uppercase">{wordB}</span>
           </span>
           <div className="flex items-center gap-2">
@@ -55,7 +56,7 @@ export default function GameSidebar({
               aria-label="Close panel"
               className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
             >
-              ✕
+              <X className="w-4 h-4" aria-hidden />
             </button>
           </div>
         </div>
@@ -64,16 +65,16 @@ export default function GameSidebar({
             <button
               onClick={onNewGame}
               disabled={leavingLobby || leaving}
-              className="flex-1 px-2 py-1.5 rounded-lg border border-brand-300 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50 transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border border-brand-300 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50 transition-colors"
             >
-              ↺ New Game
+              <RotateCcw className="w-3.5 h-3.5" aria-hidden /> New Game
             </button>
             <button
               onClick={onBackToLobby}
               disabled={leavingLobby || leaving}
-              className="flex-1 px-2 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
             >
-              {leavingLobby ? 'Returning…' : '← Lobby'}
+              {leavingLobby ? 'Returning…' : <><ArrowLeft className="w-3.5 h-3.5" aria-hidden /> Lobby</>}
             </button>
           </div>
         )}
@@ -81,7 +82,7 @@ export default function GameSidebar({
           onClick={onCopyLink}
           className="md:hidden w-full py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
         >
-          <span>{copied ? '✓' : '🔗'}</span>
+          {copied ? <Check className="w-3.5 h-3.5" aria-hidden /> : <Link2 className="w-3.5 h-3.5" aria-hidden />}
           <span>{copied ? 'Copied!' : 'Copy Invite Link'}</span>
         </button>
       </div>
