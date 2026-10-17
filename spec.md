@@ -115,12 +115,13 @@ Ideas not done: semantic "progress" scoring; moving win detection off the host's
 - A source failing twice in a row is skipped for 5 minutes.
 
 ### Dict pictures (`src/services/wikiImage.ts`, `DictImage`)
-- "🖼 Images" toggle inside the 📖 Dict panel, **off by default**; each viewer's choice is
-  kept in their browser (`localStorage` `wb-dict-images`).
+- "🖼 Images" toggle inside the 📖 Dict panel, **on by default** (owner's choice,
+  2026-10-17); a viewer who switches it off keeps that in their browser
+  (`localStorage` `wb-dict-images`).
 - When on, each card shows the thumbnail from the Wikipedia page summary API (no key,
   CORS) with an "‹Title› · Wikipedia" link as attribution. Disambiguation pages (e.g. "run")
   and pages without an image show nothing; lookups are cached per word, 4s timeout.
-- Images are not screened, which is why the toggle starts off. The image matches the
+- Images are not screened (no safe-search flag in the API). The image matches the
   word's main article, not necessarily the sense used in the game ("bank" → a bank).
 
 ## Adding a word (`handleAddWord`)

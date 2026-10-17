@@ -79,10 +79,9 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
 
   // Dictionary
   const [dictMode, setDictMode] = useState(false);
-  // Pictures on Dict cards: off by default (Wikipedia images aren't screened for every
-  // audience); each viewer's choice is remembered in their own browser
+  // Pictures on Dict cards: on unless this viewer switched them off (remembered per browser)
   const [dictImages, setDictImages] = useState(() => {
-    try { return localStorage.getItem('wb-dict-images') === 'on'; } catch { return false; }
+    try { return localStorage.getItem('wb-dict-images') !== 'off'; } catch { return true; }
   });
   const toggleDictImages = useCallback(() => {
     setDictImages((on) => {
