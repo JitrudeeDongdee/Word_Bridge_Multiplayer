@@ -25,6 +25,7 @@ import { useGameActions } from '../hooks/useGameActions';
 import { useCustomWordsSubscription } from '../hooks/useCustomWordsSubscription';
 import { getPairVoteCount, pairKey, PAIR_VOTE_THRESHOLD } from '../services/pairVotesService';
 import { lookupDefinition } from '../services/dictionary';
+import DictImage from './DictImage';
 
 const nodeTypes = { wordNode: WordNode };
 
@@ -78,6 +79,17 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
 
   // Dictionary
   const [dictMode, setDictMode] = useState(false);
+  // Pictures on Dict cards: off by default (Wikipedia images aren't screened for every
+  // audience); each viewer's choice is remembered in their own browser
+  const [dictImages, setDictImages] = useState(() => {
+    try { return localStorage.getItem('wb-dict-images') === 'on'; } catch { return false; }
+  });
+  const toggleDictImages = useCallback(() => {
+    setDictImages((on) => {
+      try { localStorage.setItem('wb-dict-images', on ? 'off' : 'on'); } catch { /* storage unavailable */ }
+      return !on;
+    });
+  }, []);
   type DictCard = { word: string; definition: string; partOfSpeech: string };
   const [dictChain, setDictChain] = useState<DictCard[]>([]);
   const [dictChainLoading, setDictChainLoading] = useState(false);
@@ -441,6 +453,18 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
           </button>
           {dictMode && (
             <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-56 flex flex-col gap-2 max-h-[70vh] overflow-y-auto">
+              <button
+                type="button"
+                onClick={toggleDictImages}
+                aria-pressed={dictImages}
+                className={`self-start px-2 py-0.5 rounded-md border text-[11px] font-medium transition-colors ${
+                  dictImages
+                    ? 'bg-brand-50 border-brand-300 text-brand-600'
+                    : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                🖼 Images {dictImages ? 'ON' : 'OFF'}
+              </button>
               <form
                 onSubmit={(e) => { e.preventDefault(); setShowDictSuggestions(false); fetchDefinition(dictSearch); }}
                 className="flex gap-1"
@@ -507,6 +531,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
                     title="Remove"
                   >✕</button>
                   <div className="font-semibold text-gray-800 capitalize text-sm pr-4">{card.word}</div>
+                  {dictImages && <DictImage word={card.word} />}
                   {card.partOfSpeech && (
                     <div className="text-xs text-brand-500 italic">{card.partOfSpeech}</div>
                   )}
