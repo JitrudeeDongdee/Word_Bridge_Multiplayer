@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useChat } from '../hooks/useChat';
+import type { ChatMessage } from '../types';
 
 interface ChatPanelProps {
-  roomId: string;
+  messages: ChatMessage[];
+  sendMessage: (text: string) => Promise<void>;
   playerId: string;
-  playerName: string;
   playerColorMap: Record<string, string>;
+  autoFocus?: boolean;
 }
 
 function formatTime(ts: number): string {
@@ -13,8 +14,7 @@ function formatTime(ts: number): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function ChatPanel({ roomId, playerId, playerName, playerColorMap }: ChatPanelProps) {
-  const { messages, sendMessage } = useChat(roomId, playerId, playerName);
+export default function ChatPanel({ messages, sendMessage, playerId, playerColorMap, autoFocus }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -54,7 +54,7 @@ export default function ChatPanel({ roomId, playerId, playerName, playerColorMap
       <div
         ref={listRef}
         onScroll={handleScroll}
-        className="flex flex-col gap-1.5 max-h-96 overflow-y-auto pr-1"
+        className="flex flex-col gap-1.5 max-h-[50vh] md:max-h-80 overflow-y-auto pr-1"
       >
         {messages.length === 0 && (
           <p className="text-xs text-gray-400 italic text-center py-3">No messages yet</p>
@@ -97,6 +97,7 @@ export default function ChatPanel({ roomId, playerId, playerName, playerColorMap
           placeholder="Message…"
           maxLength={200}
           autoComplete="off"
+          autoFocus={autoFocus}
           className="flex-1 min-w-0 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-400 bg-white"
         />
         <button
