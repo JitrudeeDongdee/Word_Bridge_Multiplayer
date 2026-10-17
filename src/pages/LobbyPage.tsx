@@ -1,4 +1,4 @@
-import { Check, Link2, Lock } from 'lucide-react';
+import { ArrowLeft, Check, Link2, Lock } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { useRoomSubscription } from '../hooks/useRoomSubscription';
@@ -64,6 +64,24 @@ export default function LobbyPage() {
     }
   };
 
+  /** Leave the room (if in it) and open the main lobby. */
+  const handleMainLobby = async () => {
+    if (!roomId || !playerId || !players[playerId]) {
+      navigate('/rooms');
+      return;
+    }
+    if (playerCount === 1 && !window.confirm('You are the only player — leaving closes this room. Go to the main lobby?')) {
+      return;
+    }
+    setLeaving(true);
+    try {
+      await leaveRoom(roomId, playerId, players);
+      navigate('/rooms');
+    } catch {
+      setLeaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm('Delete this room? All players will be removed.')) return;
     setDeleting(true);
@@ -78,6 +96,13 @@ export default function LobbyPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 to-sky-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        <button
+          onClick={handleMainLobby}
+          disabled={leaving || deleting || starting}
+          className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50"
+        >
+          <ArrowLeft className="w-4 h-4" aria-hidden /> Main lobby
+        </button>
         <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6">
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Room Lobby</p>
