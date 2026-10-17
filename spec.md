@@ -133,6 +133,8 @@ Points are awarded only when the round is won (`useWinDetection`, host's client)
   only the 50-node room limit applies).
 - Breakdown saved as `room.roundBreakdown` and shown on the victory screen. Firebase drops
   empty arrays, so its arrays may be missing when read back.
+  The victory box lays every line out on one grid (icon | item · who | points, right-aligned)
+  so bridge / finisher / creative rows line up (2026-10-17).
 - Points accumulate per room across rounds (`room.scores`, rounded to 1 decimal).
 
 Ideas not done: semantic "progress" scoring; moving win detection off the host's client

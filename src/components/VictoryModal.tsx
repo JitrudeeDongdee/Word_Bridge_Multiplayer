@@ -5,6 +5,8 @@ import confetti from 'canvas-confetti';
 import type { Room } from '../types';
 import { restartGame } from '../services/roomService';
 
+const pts = (n: number) => `${n} pt${n === 1 ? '' : 's'}`;
+
 interface VictoryModalProps {
   room: Room;
   roomId: string;
@@ -106,30 +108,36 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
         <div className="flex-1 overflow-y-auto px-6 pb-2 flex flex-col gap-5">
           {/* How this round was scored */}
           {breakdown && (
-            <div className="flex flex-col gap-1.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-xs">
-              <p className="font-bold text-amber-700 flex flex-wrap items-center gap-x-1">
-                <Zap className="w-3.5 h-3.5" aria-hidden />
+            // One grid so every row lines up: icon | what (and who) | points, right-aligned
+            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-xs text-amber-700">
+              <Zap className="w-3.5 h-3.5" aria-hidden />
+              <span className="min-w-0">
                 {breakdown.intermediates}-word bridge
-                <ArrowRight className="w-3 h-3" aria-label="gives" />
-                {breakdown.pot} pts
                 {bridgeIds.length > 1 && (
-                  <span className="font-normal text-amber-600"> · {breakdown.perWord} per word</span>
+                  <span className="text-amber-600"> · {breakdown.perWord} per word</span>
                 )}
-              </p>
+              </span>
+              <span className="font-bold tabular-nums text-right">{pts(breakdown.pot)}</span>
               {breakdown.finisherId && (
-                <p className="text-amber-700 flex items-center gap-1">
+                <>
                   <Flag className="w-3.5 h-3.5" aria-hidden />
-                  <span>Finisher +{breakdown.finisherBonus}: <b>{nameOf(breakdown.finisherId)}</b></span>
-                </p>
+                  <span className="min-w-0 truncate">
+                    Finisher · <b>{nameOf(breakdown.finisherId)}</b>
+                  </span>
+                  <span className="font-bold tabular-nums text-right">+{pts(breakdown.finisherBonus)}</span>
+                </>
               )}
               {creativeIds.length > 0 && (
-                <p className="text-amber-700 flex flex-wrap items-center gap-x-1">
+                <>
                   <Sparkles className="w-3.5 h-3.5" aria-hidden />
-                  Creative link +{breakdown.creativeBonus}:{' '}
-                  <b className="uppercase">
-                    {creativeIds.map((id) => nodes?.[id]?.word ?? '?').join(', ')}
-                  </b>
-                </p>
+                  <span className="min-w-0">
+                    Creative link ·{' '}
+                    <b className="uppercase">
+                      {creativeIds.map((id) => nodes?.[id]?.word ?? '?').join(', ')}
+                    </b>
+                  </span>
+                  <span className="font-bold tabular-nums text-right">+{pts(breakdown.creativeBonus)}</span>
+                </>
               )}
             </div>
           )}
