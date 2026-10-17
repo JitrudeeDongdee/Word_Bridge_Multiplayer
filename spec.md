@@ -58,6 +58,26 @@ Still open:
 - Who owns the Cloudflare account and the Anthropic API key (set as a Worker secret by
   the owner, not committed).
 
+## Game screen layout
+- Canvas takes the full width. Players, scores and the edge score table live in a drawer
+  (`GameSidebar`), opened from the header ("👥 Players & Scores" / ☰ on mobile).
+- Bottom dock (`GamePage`), centered, max-width 36rem: add-word input (or the spectator
+  "Watching / Join now" card) + 💬 chat button. Shown only while `status === 'playing'`.
+  It follows the on-screen keyboard via `useKeyboardInset` (visualViewport).
+- Chat (`ChatDock`): icon with an unread badge (messages from others since the panel was
+  last closed; history from before the page opened counts as read). Opens as a popover on
+  desktop, a bottom sheet on mobile.
+- Vote-link confirm panel sits top-center; MiniMap top-right (desktop only); zoom controls
+  hidden on mobile (pinch zoom). `minZoom` 0.2 so both goal words fit on a phone.
+
+## Scoring (current)
+Points are only awarded when the round is won (`useWinDetection`, host's client):
+- Path = BFS shortest path from word A to word B (`findPath`); if several are equally
+  short, whichever BFS reaches first wins (depends on edge order).
+- +1 point per word on that path, to the player who added it.
+- +5 bonus if the path has exactly one intermediate word.
+- Points accumulate per room across rounds (`room.scores`); words not on the path score 0.
+
 ## Known issues
 - 📖 Dict mode definitions still come only from `api.dictionaryapi.dev`; while it is down
   they show "Definition not found." (word validation has a fallback, see below).

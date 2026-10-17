@@ -1,7 +1,5 @@
-import AddWordPanel from './AddWordPanel';
 import PlayerList from './PlayerList';
 import ScoreTable from './ScoreTable';
-import ChatPanel from './ChatPanel';
 import type { Room } from '../types';
 import { approveJoinRequest, denyJoinRequest, kickPlayer } from '../services/roomService';
 
@@ -11,8 +9,6 @@ interface GameSidebarProps {
   playerId: string;
   isOpen: boolean;
   isHost: boolean;
-  isSpectator: boolean;
-  hasJoinRequest: boolean;
   leavingLobby: boolean;
   leaving: boolean;
   copied: boolean;
@@ -22,15 +18,14 @@ interface GameSidebarProps {
   onCopyLink: () => void;
   onNewGame: () => void;
   onBackToLobby: () => void;
-  onRequestJoin: () => void;
 }
 
 export default function GameSidebar({
   room, roomId, playerId,
-  isOpen, isHost, isSpectator, hasJoinRequest,
+  isOpen, isHost,
   leavingLobby, leaving, copied,
   selectedNodeId, playerColorMap,
-  onClose, onCopyLink, onNewGame, onBackToLobby, onRequestJoin,
+  onClose, onCopyLink, onNewGame, onBackToLobby,
 }: GameSidebarProps) {
   const { wordA = '?', wordB = '?' } = room.gameState ?? {};
   const nodeCount = Object.keys(room.nodes ?? {}).length;
@@ -38,16 +33,15 @@ export default function GameSidebar({
   return (
     <aside
       className={[
-        'fixed top-0 right-0 bottom-0 z-40 w-72 bg-white border-l border-gray-200 flex flex-col overflow-hidden',
+        'fixed top-0 right-0 bottom-0 z-40 w-72 max-w-[85vw] bg-white border-l border-gray-200 shadow-xl flex flex-col overflow-hidden',
         'transform transition-transform duration-300 ease-in-out',
         isOpen ? 'translate-x-0' : 'translate-x-full',
-        'md:relative md:w-64 md:translate-x-0 md:z-auto md:top-auto md:right-auto md:bottom-auto',
       ].join(' ')}
     >
       {/* Scrollable upper content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-4 p-4">
-      {/* Mobile-only top section: word pair + host actions */}
-      <div className="md:hidden border-b border-gray-100 pb-3 flex flex-col gap-2">
+      {/* Top section: word pair + close; host actions on mobile (desktop has them in the header) */}
+      <div className="border-b border-gray-100 pb-3 flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <span className="text-sm font-bold">
             <span className="text-brand-500 uppercase">{wordA}</span>
@@ -66,7 +60,7 @@ export default function GameSidebar({
           </div>
         </div>
         {isHost && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 md:hidden">
             <button
               onClick={onNewGame}
               disabled={leavingLobby || leaving}
@@ -85,34 +79,11 @@ export default function GameSidebar({
         )}
         <button
           onClick={onCopyLink}
-          className="w-full py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
+          className="md:hidden w-full py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
         >
           <span>{copied ? '✓' : '🔗'}</span>
           <span>{copied ? 'Copied!' : 'Copy Invite Link'}</span>
         </button>
-      </div>
-
-      {/* Add Word */}
-      <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Add Word</p>
-        {isSpectator ? (
-          <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-center flex flex-col gap-2">
-            <p className="text-xs font-semibold text-yellow-700">Watching</p>
-            <p className="text-xs text-yellow-600">You'll join the next round</p>
-            {!hasJoinRequest ? (
-              <button
-                onClick={onRequestJoin}
-                className="text-xs bg-brand-500 text-white rounded-lg py-1.5 px-2 hover:bg-brand-600 font-semibold transition-colors"
-              >
-                Request to join now
-              </button>
-            ) : (
-              <p className="text-xs text-blue-600 font-medium">Waiting for host…</p>
-            )}
-          </div>
-        ) : (
-          <AddWordPanel roomId={roomId} />
-        )}
       </div>
 
       {/* Players */}
@@ -169,16 +140,6 @@ export default function GameSidebar({
       </div>
       </div>{/* end scrollable upper content */}
 
-      {/* Chat — pinned to bottom */}
-      <div className="border-t border-gray-200 p-4 flex-shrink-0">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Chat</p>
-        <ChatPanel
-          roomId={roomId}
-          playerId={playerId}
-          playerName={room.players?.[playerId]?.name ?? 'Player'}
-          playerColorMap={playerColorMap}
-        />
-      </div>
     </aside>
   );
 }

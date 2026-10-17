@@ -408,11 +408,13 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
+        // Default minZoom (0.5) can't fit the two goal words on a phone-width screen
+        minZoom={0.2}
         deleteKeyCode={null}
       >
         <Background />
-        <Controls />
-        <MiniMap className="hidden md:block" nodeColor={(n) => (n.data.isStart ? '#0ea5e9' : ((n.data.playerColor as string) ?? '#e2e8f0'))} />
+        <Controls className="!hidden md:!flex" />
+        <MiniMap position="top-right" className="hidden md:block" nodeColor={(n) => (n.data.isStart ? '#0ea5e9' : ((n.data.playerColor as string) ?? '#e2e8f0'))} />
         <FitViewCapture fitViewRef={fitViewRef} />
         <Panel position="top-left" className="flex flex-col gap-2">
           {room.status === 'playing' && (
@@ -537,7 +539,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
           )}
         </Panel>
         {linkMode && (
-          <Panel position="bottom-center" className="!mb-4">
+          <Panel position="top-center" className="!mt-3">
             <div className="bg-white border border-amber-300 rounded-xl shadow-lg px-4 py-3 w-[min(22rem,calc(100vw-2rem))] flex flex-col gap-2 text-sm">
               {linkWords.length < 2 ? (
                 <p className="text-gray-600">

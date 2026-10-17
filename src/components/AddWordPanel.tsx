@@ -277,7 +277,10 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
             ref={listRef}
             style={{
               position: 'fixed',
-              top: dropdownRect.bottom + 4,
+              // The input usually sits in the bottom dock, so open upward when in the lower half
+              ...(dropdownRect.top > window.innerHeight / 2
+                ? { bottom: window.innerHeight - dropdownRect.top + 4 }
+                : { top: dropdownRect.bottom + 4 }),
               left: dropdownRect.left,
               width: dropdownRect.width,
               zIndex: 9999,

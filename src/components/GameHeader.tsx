@@ -34,13 +34,13 @@ export default function GameHeader({
         </div>
 
         {/* Center: word pair + node count — desktop only */}
-        <div className="hidden md:flex items-center gap-3 text-sm text-gray-600">
+        <div className="hidden md:flex items-center gap-3 text-sm text-gray-600 min-w-0">
           <span>
             <span className="font-bold text-brand-500 uppercase">{wordA}</span>
             <span className="mx-2 text-gray-400">→</span>
             <span className="font-bold text-brand-500 uppercase">{wordB}</span>
           </span>
-          <span className="text-gray-400 text-xs">{nodeCount} nodes</span>
+          <span className="hidden lg:inline text-gray-400 text-xs whitespace-nowrap">{nodeCount} nodes</span>
         </div>
 
         {/* Right: actions */}
@@ -52,14 +52,14 @@ export default function GameHeader({
                 disabled={leavingLobby || leaving}
                 className="px-3 py-1 rounded-lg border border-brand-300 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50 transition-colors"
               >
-                ↺ New Game
+                ↺ <span className="hidden lg:inline">New </span>Game
               </button>
               <button
                 onClick={onBackToLobby}
                 disabled={leavingLobby || leaving}
                 className="px-3 py-1 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
               >
-                {leavingLobby ? 'Returning…' : '← Back to Lobby'}
+                {leavingLobby ? 'Returning…' : <>← <span className="hidden lg:inline">Back to </span>Lobby</>}
               </button>
             </div>
           )}
@@ -68,7 +68,7 @@ export default function GameHeader({
             className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-lg border border-gray-200 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
           >
             <span>{copied ? '✓' : '🔗'}</span>
-            <span>{copied ? 'Copied!' : 'Invite'}</span>
+            <span className="hidden lg:inline">{copied ? 'Copied!' : 'Invite'}</span>
           </button>
           <button
             onClick={onLeave}
@@ -80,10 +80,13 @@ export default function GameHeader({
           </button>
           <button
             onClick={onToggleSidebar}
-            aria-label="Toggle panel"
-            className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
+            aria-label="Players and scores"
+            className="flex items-center justify-center gap-1.5 h-9 min-w-9 md:h-auto md:px-3 md:py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
           >
-            <span className="text-lg leading-none">☰</span>
+            <span className="text-lg leading-none md:hidden">☰</span>
+            <span className="hidden md:inline text-xs font-medium whitespace-nowrap">
+              👥<span className="hidden lg:inline"> Players &amp; Scores</span>
+            </span>
           </button>
           <button
             onClick={() => fitViewRef.current?.()}

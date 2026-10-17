@@ -5,6 +5,8 @@ import { useRoomSubscription } from '../hooks/useRoomSubscription';
 import { useWinDetection } from '../hooks/useWinDetection';
 import GameCanvas from '../components/GameCanvas';
 import AddWordPanel from '../components/AddWordPanel';
+import ChatDock from '../components/ChatDock';
+import { useKeyboardInset } from '../hooks/useKeyboardInset';
 import VictoryModal from '../components/VictoryModal';
 import NewGameModal from '../components/NewGameModal';
 import JoinGameForm from '../components/JoinGameForm';
@@ -32,10 +34,10 @@ export default function GamePage() {
   const [showNewGameModal, setShowNewGameModal] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [fabOpen, setFabOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const fitViewRef = useRef<(() => void) | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const keyboardInset = useKeyboardInset();
 
   // Download the word-similarity model in the background so the first word isn't slow
   useEffect(() => {
@@ -189,42 +191,50 @@ export default function GamePage() {
             />
           )}
 
-          {/* Modal overlay — mobile only, non-spectators only */}
-          {!isSpectator && fabOpen && (
-            <div className="fixed inset-0 bg-black/40 z-40 md:hidden flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 w-full max-w-sm">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Add Word</p>
-                <AddWordPanel roomId={roomId} onSuccess={() => setFabOpen(false)} />
+          {/* Word dock: add-word input + chat, floating at the bottom of the canvas */}
+          {room.status === 'playing' && (
+            <div
+              className="fixed inset-x-0 z-30 flex justify-center px-4 pointer-events-none"
+              style={{ bottom: 16 + keyboardInset }}
+            >
+              <div className="pointer-events-auto relative w-full max-w-xl flex items-end gap-2">
+                <div className="flex-1 min-w-0 bg-white/95 backdrop-blur border border-gray-200 rounded-2xl shadow-lg px-3 py-2">
+                  {isSpectator ? (
+                    <div className="flex items-center justify-between gap-2 min-h-10">
+                      <p className="text-xs text-yellow-700">
+                        <b>Watching</b> — you'll join the next round
+                      </p>
+                      {!hasJoinRequest ? (
+                        <button
+                          onClick={handleRequestJoin}
+                          className="flex-shrink-0 text-xs bg-brand-500 text-white rounded-lg py-1.5 px-3 hover:bg-brand-600 font-semibold transition-colors"
+                        >
+                          Join now
+                        </button>
+                      ) : (
+                        <p className="flex-shrink-0 text-xs text-blue-600 font-medium">Waiting for host…</p>
+                      )}
+                    </div>
+                  ) : (
+                    <AddWordPanel roomId={roomId} />
+                  )}
+                </div>
+                <ChatDock
+                  roomId={roomId}
+                  playerId={playerId}
+                  playerName={room.players?.[playerId]?.name ?? 'Player'}
+                  playerColorMap={playerColorMap}
+                  keyboardInset={keyboardInset}
+                />
               </div>
             </div>
           )}
-
-          {/* FAB button — mobile only, non-spectators only */}
-          {!isSpectator && (
-            <button
-              onClick={() => setFabOpen((v) => !v)}
-              aria-label="Add word"
-              className={[
-                'fixed bottom-6 right-6 z-20 md:hidden w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white transition-all duration-200 active:scale-95',
-                fabOpen ? 'bg-gray-400 hover:bg-gray-500' : 'bg-brand-500 hover:bg-brand-600',
-              ].join(' ')}
-            >
-              <span
-                className={[
-                  'text-3xl font-light leading-none inline-block transition-transform duration-200',
-                  fabOpen ? 'rotate-45' : '',
-                ].join(' ')}
-              >
-                +
-              </span>
-            </button>
-          )}
         </main>
 
-        {/* Mobile backdrop */}
+        {/* Drawer backdrop */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/40 z-30 md:hidden"
+            className="fixed inset-0 bg-black/30 z-30"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -235,8 +245,6 @@ export default function GamePage() {
           playerId={playerId}
           isOpen={sidebarOpen}
           isHost={isHost}
-          isSpectator={isSpectator}
-          hasJoinRequest={hasJoinRequest}
           leavingLobby={leavingLobby}
           leaving={leaving}
           copied={copied}
@@ -246,7 +254,6 @@ export default function GamePage() {
           onCopyLink={handleCopyLink}
           onNewGame={() => { setShowNewGameModal(true); setSidebarOpen(false); }}
           onBackToLobby={handleBackToLobby}
-          onRequestJoin={handleRequestJoin}
         />
       </div>
     </div>
