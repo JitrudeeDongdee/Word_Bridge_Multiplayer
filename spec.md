@@ -73,7 +73,8 @@ Still open:
   summary (name, host, player count, status, hasPassword, lastActiveAt) kept in sync by
   `syncRoomIndex` after every change to a room's players / status / name (create, join,
   leave, kick, start, restart, back to lobby, win; delete removes it). Waiting rooms first,
-  then by recent activity; empty or >2h idle rooms hidden. `cleanOldRooms` also removes
+  then by recent activity; empty or >2h idle rooms hidden. A search box filters by room
+  name, host name or room code (`filterRooms`, case-insensitive). `cleanOldRooms` also removes
   index entries of deleted or missing rooms. Rooms in progress can be joined as a spectator
   (including between rounds).
 - **Room lobby → main lobby**: "Main lobby" (top-left of the room lobby) leaves the room —

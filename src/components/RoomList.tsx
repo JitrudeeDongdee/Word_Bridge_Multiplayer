@@ -1,6 +1,6 @@
-import { Lock, Users } from 'lucide-react';
+import { Lock, Search, Users, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { subscribeRoomIndex } from '../services/roomIndexService';
+import { filterRooms, subscribeRoomIndex } from '../services/roomIndexService';
 import type { RoomIndexEntry } from '../types';
 
 const STATUS_LABEL: Record<RoomIndexEntry['status'], { text: string; className: string }> = {
@@ -17,6 +17,8 @@ interface RoomListProps {
 export default function RoomList({ onPick }: RoomListProps) {
   const [rooms, setRooms] = useState<RoomIndexEntry[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [query, setQuery] = useState('');
+  const shown = rooms ? filterRooms(rooms, query) : null;
 
   useEffect(
     () =>
@@ -34,8 +36,36 @@ export default function RoomList({ onPick }: RoomListProps) {
     <div className="bg-white rounded-2xl shadow-xl p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Rooms</h2>
-        {rooms && <span className="text-xs text-gray-400">{rooms.length} open</span>}
+        {rooms && (
+          <span className="text-xs text-gray-400">
+            {query.trim() && shown ? `${shown.length} of ${rooms.length}` : rooms.length} open
+          </span>
+        )}
       </div>
+
+      <label className="relative">
+        <span className="sr-only">Search rooms</span>
+        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by room name, host or code"
+          className="w-full pl-9 pr-9 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&::-webkit-search-cancel-button]:hidden"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-4 h-4" aria-hidden />
+          </button>
+        )}
+      </label>
 
       {failed && <p className="text-xs text-red-500">Couldn't load the room list.</p>}
       {!failed && rooms === null && <p className="text-xs text-gray-400">Loading rooms…</p>}
@@ -43,9 +73,13 @@ export default function RoomList({ onPick }: RoomListProps) {
         <p className="text-xs text-gray-400">No rooms right now — create one and invite friends.</p>
       )}
 
-      {rooms && rooms.length > 0 && (
-        <ul className="flex flex-col gap-2 max-h-80 overflow-y-auto -mx-1 px-1">
-          {rooms.map((r) => {
+      {rooms && rooms.length > 0 && shown?.length === 0 && (
+        <p className="text-xs text-gray-400">No rooms match “{query.trim()}”.</p>
+      )}
+
+      {shown && shown.length > 0 && (
+        <ul className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto -mx-1 px-1">
+          {shown.map((r) => {
             const status = STATUS_LABEL[r.status];
             return (
               <li key={r.id}>

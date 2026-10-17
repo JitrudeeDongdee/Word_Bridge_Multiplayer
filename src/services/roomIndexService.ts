@@ -86,3 +86,12 @@ export function joinErrorMessage(reason: 'not_found' | 'password_required' | 'wr
       return 'Wrong password.';
   }
 }
+
+/** Rooms whose name, host name or room code contains the query (case-insensitive). */
+export function filterRooms(entries: RoomIndexEntry[], query: string): RoomIndexEntry[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return entries;
+  return entries.filter((e) =>
+    [e.name, e.hostName, e.id].some((field) => field.toLowerCase().includes(q)),
+  );
+}
