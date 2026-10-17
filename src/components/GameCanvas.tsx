@@ -424,7 +424,8 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
         <MiniMap position="top-right" className="hidden md:block" nodeColor={(n) => (n.data.isStart ? '#0ea5e9' : ((n.data.playerColor as string) ?? '#e2e8f0'))} />
         <FitViewCapture fitViewRef={fitViewRef} />
         <Panel position="top-left" className="flex flex-col gap-2">
-          {room.status === 'playing' && (
+          {/* Also after the round ends, to review the board and teach links the game missed */}
+          {(room.status === 'playing' || room.status === 'won') && (
             <button
               onClick={() => {
                 setLinkMode((m) => !m);

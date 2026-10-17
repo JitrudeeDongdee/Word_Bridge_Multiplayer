@@ -219,7 +219,11 @@ export function useGameActions(roomId: string) {
         error, count: 0, threshold: PAIR_VOTE_THRESHOLD, linked: false,
       });
       if (!room || !playerId || !room.gameState) return fail('Not connected to a room.');
-      if (room.status !== 'playing') return fail('Voting is only open during a game.');
+      // Also open after a round ends, so players can review the board and teach missed links.
+      // A link added then doesn't change that round's score (it was already tallied).
+      if (room.status !== 'playing' && room.status !== 'won') {
+        return fail('Voting is only open during a game or right after it.');
+      }
 
       const a = room.nodes?.[nodeAId];
       const b = room.nodes?.[nodeBId];
