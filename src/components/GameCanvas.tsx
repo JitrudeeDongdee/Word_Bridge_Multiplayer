@@ -27,6 +27,7 @@ import { useCustomWordsSubscription } from '../hooks/useCustomWordsSubscription'
 import { getPairVoteCount, pairKey, PAIR_VOTE_THRESHOLD } from '../services/pairVotesService';
 import { lookupDefinition } from '../services/dictionary';
 import DictImage from './DictImage';
+import SpeakButton from './SpeakButton';
 
 const nodeTypes = { wordNode: WordNode };
 
@@ -535,7 +536,10 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
                     title="Remove"
                     aria-label="Remove"
                   ><X className="w-3.5 h-3.5" aria-hidden /></button>
-                  <div className="font-semibold text-gray-800 capitalize text-sm pr-4">{card.word}</div>
+                  <div className="font-semibold text-gray-800 capitalize text-sm pr-4 flex items-center gap-1">
+                    {card.word}
+                    <SpeakButton word={card.word} />
+                  </div>
                   {dictImages && <DictImage word={card.word} />}
                   {card.partOfSpeech && (
                     <div className="text-xs text-brand-500 italic">{card.partOfSpeech}</div>
