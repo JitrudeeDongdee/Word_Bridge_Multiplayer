@@ -4,6 +4,7 @@ import { useGameStore } from '../store/useGameStore';
 import { useRoomSubscription } from '../hooks/useRoomSubscription';
 import { startGame, deleteRoom, kickPlayer, leaveRoom } from '../services/roomService';
 import PlayerList from '../components/PlayerList';
+import RoomSettings from '../components/RoomSettings';
 import { useState } from 'react';
 import { defaultRoomName } from '../services/roomIndexService';
 
@@ -146,6 +147,8 @@ export default function LobbyPage() {
               onKick={isHost ? handleKick : undefined}
             />
           </div>
+
+          {isHost && <RoomSettings room={room} roomId={roomId} />}
 
           {isHost ? (
             <div className="flex flex-col gap-2">

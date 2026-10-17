@@ -160,6 +160,36 @@ export async function createRoom(
   return { room, playerId };
 }
 
+export interface RoomSettingsUpdate {
+  /** New display name; empty string resets to the default "<host>'s room" */
+  name?: string;
+  /** New join password; null removes the lock. Omit to leave the password as is. */
+  password?: string | null;
+}
+
+/**
+ * Host-only room settings (the UI shows them to the host only). No old password is
+ * needed, so a host who forgot it can set a new one or open the room. Players already
+ * in the room stay; the password only applies to new joiners.
+ */
+export async function updateRoomSettings(roomId: string, settings: RoomSettingsUpdate): Promise<void> {
+  const updates: Record<string, unknown> = { lastActiveAt: Date.now() };
+  if (settings.name !== undefined) {
+    const name = settings.name.trim().slice(0, 30);
+    updates.name = name || null;
+  }
+  if (settings.password === null || settings.password === '') {
+    updates.passwordHash = null;
+    updates.passwordSalt = null;
+  } else if (settings.password !== undefined) {
+    const salt = newPasswordSalt();
+    updates.passwordSalt = salt;
+    updates.passwordHash = await hashRoomPassword(settings.password, salt);
+  }
+  await update(ref(db, `rooms/${roomId}`), updates);
+  await syncRoomIndex(roomId);
+}
+
 export type JoinRoomResult =
   | { ok: true; room: Room; playerId: string }
   | { ok: false; reason: 'not_found' | 'password_required' | 'wrong_password' };

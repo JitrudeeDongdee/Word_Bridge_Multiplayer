@@ -108,3 +108,32 @@ describe('joinRoom', () => {
     expect(await joinRoom('NOPE00', 'QuickOwl')).toEqual({ ok: false, reason: 'not_found' });
   });
 });
+
+describe('updateRoomSettings', () => {
+  beforeEach(() => { for (const k of Object.keys(store)) delete store[k]; });
+
+  it('lets the host replace a forgotten password without the old one', async () => {
+    const { updateRoomSettings, joinRoom } = await import('../services/roomService');
+    const salt = newPasswordSalt();
+    store['rooms/ABC123'] = room({ passwordSalt: salt, passwordHash: await hashRoomPassword('forgotten', salt) });
+
+    await updateRoomSettings('ABC123', { password: 'fresh' });
+
+    expect(await joinRoom('ABC123', 'P1', undefined, 'forgotten')).toEqual({ ok: false, reason: 'wrong_password' });
+    expect((await joinRoom('ABC123', 'P2', undefined, 'fresh')).ok).toBe(true);
+    expect(JSON.stringify(store['rooms/ABC123'])).not.toContain('fresh');
+  });
+
+  it('removes the lock and renames the room (empty name = default)', async () => {
+    const { updateRoomSettings, joinRoom } = await import('../services/roomService');
+    const salt = newPasswordSalt();
+    store['rooms/ABC123'] = room({ name: 'Old', passwordSalt: salt, passwordHash: await hashRoomPassword('x', salt) });
+
+    await updateRoomSettings('ABC123', { password: null, name: '  Friday crew  ' });
+    expect((store['roomIndex/ABC123'] as RoomIndexEntry)).toMatchObject({ name: 'Friday crew', hasPassword: false });
+    expect((await joinRoom('ABC123', 'P1')).ok).toBe(true);
+
+    await updateRoomSettings('ABC123', { name: '' });
+    expect((store['roomIndex/ABC123'] as RoomIndexEntry).name).toBe("BoldFox's room");
+  });
+});
