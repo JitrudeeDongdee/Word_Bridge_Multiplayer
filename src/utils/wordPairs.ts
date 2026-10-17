@@ -1,5 +1,9 @@
-// 90 curated word pairs across 6 categories for maximum variety
-export type PairCategory = 'contrast' | 'nature' | 'journey' | 'abstract' | 'science' | 'story';
+// Curated start pairs across 13 categories. The first 90 were hand-picked; the rest were
+// hand-written and kept only if their embedding cosine is 0.15–0.45 (not trivially close,
+// not unrelated) with no word used more than 3 times (calibrated 2026-10-17).
+export type PairCategory =
+  | 'contrast' | 'nature' | 'journey' | 'abstract' | 'science' | 'story'
+  | 'animals' | 'food' | 'city' | 'home' | 'art' | 'play' | 'work';
 
 interface WordPairEntry {
   pair: [string, string];
@@ -108,56 +112,380 @@ const WORD_PAIRS_DATA: WordPairEntry[] = [
   { pair: ['riddle',      'answer'],    category: 'story' },
   { pair: ['oracle',      'skeptic'],   category: 'story' },
   { pair: ['enchantment', 'logic'],     category: 'story' },
+
+  // ── contrast (filtered: embedding cosine 0.15–0.45) ────────────────────────────
+  { pair: ['whisper',  'thunder'], category: 'contrast' },
+  { pair: ['feather',  'anvil'], category: 'contrast' },
+  { pair: ['candle',   'sun'], category: 'contrast' },
+  { pair: ['pebble',   'boulder'], category: 'contrast' },
+  { pair: ['sugar',    'vinegar'], category: 'contrast' },
+  { pair: ['ice',      'lava'], category: 'contrast' },
+  { pair: ['cradle',   'grave'], category: 'contrast' },
+  { pair: ['sprint',   'marathon'], category: 'contrast' },
+  { pair: ['crumb',    'banquet'], category: 'contrast' },
+  { pair: ['spark',    'inferno'], category: 'contrast' },
+  { pair: ['drizzle',  'flood'], category: 'contrast' },
+  { pair: ['hut',      'palace'], category: 'contrast' },
+  { pair: ['pawn',     'queen'], category: 'contrast' },
+  { pair: ['cotton',   'steel'], category: 'contrast' },
+  { pair: ['seed',     'forest'], category: 'contrast' },
+  { pair: ['toddler',  'elder'], category: 'contrast' },
+  { pair: ['beggar',   'emperor'], category: 'contrast' },
+  { pair: ['calm',     'storm'], category: 'contrast' },
+  { pair: ['empty',    'crowded'], category: 'contrast' },
+  { pair: ['cage',     'sky'], category: 'contrast' },
+  { pair: ['mask',     'mirror'], category: 'contrast' },
+  { pair: ['stranger', 'sibling'], category: 'contrast' },
+  { pair: ['gift',     'theft'], category: 'contrast' },
+  { pair: ['needle',   'sword'], category: 'contrast' },
+  { pair: ['village',  'metropolis'], category: 'contrast' },
+  { pair: ['sweet',    'bitter'], category: 'contrast' },
+  { pair: ['loud',     'hush'], category: 'contrast' },
+  { pair: ['ripe',     'rotten'], category: 'contrast' },
+  { pair: ['quiet',    'riot'], category: 'contrast' },
+  { pair: ['bud',      'blossom'], category: 'contrast' },
+
+  // ── nature (filtered: embedding cosine 0.15–0.45) ──────────────────────────────
+  { pair: ['moss',       'meteor'], category: 'nature' },
+  { pair: ['pine',       'coconut'], category: 'nature' },
+  { pair: ['pond',       'canyon'], category: 'nature' },
+  { pair: ['fog',        'wildfire'], category: 'nature' },
+  { pair: ['pollen',     'hail'], category: 'nature' },
+  { pair: ['thorn',      'petal'], category: 'nature' },
+  { pair: ['willow',     'lava'], category: 'nature' },
+  { pair: ['nest',       'nebula'], category: 'nature' },
+  { pair: ['mushroom',   'moon'], category: 'nature' },
+  { pair: ['comet',      'firefly'], category: 'nature' },
+  { pair: ['geyser',     'snowflake'], category: 'nature' },
+  { pair: ['dandelion',  'hurricane'], category: 'nature' },
+  { pair: ['mangrove',   'tundra'], category: 'nature' },
+  { pair: ['quartz',     'clover'], category: 'nature' },
+  { pair: ['marsh',      'mesa'], category: 'nature' },
+  { pair: ['icicle',     'ember'], category: 'nature' },
+  { pair: ['lagoon',     'blizzard'], category: 'nature' },
+  { pair: ['sapling',    'stump'], category: 'nature' },
+  { pair: ['honey',      'venom'], category: 'nature' },
+  { pair: ['cocoon',     'eclipse'], category: 'nature' },
+  { pair: ['peat',       'pearl'], category: 'nature' },
+  { pair: ['boulder',    'breeze'], category: 'nature' },
+  { pair: ['orchid',     'glacier'], category: 'nature' },
+  { pair: ['beehive',    'lighthouse'], category: 'nature' },
+  { pair: ['driftwood',  'sapphire'], category: 'nature' },
+  { pair: ['sand',       'snow'], category: 'nature' },
+  { pair: ['monsoon',    'oasis'], category: 'nature' },
+  { pair: ['maple',      'coral'], category: 'nature' },
+  { pair: ['ivy',        'ruin'], category: 'nature' },
+  { pair: ['owl',        'sunflower'], category: 'nature' },
+  { pair: ['tadpole',    'thunderstorm'], category: 'nature' },
+  { pair: ['rock',       'river'], category: 'nature' },
+  { pair: ['earthquake', 'garden'], category: 'nature' },
+  { pair: ['mist',       'mountain'], category: 'nature' },
+  { pair: ['root',       'cloud'], category: 'nature' },
+  { pair: ['wave',       'dune'], category: 'nature' },
+  { pair: ['lichen',     'lava'], category: 'nature' },
+  { pair: ['bark',       'feather'], category: 'nature' },
+  { pair: ['creek',      'crater'], category: 'nature' },
+  { pair: ['seashell',   'sky'], category: 'nature' },
+  { pair: ['frost',      'fire'], category: 'nature' },
+
+  // ── animals (filtered: embedding cosine 0.15–0.45) ─────────────────────────────
+  { pair: ['octopus',   'eagle'], category: 'animals' },
+  { pair: ['snail',     'cheetah'], category: 'animals' },
+  { pair: ['penguin',   'camel'], category: 'animals' },
+  { pair: ['bat',       'hummingbird'], category: 'animals' },
+  { pair: ['tortoise',  'hare'], category: 'animals' },
+  { pair: ['lion',      'mouse'], category: 'animals' },
+  { pair: ['parrot',    'owl'], category: 'animals' },
+  { pair: ['jellyfish', 'rhino'], category: 'animals' },
+  { pair: ['beetle',    'whale'], category: 'animals' },
+  { pair: ['fox',       'hen'], category: 'animals' },
+  { pair: ['crow',      'swan'], category: 'animals' },
+  { pair: ['moth',      'lantern'], category: 'animals' },
+  { pair: ['goat',      'mountain'], category: 'animals' },
+  { pair: ['frog',      'prince'], category: 'animals' },
+  { pair: ['horse',     'bicycle'], category: 'animals' },
+  { pair: ['cat',       'laser'], category: 'animals' },
+  { pair: ['salmon',    'grizzly'], category: 'animals' },
+  { pair: ['crab',      'castle'], category: 'animals' },
+  { pair: ['flamingo',  'iceberg'], category: 'animals' },
+  { pair: ['squirrel',  'winter'], category: 'animals' },
+  { pair: ['gorilla',   'banana'], category: 'animals' },
+  { pair: ['koala',     'eucalyptus'], category: 'animals' },
+  { pair: ['otter',     'river'], category: 'animals' },
+  { pair: ['raven',     'riddle'], category: 'animals' },
+  { pair: ['peacock',   'mirror'], category: 'animals' },
+  { pair: ['camel',     'needle'], category: 'animals' },
+  { pair: ['lobster',   'crown'], category: 'animals' },
+  { pair: ['sloth',     'rocket'], category: 'animals' },
+  { pair: ['firefly',   'city'], category: 'animals' },
+  { pair: ['wolf',      'moon'], category: 'animals' },
+  { pair: ['pigeon',    'statue'], category: 'animals' },
+  { pair: ['yak',       'tea'], category: 'animals' },
+  { pair: ['seal',      'circus'], category: 'animals' },
+  { pair: ['termite',   'tower'], category: 'animals' },
+  { pair: ['mosquito',  'vampire'], category: 'animals' },
+  { pair: ['ostrich',   'sand'], category: 'animals' },
+  { pair: ['ladybug',   'dragon'], category: 'animals' },
+
+  // ── food (filtered: embedding cosine 0.15–0.45) ────────────────────────────────
+  { pair: ['bread',   'brick'], category: 'food' },
+  { pair: ['honey',   'sting'], category: 'food' },
+  { pair: ['lemon',   'sunshine'], category: 'food' },
+  { pair: ['rice',    'wedding'], category: 'food' },
+  { pair: ['apple',   'gravity'], category: 'food' },
+  { pair: ['coffee',  'dream'], category: 'food' },
+  { pair: ['onion',   'tears'], category: 'food' },
+  { pair: ['pumpkin', 'carriage'], category: 'food' },
+  { pair: ['toast',   'bride'], category: 'food' },
+  { pair: ['pickle',  'time'], category: 'food' },
+  { pair: ['soup',    'winter'], category: 'food' },
+  { pair: ['cake',    'candle'], category: 'food' },
+  { pair: ['popcorn', 'cinema'], category: 'food' },
+  { pair: ['cheese',  'moon'], category: 'food' },
+  { pair: ['garlic',  'vampire'], category: 'food' },
+  { pair: ['egg',     'universe'], category: 'food' },
+  { pair: ['jam',     'traffic'], category: 'food' },
+  { pair: ['butter',  'sunset'], category: 'food' },
+  { pair: ['mint',    'frost'], category: 'food' },
+  { pair: ['tea',     'storm'], category: 'food' },
+  { pair: ['pie',     'sky'], category: 'food' },
+  { pair: ['bean',    'giant'], category: 'food' },
+  { pair: ['olive',   'peace'], category: 'food' },
+  { pair: ['dough',   'clay'], category: 'food' },
+  { pair: ['milk',    'galaxy'], category: 'food' },
+  { pair: ['waffle',  'grid'], category: 'food' },
+  { pair: ['pepper',  'sneeze'], category: 'food' },
+  { pair: ['candy',   'dentist'], category: 'food' },
+  { pair: ['pretzel', 'knot'], category: 'food' },
+  { pair: ['pasta',   'tower'], category: 'food' },
+  { pair: ['melon',   'drum'], category: 'food' },
+  { pair: ['biscuit', 'fortress'], category: 'food' },
+  { pair: ['mustard', 'sunflower'], category: 'food' },
+  { pair: ['yogurt',  'cloud'], category: 'food' },
+  { pair: ['vinegar', 'battle'], category: 'food' },
+  { pair: ['spice',   'journey'], category: 'food' },
+
+  // ── city (filtered: embedding cosine 0.15–0.45) ────────────────────────────────
+  { pair: ['subway',     'cave'], category: 'city' },
+  { pair: ['skyscraper', 'tree'], category: 'city' },
+  { pair: ['bakery',     'factory'], category: 'city' },
+  { pair: ['library',    'ocean'], category: 'city' },
+  { pair: ['rooftop',    'garden'], category: 'city' },
+  { pair: ['bus',        'whale'], category: 'city' },
+  { pair: ['market',     'jungle'], category: 'city' },
+  { pair: ['statue',     'ghost'], category: 'city' },
+  { pair: ['bridge',     'rainbow'], category: 'city' },
+  { pair: ['stadium',    'volcano'], category: 'city' },
+  { pair: ['parking',    'desert'], category: 'city' },
+  { pair: ['museum',     'attic'], category: 'city' },
+  { pair: ['tower',      'needle'], category: 'city' },
+  { pair: ['fountain',   'geyser'], category: 'city' },
+  { pair: ['tunnel',     'burrow'], category: 'city' },
+  { pair: ['lamp',       'firefly'], category: 'city' },
+  { pair: ['plaza',      'lake'], category: 'city' },
+  { pair: ['graffiti',   'fossil'], category: 'city' },
+  { pair: ['crane',      'giraffe'], category: 'city' },
+  { pair: ['sewer',      'vein'], category: 'city' },
+  { pair: ['chimney',    'volcano'], category: 'city' },
+  { pair: ['billboard',  'scroll'], category: 'city' },
+  { pair: ['taxi',       'chariot'], category: 'city' },
+  { pair: ['clinic',     'temple'], category: 'city' },
+  { pair: ['mall',       'bazaar'], category: 'city' },
+  { pair: ['hotel',      'nest'], category: 'city' },
+  { pair: ['highway',    'artery'], category: 'city' },
+  { pair: ['prison',     'zoo'], category: 'city' },
+  { pair: ['garage',     'stable'], category: 'city' },
+  { pair: ['window',     'eye'], category: 'city' },
+  { pair: ['siren',      'song'], category: 'city' },
+  { pair: ['bench',      'throne'], category: 'city' },
+  { pair: ['newsstand',  'oracle'], category: 'city' },
+  { pair: ['ferry',      'ark'], category: 'city' },
+  { pair: ['crosswalk',  'piano'], category: 'city' },
+  { pair: ['pharmacy',   'potion'], category: 'city' },
+  { pair: ['laundry',    'waterfall'], category: 'city' },
+  { pair: ['bank',       'vault'], category: 'city' },
+  { pair: ['cafe',       'campfire'], category: 'city' },
+  { pair: ['parade',     'flood'], category: 'city' },
+
+  // ── home (filtered: embedding cosine 0.15–0.45) ────────────────────────────────
+  { pair: ['pillow',    'cloud'], category: 'home' },
+  { pair: ['mirror',    'lake'], category: 'home' },
+  { pair: ['blanket',   'snow'], category: 'home' },
+  { pair: ['clock',     'heart'], category: 'home' },
+  { pair: ['door',      'mouth'], category: 'home' },
+  { pair: ['broom',     'witch'], category: 'home' },
+  { pair: ['candle',    'star'], category: 'home' },
+  { pair: ['sofa',      'boat'], category: 'home' },
+  { pair: ['oven',      'desert'], category: 'home' },
+  { pair: ['fridge',    'winter'], category: 'home' },
+  { pair: ['sink',      'ocean'], category: 'home' },
+  { pair: ['drawer',    'tomb'], category: 'home' },
+  { pair: ['curtain',   'stage'], category: 'home' },
+  { pair: ['attic',     'memory'], category: 'home' },
+  { pair: ['wallpaper', 'forest'], category: 'home' },
+  { pair: ['rug',       'meadow'], category: 'home' },
+  { pair: ['fork',      'trident'], category: 'home' },
+  { pair: ['teapot',    'genie'], category: 'home' },
+  { pair: ['umbrella',  'mushroom'], category: 'home' },
+  { pair: ['mailbox',   'bird'], category: 'home' },
+  { pair: ['vacuum',    'tornado'], category: 'home' },
+  { pair: ['faucet',    'spring'], category: 'home' },
+  { pair: ['bucket',    'well'], category: 'home' },
+  { pair: ['wardrobe',  'portal'], category: 'home' },
+  { pair: ['toaster',   'rocket'], category: 'home' },
+  { pair: ['ladder',    'vine'], category: 'home' },
+  { pair: ['shelf',     'cliff'], category: 'home' },
+  { pair: ['alarm',     'rooster'], category: 'home' },
+  { pair: ['fan',       'wind'], category: 'home' },
+  { pair: ['suitcase',  'turtle'], category: 'home' },
+  { pair: ['thread',    'spider'], category: 'home' },
+  { pair: ['soap',      'bubble'], category: 'home' },
+
+  // ── art (filtered: embedding cosine 0.15–0.45) ─────────────────────────────────
+  { pair: ['drum',      'heartbeat'], category: 'art' },
+  { pair: ['poem',      'bridge'], category: 'art' },
+  { pair: ['sculpture', 'ice'], category: 'art' },
+  { pair: ['dance',     'fire'], category: 'art' },
+  { pair: ['opera',     'thunder'], category: 'art' },
+  { pair: ['flute',     'wind'], category: 'art' },
+  { pair: ['piano',     'rain'], category: 'art' },
+  { pair: ['ink',       'night'], category: 'art' },
+  { pair: ['painting',  'window'], category: 'art' },
+  { pair: ['ballet',    'feather'], category: 'art' },
+  { pair: ['jazz',      'traffic'], category: 'art' },
+  { pair: ['melody',    'thread'], category: 'art' },
+  { pair: ['puppet',    'king'], category: 'art' },
+  { pair: ['novel',     'maze'], category: 'art' },
+  { pair: ['comedy',    'funeral'], category: 'art' },
+  { pair: ['statue',    'dancer'], category: 'art' },
+  { pair: ['sketch',    'ghost'], category: 'art' },
+  { pair: ['lullaby',   'storm'], category: 'art' },
+  { pair: ['trumpet',   'dawn'], category: 'art' },
+  { pair: ['harp',      'waterfall'], category: 'art' },
+  { pair: ['film',      'dream'], category: 'art' },
+  { pair: ['rhythm',    'tide'], category: 'art' },
+  { pair: ['costume',   'skin'], category: 'art' },
+  { pair: ['orchestra', 'hive'], category: 'art' },
+  { pair: ['solo',      'crowd'], category: 'art' },
+  { pair: ['script',    'destiny'], category: 'art' },
+  { pair: ['stage',     'battlefield'], category: 'art' },
+  { pair: ['clay',      'memory'], category: 'art' },
+  { pair: ['whistle',   'train'], category: 'art' },
+  { pair: ['echo',      'canyon'], category: 'art' },
+  { pair: ['poster',    'legend'], category: 'art' },
+  { pair: ['chalk',     'rain'], category: 'art' },
+  { pair: ['crayon',    'rainbow'], category: 'art' },
+  { pair: ['tattoo',    'map'], category: 'art' },
+  { pair: ['sonnet',    'sword'], category: 'art' },
+  { pair: ['applause',  'rain'], category: 'art' },
+
+  // ── play (filtered: embedding cosine 0.15–0.45) ────────────────────────────────
+  { pair: ['chess',      'war'], category: 'play' },
+  { pair: ['kite',       'bird'], category: 'play' },
+  { pair: ['marble',     'planet'], category: 'play' },
+  { pair: ['puzzle',     'heart'], category: 'play' },
+  { pair: ['dice',       'destiny'], category: 'play' },
+  { pair: ['sandcastle', 'empire'], category: 'play' },
+  { pair: ['trophy',     'tear'], category: 'play' },
+  { pair: ['whistle',    'silence'], category: 'play' },
+  { pair: ['goal',       'horizon'], category: 'play' },
+  { pair: ['tent',       'castle'], category: 'play' },
+  { pair: ['magnet',     'friendship'], category: 'play' },
+  { pair: ['balloon',    'heart'], category: 'play' },
+  { pair: ['card',       'kingdom'], category: 'play' },
+  { pair: ['slide',      'waterfall'], category: 'play' },
+  { pair: ['ticket',     'journey'], category: 'play' },
+  { pair: ['medal',      'scar'], category: 'play' },
+  { pair: ['referee',    'judge'], category: 'play' },
+  { pair: ['helmet',     'shell'], category: 'play' },
+  { pair: ['jersey',     'flag'], category: 'play' },
+  { pair: ['bowling',    'thunder'], category: 'play' },
+  { pair: ['tag',        'shadow'], category: 'play' },
+  { pair: ['bicycle',    'wing'], category: 'play' },
+  { pair: ['lottery',    'fate'], category: 'play' },
+  { pair: ['scoreboard', 'stars'], category: 'play' },
+  { pair: ['marathon',   'pilgrimage'], category: 'play' },
+  { pair: ['fishing',    'patience'], category: 'play' },
+  { pair: ['picnic',     'feast'], category: 'play' },
+  { pair: ['camping',    'exile'], category: 'play' },
+  { pair: ['snowball',   'avalanche'], category: 'play' },
+  { pair: ['archery',    'focus'], category: 'play' },
+  { pair: ['juggler',    'planet'], category: 'play' },
+
+  // ── work (filtered: embedding cosine 0.15–0.45) ────────────────────────────────
+  { pair: ['shovel',     'treasure'], category: 'work' },
+  { pair: ['ladder',     'ambition'], category: 'work' },
+  { pair: ['rope',       'trust'], category: 'work' },
+  { pair: ['nail',       'promise'], category: 'work' },
+  { pair: ['gear',       'planet'], category: 'work' },
+  { pair: ['wrench',     'key'], category: 'work' },
+  { pair: ['pen',        'sword'], category: 'work' },
+  { pair: ['ink',        'blood'], category: 'work' },
+  { pair: ['factory',    'hive'], category: 'work' },
+  { pair: ['office',     'aquarium'], category: 'work' },
+  { pair: ['desk',       'island'], category: 'work' },
+  { pair: ['paper',      'tree'], category: 'work' },
+  { pair: ['printer',    'tree'], category: 'work' },
+  { pair: ['laptop',     'window'], category: 'work' },
+  { pair: ['phone',      'telepathy'], category: 'work' },
+  { pair: ['email',      'pigeon'], category: 'work' },
+  { pair: ['anchor',     'doubt'], category: 'work' },
+  { pair: ['bulldozer',  'elephant'], category: 'work' },
+  { pair: ['scaffold',   'skeleton'], category: 'work' },
+  { pair: ['wire',       'nerve'], category: 'work' },
+  { pair: ['furnace',    'sun'], category: 'work' },
+  { pair: ['sail',       'wing'], category: 'work' },
+  { pair: ['harvest',    'payday'], category: 'work' },
+  { pair: ['lighthouse', 'teacher'], category: 'work' },
+  { pair: ['nurse',      'angel'], category: 'work' },
+  { pair: ['farmer',     'painter'], category: 'work' },
+  { pair: ['miner',      'astronaut'], category: 'work' },
+  { pair: ['baker',      'alchemist'], category: 'work' },
+  { pair: ['sailor',     'poet'], category: 'work' },
+  { pair: ['pilot',      'eagle'], category: 'work' },
+  { pair: ['chef',       'chemist'], category: 'work' },
+  { pair: ['judge',      'scale'], category: 'work' },
 ];
 
 // Legacy export used by existing code paths that just want the raw pairs
 export const WORD_PAIRS: [string, string][] = WORD_PAIRS_DATA.map((e) => e.pair);
 
+/** Rounds within which a start word is not reused, even in a different pair. */
+const RECENT_WORD_ROUNDS = 10;
+
 /**
- * Picks a word pair that avoids recently-used pairs and recently-used categories.
+ * Picks a start pair from the curated list, avoiding recently used pairs, words and
+ * categories. Player-typed words (globalCustomWords) are deliberately not used: that pool
+ * is small, unmoderated and dominated by whatever people typed, so start words repeated.
  * @param usedPairs  History of used pairs stored as "wordA/wordB" strings (oldest → newest).
  */
-export function pickWordPair(usedPairs: string[] = [], customWords?: string[]): [string, string] {
+export function pickWordPair(usedPairs: string[] = []): [string, string] {
   const usedSet = new Set(usedPairs);
+  const isUsed = (e: WordPairEntry) => usedSet.has(`${e.pair[0]}/${e.pair[1]}`);
 
-  // Determine categories used in the last 3 rounds so we can rotate away from them
+  // Categories used in the last 3 rounds, so we rotate away from them
   const recentCategories = new Set(
     usedPairs
       .slice(-3)
       .map((p) => WORD_PAIRS_DATA.find((e) => `${e.pair[0]}/${e.pair[1]}` === p)?.category)
       .filter((c): c is PairCategory => c !== undefined),
   );
+  // Individual words from recent rounds (e.g. "feather" shouldn't come back in a new pair)
+  const recentWords = new Set(usedPairs.slice(-RECENT_WORD_ROUNDS).flatMap((p) => p.split('/')));
+  const hasRecentWord = (e: WordPairEntry) =>
+    recentWords.has(e.pair[0]) || recentWords.has(e.pair[1]);
 
-  // If a custom word pool is provided and has >= 2 words, prefer picking two from it
-  if (customWords && customWords.length >= 2) {
-    // Attempt to pick two distinct words from customWords that haven't been used together recently
-    const pool = Array.from(new Set(customWords.map((w) => w.toLowerCase())));
-    const attempts = Math.min(20, pool.length * 2);
-    for (let i = 0; i < attempts; i++) {
-      const a = pool[Math.floor(Math.random() * pool.length)];
-      let b = pool[Math.floor(Math.random() * pool.length)];
-      // ensure distinct
-      if (a === b) continue;
-      // avoid recently used pair in either order
-      if (usedSet.has(`${a}/${b}`) || usedSet.has(`${b}/${a}`)) continue;
-      return [a, b];
-    }
-    // If we couldn't find a fresh pair, fall through to curated list
+  // Most to least strict; the first non-empty tier wins
+  const tiers: Array<(e: WordPairEntry) => boolean> = [
+    (e) => !isUsed(e) && !hasRecentWord(e) && !recentCategories.has(e.category),
+    (e) => !isUsed(e) && !hasRecentWord(e),
+    (e) => !isUsed(e),
+  ];
+  for (const keep of tiers) {
+    const candidates = WORD_PAIRS_DATA.filter(keep);
+    if (candidates.length > 0) return candidates[Math.floor(Math.random() * candidates.length)].pair;
   }
 
-  // 1st preference: unused pair from a fresh category
-  let candidates = WORD_PAIRS_DATA.filter(
-    (e) => !usedSet.has(`${e.pair[0]}/${e.pair[1]}`) && !recentCategories.has(e.category),
-  );
-
-  // 2nd preference: any unused pair
-  if (candidates.length === 0) {
-    candidates = WORD_PAIRS_DATA.filter((e) => !usedSet.has(`${e.pair[0]}/${e.pair[1]}`));
-  }
-
-  // Fallback: all pairs (full cycle reset)
-  if (candidates.length === 0) candidates = WORD_PAIRS_DATA;
-
-  return candidates[Math.floor(Math.random() * candidates.length)].pair;
+  // Everything used: full cycle reset
+  return WORD_PAIRS_DATA[Math.floor(Math.random() * WORD_PAIRS_DATA.length)].pair;
 }
-

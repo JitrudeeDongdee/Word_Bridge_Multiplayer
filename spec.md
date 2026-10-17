@@ -71,3 +71,15 @@ valid = exact spelling + at least one definition + not tagged `prop` (proper nou
 - **2026-10-17 hotfix** — dictionaryapi.dev timed out on every request, so no word could
   be added and the game was unplayable.
 - `npm run lint` has 10 pre-existing problems on `main`.
+
+## Start word pairs
+`pickWordPair` (`src/utils/wordPairs.ts`) picks only from the curated list: 405 pairs in 13
+categories (90 hand-picked + 315 hand-written, kept if embedding cosine is 0.15–0.45 and no
+word appears more than 3 times; calibrated 2026-10-17 — the original 90 have median 0.36).
+Per room it avoids, in order of strictness: used pairs, any word from the last 10 rounds,
+categories from the last 3 rounds; then falls back to any unused pair, then any pair.
+- **2026-10-17** — stopped picking start words from `globalCustomWords`. That pool is every
+  word players ever typed (31 words at the time, mostly bird/sky themed), so it always won
+  over the curated list and the same words kept coming back. It also contained an ethnic
+  slur ("gook"), which was deleted from the database. The pool still feeds autocomplete and
+  has no profanity filter (decided not to add one for now).
