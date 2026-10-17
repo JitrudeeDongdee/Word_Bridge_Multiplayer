@@ -40,6 +40,34 @@ function FitViewCapture({ fitViewRef }: { fitViewRef?: MutableRefObject<(() => v
   return null;
 }
 
+const PAN_STEP = 80; // px per arrow press (×3 with Shift)
+const PAN_KEYS: Record<string, [number, number]> = { ArrowLeft: [1, 0], ArrowRight: [-1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
+
+/**
+ * Arrow keys pan the board (Shift = faster). Skipped while the arrows are doing
+ * something else: a handler already used them (e.g. the suggestion list) or the
+ * focus is in a field that has text to move the caret through.
+ */
+function ArrowKeyPan() {
+  const { getViewport, setViewport } = useReactFlow();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const dir = PAN_KEYS[e.key];
+      if (!dir || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el?.isContentEditable || el instanceof HTMLSelectElement) return;
+      if ((el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) && el.value !== '') return;
+      e.preventDefault();
+      const step = PAN_STEP * (e.shiftKey ? 3 : 1);
+      const { x, y, zoom } = getViewport();
+      void setViewport({ x: x + dir[0] * step, y: y + dir[1] * step, zoom }, { duration: 120 });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [getViewport, setViewport]);
+  return null;
+}
+
 const NODE_GAP = 8; // minimum gap between nodes in pixels
 
 function nodesOverlap(
@@ -424,6 +452,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
         <Controls className="!hidden md:!flex" />
         <MiniMap position="top-right" className="hidden md:block" nodeColor={(n) => (n.data.isStart ? '#0ea5e9' : ((n.data.playerColor as string) ?? '#e2e8f0'))} />
         <FitViewCapture fitViewRef={fitViewRef} />
+        <ArrowKeyPan />
         <Panel position="top-left" className="flex flex-col gap-2">
           {/* Also after the round ends, to review the board and teach links the game missed */}
           {(room.status === 'playing' || room.status === 'won') && (
