@@ -172,7 +172,7 @@ export function useGameActions(roomId: string) {
       if (!room || !playerId) return fail('Not connected to a room.');
 
       const nodes = Object.values(room.nodes ?? {});
-      const result = validateWord(word, nodes, playerId);
+      const result = validateWord(word, nodes);
       if (!result.valid) return fail(result.error ?? 'Invalid word.');
 
       const newWord = word.trim().toLowerCase();

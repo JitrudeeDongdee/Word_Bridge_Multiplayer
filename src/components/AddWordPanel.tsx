@@ -2,8 +2,6 @@ import { useState, useRef, useEffect, useCallback, type FormEvent } from 'react'
 import { createPortal } from 'react-dom';
 import { useGameActions } from '../hooks/useGameActions';
 import { useCustomWordsSubscription } from '../hooks/useCustomWordsSubscription';
-import { wordsLeft, MAX_WORDS_PER_PLAYER } from '../utils/validation';
-import { useGameStore } from '../store/useGameStore';
 
 interface AddWordPanelProps {
   roomId: string;
@@ -24,9 +22,6 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
   const listRef = useRef<HTMLUListElement>(null);
   const { handleAddWord } = useGameActions(roomId);
   const customWords = useCustomWordsSubscription();
-  const nodes = useGameStore((s) => s.room?.nodes);
-  const playerId = useGameStore((s) => s.playerId);
-  const left = playerId ? wordsLeft(Object.values(nodes ?? {}), playerId) : MAX_WORDS_PER_PLAYER;
 
   // Fetch autocomplete suggestions with debounce
   useEffect(() => {
@@ -163,10 +158,6 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
       setError('Word cannot be empty.');
       return;
     }
-    if (left === 0) {
-      setError(`You've used all ${MAX_WORDS_PER_PLAYER} words this round. Delete one of yours to add another.`);
-      return;
-    }
 
     // Placing the word is quick (format checks + one write); the dictionary check and
     // linking run in the background, so the input is free for the next word right away
@@ -196,7 +187,7 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
           onBlur={() => setTimeout(() => { setShowSuggestions(false); setActiveIndex(-1); }, 150)}
           onFocus={openSuggestions}
           onKeyDown={handleKeyDown}
-          placeholder={left > 0 ? `Add a word… (${left} left)` : 'No words left this round'}
+          placeholder="Add a word…"
           className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
           disabled={placing}
           maxLength={30}

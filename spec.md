@@ -89,7 +89,8 @@ Points are awarded only when the round is won (`useWinDetection`, host's client)
   (`edge.datamuse` ≥ 0.15) but whose final `edge.score` is < 0.30 — valid but not obvious.
   Embedding-only links never count (their weak range is mostly noise); vote links, learned
   pairs (1.0) and older edges without `datamuse` don't count either.
-- **Cap**: 5 words per player per round (`MAX_WORDS_PER_PLAYER`); deleting one frees a slot.
+- No per-player word cap (a 5-word cap was tried and removed 2026-10-17 at the owner's request;
+  only the 50-node room limit applies).
 - Breakdown saved as `room.roundBreakdown` and shown on the victory screen. Firebase drops
   empty arrays, so its arrays may be missing when read back.
 - Points accumulate per room across rounds (`room.scores`, rounded to 1 decimal).
@@ -114,9 +115,10 @@ Ideas not done: semantic "progress" scoring; moving win detection off the host's
 - A source failing twice in a row is skipped for 5 minutes.
 
 ## Adding a word (`handleAddWord`)
-1. Instant: format / duplicate / per-player cap checks, then the node is written with
+1. Instant: format / duplicate / room-size checks, then the node is written with
    `pending: true` (`placeNode`, id generated locally — no wait for the server ack).
-   The input clears immediately; the node shows "checking…" and can't be deleted.
+   The input clears immediately; the node is shown faded and pulsing (no extra text, so
+   it doesn't resize) and can't be deleted.
 2. Background: dictionary check → if invalid the node (and any edges) is removed and the
    error floats above the input; if valid → autocomplete pool, scoring + edges (pending
    nodes of others are skipped), relayout, then `pending` is cleared.

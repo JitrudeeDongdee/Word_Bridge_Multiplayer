@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LobbyPage from './pages/LobbyPage';
@@ -5,18 +6,36 @@ import GamePage from './pages/GamePage';
 import VictoryPage from './pages/VictoryPage';
 import { useVersionCheck } from './hooks/useVersionCheck';
 
+/**
+ * "New version" notice: a small dismissible card under the header (on phones, below the
+ * Vote link / Dict buttons). It used to be a full-width bar pinned to the bottom, which
+ * covered the add-word dock.
+ */
 function UpdateBanner() {
   const updateAvailable = useVersionCheck();
-  if (!updateAvailable) return null;
+  const [dismissed, setDismissed] = useState(false);
+  if (!updateAvailable || dismissed) return null;
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between bg-brand-600 px-4 py-2 text-sm text-white shadow-lg">
-      <span>มีเวอร์ชันใหม่ — รีเฟรชหลังเล่นจบเพื่ออัปเดต</span>
-      <button
-        onClick={() => window.location.reload()}
-        className="ml-4 rounded bg-white px-3 py-1 font-semibold text-brand-600 transition-colors hover:bg-brand-50"
+    <div className="fixed top-[9.5rem] md:top-[4.5rem] inset-x-4 z-50 flex justify-center pointer-events-none">
+      <div
+        role="status"
+        className="pointer-events-auto flex items-center gap-3 max-w-md bg-brand-600 rounded-xl px-4 py-2 text-sm text-white shadow-lg"
       >
-        รีเฟรช
-      </button>
+        <span>มีเวอร์ชันใหม่ — รีเฟรชหลังเล่นจบเพื่ออัปเดต</span>
+        <button
+          onClick={() => window.location.reload()}
+          className="flex-shrink-0 rounded bg-white px-3 py-1 font-semibold text-brand-600 transition-colors hover:bg-brand-50"
+        >
+          รีเฟรช
+        </button>
+        <button
+          onClick={() => setDismissed(true)}
+          aria-label="Dismiss"
+          className="flex-shrink-0 text-white/80 hover:text-white text-base leading-none"
+        >
+          ✕
+        </button>
+      </div>
     </div>
   );
 }
