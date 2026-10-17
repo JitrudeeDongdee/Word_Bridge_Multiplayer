@@ -1,5 +1,6 @@
 import { ArrowLeft, ArrowRight, Check, Link2, RotateCcw, X } from 'lucide-react';
 import PlayerList from './PlayerList';
+import RoomSettings from './RoomSettings';
 import ScoreTable from './ScoreTable';
 import type { Room } from '../types';
 import { approveJoinRequest, denyJoinRequest, kickPlayer } from '../services/roomService';
@@ -86,6 +87,12 @@ export default function GameSidebar({
           <span>{copied ? 'Copied!' : 'Copy Invite Link'}</span>
         </button>
       </div>
+
+      {isHost && (
+        <div className="border-b border-gray-100 pb-4">
+          <RoomSettings room={room} roomId={roomId} compact />
+        </div>
+      )}
 
       {/* Players */}
       <div>
