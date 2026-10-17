@@ -70,13 +70,25 @@ Still open:
 - Vote-link confirm panel sits top-center; MiniMap top-right (desktop only); zoom controls
   hidden on mobile (pinch zoom). `minZoom` 0.2 so both goal words fit on a phone.
 
-## Scoring (current)
-Points are only awarded when the round is won (`useWinDetection`, host's client):
-- Path = BFS shortest path from word A to word B (`findPath`); if several are equally
-  short, whichever BFS reaches first wins (depends on edge order).
-- +1 point per word on that path, to the player who added it.
-- +5 bonus if the path has exactly one intermediate word.
-- Points accumulate per room across rounds (`room.scores`); words not on the path score 0.
+## Scoring (competitive, v2 — `src/utils/scoring.ts`)
+Points are awarded only when the round is won (`useWinDetection`, host's client).
+- **Bridge** = every intermediate word on *any* shortest path from A to B (BFS distances
+  from both ends: `dA[v] + dB[v] === length`). Longer detours don't count.
+- **Pot** by bridge length (intermediate words): 1 → 10, 2 → 8, 3 → 6, 4 → 4, 5+ → 2.
+  Split equally between the bridge words' owners (ties share one pot); rounded to 1 decimal.
+- **Finisher +2**: `createdBy` of the newest edge on the bridge (the add-word or vote that
+  completed it). Edges without `createdAt` (pre-v2) give no finisher bonus.
+- **Creative +1** per bridge word with an auto-bridged link scoring in [0.15, 0.30) — valid
+  but not obvious. Vote links never count; learned pairs score 1.0 so never count.
+  The score is taken from `edge.score` (node scores are saved only after the edges, so the
+  finishing word may not have them yet), falling back to `node.scores`.
+- **Cap**: 5 words per player per round (`MAX_WORDS_PER_PLAYER`); deleting one frees a slot.
+- Breakdown saved as `room.roundBreakdown` and shown on the victory screen. Firebase drops
+  empty arrays, so its arrays may be missing when read back.
+- Points accumulate per room across rounds (`room.scores`, rounded to 1 decimal).
+
+Ideas not done: semantic "progress" scoring; moving win detection off the host's client
+(if the host's tab is closed, a win isn't recorded).
 
 ## Known issues
 - 📖 Dict mode definitions still come only from `api.dictionaryapi.dev`; while it is down

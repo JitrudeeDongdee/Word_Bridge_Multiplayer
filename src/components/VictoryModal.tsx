@@ -36,7 +36,11 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
   }, []);
   const wordB = gameState?.wordB ?? '?';
   const path = winningPath ?? [];
-  const isOneWordWin = path.filter((nid) => !nodes?.[nid]?.isStart).length === 1;
+  const breakdown = room.roundBreakdown;
+  // Firebase drops empty arrays, so these can be missing
+  const bridgeIds = breakdown?.bridgeNodeIds ?? [];
+  const creativeIds = breakdown?.creativeNodeIds ?? [];
+  const nameOf = (pid: string) => room.players?.[pid]?.name ?? 'Someone';
 
   const roundEntries = Object.entries(room.roundScores ?? {}).sort(([, a], [, b]) => b - a);
   const totalEntries = Object.entries(room.scores ?? {}).sort(([, a], [, b]) => b - a);
@@ -96,14 +100,28 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-6 pb-2 flex flex-col gap-5">
-          {/* 1-word bonus banner */}
-          {isOneWordWin && (
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
-              <span className="text-lg">⚡</span>
-              <div>
-                <p className="text-xs font-bold text-amber-700">1-Word Bonus! +5 pts</p>
-                <p className="text-xs text-amber-600">Bridged in a single word</p>
-              </div>
+          {/* How this round was scored */}
+          {breakdown && (
+            <div className="flex flex-col gap-1.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-xs">
+              <p className="font-bold text-amber-700">
+                ⚡ {breakdown.intermediates}-word bridge → {breakdown.pot} pts
+                {bridgeIds.length > 1 && (
+                  <span className="font-normal text-amber-600"> · {breakdown.perWord} per word</span>
+                )}
+              </p>
+              {breakdown.finisherId && (
+                <p className="text-amber-700">
+                  🏁 Finisher +{breakdown.finisherBonus}: <b>{nameOf(breakdown.finisherId)}</b>
+                </p>
+              )}
+              {creativeIds.length > 0 && (
+                <p className="text-amber-700">
+                  ✨ Creative link +{breakdown.creativeBonus}:{' '}
+                  <b className="uppercase">
+                    {creativeIds.map((id) => nodes?.[id]?.word ?? '?').join(', ')}
+                  </b>
+                </p>
+              )}
             </div>
           )}
           {/* Winning path */}

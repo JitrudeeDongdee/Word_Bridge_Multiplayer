@@ -10,7 +10,7 @@ import {
 } from 'firebase/database';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from './firebase';
-import type { Room, Player, GameNode, GameEdge, SharedWordScore, LastWordScores } from '../types';
+import type { Room, Player, GameNode, GameEdge, SharedWordScore, LastWordScores, RoundBreakdown } from '../types';
 import { pickWordPair } from '../utils/wordPairs';
 import { generateRoomCode } from '../utils/generateRoomCode';
 
@@ -259,6 +259,7 @@ export async function restartGame(roomId: string): Promise<void> {
     [`rooms/${roomId}/winningPath`]: null,
     [`rooms/${roomId}/lastWordScores`]: null,
     [`rooms/${roomId}/roundScores`]: null,
+    [`rooms/${roomId}/roundBreakdown`]: null,
     [`rooms/${roomId}/usedPairs`]: updatedUsedPairs.join('|'),
     [`rooms/${roomId}/lastActiveAt`]: Date.now(),
     // `scores` (cumulative) is intentionally not cleared
@@ -285,6 +286,7 @@ export async function resetToLobby(roomId: string): Promise<void> {
     winningPath: null,
     lastWordScores: null,
     roundScores: null,
+    roundBreakdown: null,
     // `scores` (cumulative) intentionally preserved
   });
 }
@@ -351,9 +353,15 @@ export async function addEdge(
   roomId: string,
   source: string,
   target: string,
+  createdBy: string,
+  via: 'auto' | 'vote',
+  score?: number,
 ): Promise<void> {
   const edgeId = uuidv4();
-  const edge: GameEdge = { id: edgeId, source, target };
+  const edge: GameEdge = {
+    id: edgeId, source, target, createdBy, createdAt: Date.now(), via,
+    ...(score !== undefined ? { score } : {}),
+  };
   await Promise.all([
     set(ref(db, `rooms/${roomId}/edges/${edgeId}`), edge),
     update(ref(db, `rooms/${roomId}`), { lastActiveAt: Date.now() }),
@@ -401,6 +409,7 @@ export async function markRoomWon(
   winnerId: string,
   winningPath: string[],
   roundScores: Record<string, number>,
+  roundBreakdown: RoundBreakdown,
 ): Promise<void> {
   // Read current cumulative scores and merge in round scores
   const snapshot = await get(ref(db, `rooms/${roomId}/scores`));
@@ -409,13 +418,15 @@ export async function markRoomWon(
     : {};
   const merged: Record<string, number> = { ...current };
   for (const [pid, pts] of Object.entries(roundScores)) {
-    merged[pid] = (merged[pid] ?? 0) + pts;
+    // Round points can be fractional (shared pots); keep one decimal without float drift
+    merged[pid] = Math.round(((merged[pid] ?? 0) + pts) * 10) / 10;
   }
   await update(ref(db, `rooms/${roomId}`), {
     status: 'won',
     winnerId,
     winningPath,
     roundScores,
+    roundBreakdown,
     scores: merged,
   });
 }

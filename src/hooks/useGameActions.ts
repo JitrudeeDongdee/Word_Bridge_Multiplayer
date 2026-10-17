@@ -72,7 +72,7 @@ export function useGameActions(roomId: string) {
       if (!room || !playerId) return fail('Not connected to a room.');
 
       const nodes = Object.values(room.nodes ?? {});
-      const result = validateWord(word, nodes);
+      const result = validateWord(word, nodes, playerId);
       if (!result.valid) return fail(result.error ?? 'Invalid word.');
 
       const wordCheck = await checkRealWord(word.trim(), signal);
@@ -118,7 +118,7 @@ export function useGameActions(roomId: string) {
       await Promise.all(
         toConnect
           .filter((s) => !hasEdge(newNodeId, s.node.id))
-          .map((s) => addEdge(roomId, newNodeId, s.node.id)),
+          .map((s) => addEdge(roomId, newNodeId, s.node.id, playerId, 'auto', s.sim)),
       );
 
       // 2. Also bridge existing node-pairs that have no edge yet
@@ -139,7 +139,7 @@ export function useGameActions(roomId: string) {
             scorePair(a.word.toLowerCase(), b.word.toLowerCase()).then(
               (sim) => {
                 if (sim >= AUTO_BRIDGE_THRESHOLD) {
-                  return addEdge(roomId, a.id, b.id);
+                  return addEdge(roomId, a.id, b.id, playerId, 'auto', sim);
                 }
               },
             ),
@@ -210,7 +210,7 @@ export function useGameActions(roomId: string) {
           (e) => (e.source === a.id && e.target === b.id) || (e.source === b.id && e.target === a.id),
         );
         if (!exists) {
-          await addEdge(roomId, a.id, b.id);
+          await addEdge(roomId, a.id, b.id, playerId, 'vote');
           await relayout(roomId);
         }
       }

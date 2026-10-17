@@ -25,6 +25,30 @@ export interface GameEdge {
   id: string;
   source: string;
   target: string;
+  /** Player whose action created the edge (absent on edges from before scoring v2) */
+  createdBy?: string;
+  createdAt?: number;
+  /** 'auto' = similarity auto-bridge, 'vote' = linked by player votes */
+  via?: 'auto' | 'vote';
+  /** Similarity score that created an auto edge */
+  score?: number;
+}
+
+/**
+ * How a won round was scored (see utils/scoring.ts).
+ * Firebase drops empty arrays, so the arrays may be missing when read back.
+ */
+export interface RoundBreakdown {
+  /** Intermediate words on the shortest bridge */
+  intermediates: number;
+  pot: number;
+  perWord: number;
+  /** Every intermediate word on any shortest path */
+  bridgeNodeIds?: string[];
+  finisherId: string | null;
+  finisherBonus: number;
+  creativeNodeIds?: string[];
+  creativeBonus: number;
 }
 
 export interface GameState {
@@ -62,6 +86,8 @@ export interface Room {
   scores: Record<string, number>;
   /** Points earned in the most recently completed round (playerId → pts) */
   roundScores: Record<string, number> | null;
+  /** Explanation of roundScores for the victory screen */
+  roundBreakdown?: RoundBreakdown | null;
   /** History of used pairs stored as "wordA/wordB" — used to avoid repetition */
   usedPairs?: string[];
   /** Timestamp of the last meaningful activity in this room */
