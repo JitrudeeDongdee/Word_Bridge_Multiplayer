@@ -74,12 +74,12 @@ function WordNode({ id, data, selected }: WordNodeProps) {
         />
       )}
       <div
-        className={`${baseClass} ${isStart ? startClass : normalClass}${isPending ? ' border-dashed opacity-60 animate-pulse' : ''}`}
+        // Pending = faded only (no extra text), so the node keeps its size when checking ends
+        className={`${baseClass} ${isStart ? startClass : normalClass}${isPending ? ' border-dashed opacity-50 animate-pulse' : ''}`}
         style={nodeStyle}
         title={isPending ? 'Checking word…' : undefined}
       >
         {word}
-        {isPending && <span className="ml-1.5 text-[10px] font-normal normal-case text-gray-500">checking…</span>}
         {!isStart && canDelete && (
           <button
             className="absolute -top-2 -right-2 flex md:hidden md:group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs leading-none"
