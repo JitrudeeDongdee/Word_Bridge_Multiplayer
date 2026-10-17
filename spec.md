@@ -12,7 +12,7 @@ Score = `max(datamuse, embedding)` — `src/utils/semanticSimilarity.ts`
 
 | Source | How | Notes |
 |---|---|---|
-| Embedding | `Xenova/all-MiniLM-L6-v2` (q8, ~23MB) via `@huggingface/transformers` in the browser — `src/utils/embeddingSimilarity.ts` | Cosine is mapped so `EMBEDDING_RELATED_COSINE` (0.35) == 0.15. Model files come from huggingface.co, ONNX wasm from cdn.jsdelivr.net; both cached by the browser after first load. Preloaded on GamePage mount. |
+| Embedding | `Xenova/all-MiniLM-L6-v2` (q8, ~23MB) via `@huggingface/transformers` in the browser — `src/utils/embeddingSimilarity.ts` | Cosine is mapped so `EMBEDDING_RELATED_COSINE` (0.45) == 0.15. Model files come from huggingface.co, ONNX wasm from cdn.jsdelivr.net; both cached by the browser after first load. Preloaded on GamePage mount. |
 | Datamuse | `ml` + `rel_trg`, top 200 each, both directions | Binary in practice: a pair is in the top-200 list (high score) or scores 0. |
 
 If the model fails to load, Datamuse alone is used (a warning is logged).
@@ -32,6 +32,13 @@ If the model fails to load, Datamuse alone is used (a warning is logged).
   UI shows "Could not save your vote".
 
 ### Decisions
+- **2026-10-17 (later)** — embedding-only cutoff raised 0.35 → 0.45. On 1,500 random
+  start-word pairs 11% reached 0.35 (dog–king 0.392, puppet–dog 0.418), so generic words
+  like "rock"/"fire" finished ~20% of start pairs in one word. At 0.45: 1.5% of random pairs;
+  on 80 sampled start pairs rock 15 → 1, fire 18 → 4, dark 11 → 0 one-word wins.
+  Cost: embedding-only true pairs like coffee–morning (0.357) and war–dead (0.384) no longer
+  auto-link — Datamuse or player votes must cover them. CSLS hubness correction and the
+  bge-small / gte-small models were tried and separated related/unrelated no better.
 - **2026-10-17** — ConceptNet removed: `api.conceptnet.io` returns 502. Embedding added
   because Datamuse alone gave 0 to obviously related pairs (sun–summer, war–dead,
   coffee–morning), so tuning the threshold had no effect.
@@ -78,10 +85,10 @@ Points are awarded only when the round is won (`useWinDetection`, host's client)
   Split equally between the bridge words' owners (ties share one pot); rounded to 1 decimal.
 - **Finisher +2**: `createdBy` of the newest edge on the bridge (the add-word or vote that
   completed it). Edges without `createdAt` (pre-v2) give no finisher bonus.
-- **Creative +1** per bridge word with an auto-bridged link scoring in [0.15, 0.30) — valid
-  but not obvious. Vote links never count; learned pairs score 1.0 so never count.
-  The score is taken from `edge.score` (node scores are saved only after the edges, so the
-  finishing word may not have them yet), falling back to `node.scores`.
+- **Creative +1** per bridge word with an auto link that Datamuse confirms
+  (`edge.datamuse` ≥ 0.15) but whose final `edge.score` is < 0.30 — valid but not obvious.
+  Embedding-only links never count (their weak range is mostly noise); vote links, learned
+  pairs (1.0) and older edges without `datamuse` don't count either.
 - **Cap**: 5 words per player per round (`MAX_WORDS_PER_PLAYER`); deleting one frees a slot.
 - Breakdown saved as `room.roundBreakdown` and shown on the victory screen. Firebase drops
   empty arrays, so its arrays may be missing when read back.
@@ -91,18 +98,31 @@ Ideas not done: semantic "progress" scoring; moving win detection off the host's
 (if the host's tab is closed, a win isn't recorded).
 
 ## Known issues
+- Fixed 2026-10-17: every page reload logged the player out of their room. The store's
+  `get currentPlayer()` getter made zustand-persist hydration throw (silently), so the
+  first write after load saved `playerId: null`. Test: `src/test/sessionStore.test.ts`.
 - 📖 Dict mode definitions still come only from `api.dictionaryapi.dev`; while it is down
   they show "Definition not found." (word validation has a fallback, see below).
 
-## Word validation
-`checkRealWord` (`src/utils/validation.ts`) asks `api.dictionaryapi.dev` first (3s
-timeout). Only a JSON response is trusted (200 = valid, 404 = not found); a timeout,
-HTML error page or 5xx falls through to Datamuse (`/words?sp=<word>&md=dp`, 5s):
-valid = exact spelling + at least one definition + not tagged `prop` (proper noun).
-"Network error" is shown only when both are unreachable.
+## Word validation & definitions (`src/services/dictionary.ts`)
+`checkRealWord` and `lookupDefinition` (📖 Dict panel) share one lookup per word:
+- Both sources are asked **in parallel**: `api.dictionaryapi.dev` (3s timeout; only JSON
+  trusted — 200 found, 404 not found) and Datamuse (`/words?sp=<word>&md=dp`, 5s: exact
+  spelling + a definition + not tagged `prop`). First source to find the word wins;
+  not found only when no source found it and at least one answered.
+- Results are cached per word (network failures aren't cached, so they can be retried).
+- A source failing twice in a row is skipped for 5 minutes.
+
+## Adding a word (`handleAddWord`)
+1. Instant: format / duplicate / per-player cap checks, then the node is written with
+   `pending: true` (`placeNode`, id generated locally — no wait for the server ack).
+   The input clears immediately; the node shows "checking…" and can't be deleted.
+2. Background: dictionary check → if invalid the node (and any edges) is removed and the
+   error floats above the input; if valid → autocomplete pool, scoring + edges (pending
+   nodes of others are skipped), relayout, then `pending` is cleared.
 - **2026-10-17 hotfix** — dictionaryapi.dev timed out on every request, so no word could
   be added and the game was unplayable.
-- `npm run lint` has 10 pre-existing problems on `main`.
+- `npm run lint` has 9 pre-existing problems on `main`.
 
 ## Start word pairs
 `pickWordPair` (`src/utils/wordPairs.ts`) picks only from the curated list: 405 pairs in 13

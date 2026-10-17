@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import {
-  addNode,
+  placeNode,
   addEdge,
   fetchNodes,
   fetchEdges,
@@ -9,12 +9,14 @@ import {
   deleteNode,
   deleteEdgesForNode,
   updateNodePosition,
+  markNodeChecked,
   batchUpdateNodePositions,
 } from '../services/roomService';
 import { forceDirectedLayout } from '../utils/graphLayout';
+import { addCustomWord } from '../services/customWordsService';
 import { useGameStore } from '../store/useGameStore';
 import { validateWord, checkRealWord } from '../utils/validation';
-import { semanticSimilarity, AUTO_BRIDGE_THRESHOLD } from '../utils/semanticSimilarity';
+import { semanticScores, AUTO_BRIDGE_THRESHOLD, type PairScore } from '../utils/semanticSimilarity';
 import { castPairVote, pairKey, PAIR_VOTE_THRESHOLD } from '../services/pairVotesService';
 import { useLearnedPairs } from './useLearnedPairs';
 
@@ -25,8 +27,14 @@ export interface WordScoreEntry {
 }
 
 export interface AddWordResult {
+  /** Problem found before placing the word (format, duplicate, word cap) */
   error: string | null;
-  scores: WordScoreEntry[];
+  /**
+   * The word is on the board (marked pending) as soon as this result arrives; checking it
+   * and drawing its links happens in the background. Resolves with an error message if the
+   * word turned out invalid and was removed, otherwise null.
+   */
+  done: Promise<string | null>;
 }
 
 export interface VotePairResult {
@@ -59,31 +67,17 @@ export function useGameActions(roomId: string) {
 
   // Pairs players voted in are always connected; everything else goes by similarity
   const scorePair = useCallback(
-    async (a: string, b: string): Promise<number> =>
-      learnedPairs.has(pairKey(a, b)) ? 1 : semanticSimilarity(a, b),
+    async (a: string, b: string): Promise<PairScore> =>
+      learnedPairs.has(pairKey(a, b))
+        ? { score: 1, datamuse: 0, embedding: null }
+        : semanticScores(a, b),
     [learnedPairs],
   );
 
-  const handleAddWord = useCallback(
-    async (word: string, signal?: AbortSignal): Promise<AddWordResult> => {
-      const fail = (error: string): AddWordResult => ({ error, scores: [] });
-      const aborted = () => signal?.aborted ?? false;
-
-      if (!room || !playerId) return fail('Not connected to a room.');
-
-      const nodes = Object.values(room.nodes ?? {});
-      const result = validateWord(word, nodes, playerId);
-      if (!result.valid) return fail(result.error ?? 'Invalid word.');
-
-      const wordCheck = await checkRealWord(word.trim(), signal);
-      if (aborted()) return { error: null, scores: [] };
-      if (wordCheck === 'not_found')
-        return fail(`"${word.trim()}" wasn't found in the dictionary. Only common English words are allowed — proper nouns like place or person names are not supported.`);
-      if (wordCheck === 'network_error')
-        return fail('Could not verify the word. Please check your connection and try again.');
-
-      const newNodeId = await addNode(roomId, word, playerId);
-      if (aborted()) { deleteNode(roomId, newNodeId).catch(() => {}); return { error: null, scores: [] }; }
+  /** Scores a just-checked word against the board, draws its edges and re-layouts. */
+  const linkNewWord = useCallback(
+    async (newNodeId: string, newWord: string): Promise<void> => {
+      if (!room?.gameState || !playerId) return;
 
       // Read fresh node/edge data from Firebase to avoid stale Zustand state
       const [freshNodes, freshEdges] = await Promise.all([
@@ -91,8 +85,10 @@ export function useGameActions(roomId: string) {
         fetchEdges(roomId),
       ]);
 
-      const existingNodes = Object.values(freshNodes).filter((n) => n.id !== newNodeId);
-      if (existingNodes.length === 0) return { error: null, scores: [] };
+      // Words still being checked are skipped: they may be removed, and they link to
+      // this word themselves once their own check finishes
+      const existingNodes = Object.values(freshNodes).filter((n) => n.id !== newNodeId && !n.pending);
+      if (existingNodes.length === 0) return;
 
       // Build existing edge set for duplicate prevention
       const edgeSet = new Set(
@@ -104,8 +100,6 @@ export function useGameActions(roomId: string) {
       const hasEdge = (a: string, b: string) =>
         edgeSet.has(`${a}|${b}`);
 
-      const newWord = word.trim().toLowerCase();
-
       // 1. Score the new word against every existing node
       const similarities = await Promise.all(
         existingNodes.map(async (node) => ({
@@ -114,7 +108,7 @@ export function useGameActions(roomId: string) {
         })),
       );
 
-      const toConnect = similarities.filter((s) => s.sim >= AUTO_BRIDGE_THRESHOLD);
+      const toConnect = similarities.filter((s) => s.sim.score >= AUTO_BRIDGE_THRESHOLD);
       await Promise.all(
         toConnect
           .filter((s) => !hasEdge(newNodeId, s.node.id))
@@ -138,7 +132,7 @@ export function useGameActions(roomId: string) {
           pairChecks.push(
             scorePair(a.word.toLowerCase(), b.word.toLowerCase()).then(
               (sim) => {
-                if (sim >= AUTO_BRIDGE_THRESHOLD) {
+                if (sim.score >= AUTO_BRIDGE_THRESHOLD) {
                   return addEdge(roomId, a.id, b.id, playerId, 'auto', sim);
                 }
               },
@@ -156,7 +150,7 @@ export function useGameActions(roomId: string) {
       const scores: WordScoreEntry[] = similarities
         .map((s) => ({
           word: s.node.word,
-          score: s.sim,
+          score: s.sim.score,
           connected: connectedIds.has(s.node.id),
         }))
         .sort((a, b) => b.score - a.score);
@@ -167,9 +161,51 @@ export function useGameActions(roomId: string) {
         updateNodeScores(roomId, newNodeId, scores),
       ]);
 
-      return { error: null, scores };
     },
     [room, playerId, roomId, scorePair],
+  );
+
+  const handleAddWord = useCallback(
+    async (word: string): Promise<AddWordResult> => {
+      const fail = (error: string): AddWordResult => ({ error, done: Promise.resolve(null) });
+
+      if (!room || !playerId) return fail('Not connected to a room.');
+
+      const nodes = Object.values(room.nodes ?? {});
+      const result = validateWord(word, nodes, playerId);
+      if (!result.valid) return fail(result.error ?? 'Invalid word.');
+
+      const newWord = word.trim().toLowerCase();
+      // Put the word on the board right away; checking and linking continue in the background
+      const { nodeId: newNodeId, saved } = placeNode(roomId, newWord, playerId, true);
+
+      const remove = async (message: string) => {
+        await deleteEdgesForNode(roomId, newNodeId).catch(() => {});
+        await deleteNode(roomId, newNodeId).catch(() => {});
+        return message;
+      };
+
+      const done = (async (): Promise<string | null> => {
+        const [wordCheck] = await Promise.all([checkRealWord(newWord), saved]);
+        if (wordCheck === 'not_found')
+          return remove(`"${newWord}" wasn't found in the dictionary, so it was removed. Only common English words are allowed — proper nouns like place or person names are not supported.`);
+        if (wordCheck === 'network_error')
+          return remove(`Couldn't verify "${newWord}", so it was removed. Please check your connection and try again.`);
+
+        // Valid word: remember it for autocomplete (best effort)
+        addCustomWord(newWord).catch((err) => console.error('Error saving custom word:', err));
+
+        await linkNewWord(newNodeId, newWord);
+        await markNodeChecked(roomId, newNodeId);
+        return null;
+      })().catch(async (err) => {
+        console.error('Error adding word:', err);
+        return remove(`Something went wrong adding "${newWord}". Please try again.`);
+      });
+
+      return { error: null, done };
+    },
+    [room, playerId, roomId, linkNewWord],
   );
 
   /**

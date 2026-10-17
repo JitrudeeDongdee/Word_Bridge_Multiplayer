@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { validateWord, checkRealWord, wordsLeft, MAX_WORDS_PER_PLAYER } from '../utils/validation';
+import { resetDictionaryState, lookupDefinition } from '../services/dictionary';
 import type { GameNode } from '../types';
 
 const node = (word: string): GameNode => ({
@@ -54,6 +55,7 @@ describe('checkRealWord', () => {
   beforeEach(() => {
     mockFetch.mockReset();
     vi.stubGlobal('fetch', mockFetch);
+    resetDictionaryState(); // lookups are cached per word across calls
   });
 
   afterEach(() => {
@@ -71,16 +73,34 @@ describe('checkRealWord', () => {
   const route = (dict: () => Promise<Response>, dm: () => Promise<Response>) =>
     mockFetch.mockImplementation((url: string) => (url.includes('dictionaryapi') ? dict() : dm()));
 
-  it('accepts a word dictionaryapi.dev knows, without calling the fallback', async () => {
+  it('accepts a word as soon as either source knows it', async () => {
     route(() => json([{ word: 'water' }]), () => datamuse([]));
     expect(await checkRealWord('water')).toBe('valid');
-    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
-  it('trusts a JSON 404 from dictionaryapi.dev as not found', async () => {
+  it('asks both sources in parallel instead of waiting for one to time out', async () => {
+    route(() => new Promise(() => {}), () => datamuse([{ word: 'egg', tags: ['n'], defs: ['n\tan egg'] }]));
+    expect(await checkRealWord('egg')).toBe('valid'); // resolves without waiting on dictionaryapi
+    expect(mockFetch.mock.calls.map(([u]) => (u as string).includes('dictionaryapi'))).toEqual([true, false]);
+  });
+
+  it('checks each word only once', async () => {
+    route(() => json([{ word: 'water' }]), () => datamuse([]));
+    await checkRealWord('water');
+    await checkRealWord('Water');
+    expect(mockFetch).toHaveBeenCalledTimes(2); // one call per source, then cached
+  });
+
+  it('skips a source that keeps failing', async () => {
+    route(() => Promise.reject(new TypeError('down')), () => datamuse([{ word: 'a', tags: ['n'], defs: ['n\tx'] }]));
+    for (const w of ['a', 'b', 'c']) await checkRealWord(w);
+    const dictCalls = mockFetch.mock.calls.filter(([u]) => (u as string).includes('dictionaryapi')).length;
+    expect(dictCalls).toBe(2); // skipped after 2 failures in a row
+  });
+
+  it('reports not found when both sources answer without the word', async () => {
     route(() => json({ title: 'No Definitions Found' }, 404), () => datamuse([]));
     expect(await checkRealWord('qwzx')).toBe('not_found');
-    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   it('falls back to Datamuse when dictionaryapi.dev serves an HTML error page', async () => {
@@ -140,5 +160,29 @@ describe('per-player word cap', () => {
     expect(validateWord('extra', nodes, 'me').valid).toBe(false);
     expect(validateWord('extra', nodes, 'other').valid).toBe(true);
     expect(validateWord('extra', nodes).valid).toBe(true); // no player → no cap
+  });
+});
+
+describe('lookupDefinition', () => {
+  const mockFetch = vi.fn();
+  beforeEach(() => {
+    mockFetch.mockReset();
+    vi.stubGlobal('fetch', mockFetch);
+    resetDictionaryState();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('falls back to a Datamuse definition when dictionaryapi.dev is down', async () => {
+    mockFetch.mockImplementation((url: string) =>
+      url.includes('dictionaryapi')
+        ? Promise.reject(new TypeError('down'))
+        : Promise.resolve(new Response(JSON.stringify([{ word: 'lantern', tags: ['n'], defs: ['n\tA case for a light'] }]))),
+    );
+    expect(await lookupDefinition('lantern')).toEqual({ definition: 'A case for a light', partOfSpeech: 'noun' });
+  });
+
+  it('returns null when no source knows the word', async () => {
+    mockFetch.mockImplementation(() => Promise.resolve(new Response(JSON.stringify([]))));
+    expect(await lookupDefinition('qwzx')).toBeNull();
   });
 });

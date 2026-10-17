@@ -17,6 +17,8 @@ export interface GameNode {
   y: number;
   createdBy: string;
   isStart: boolean;
+  /** Placed on the board but still being checked (dictionary + links); removed if invalid */
+  pending?: boolean;
   /** Similarity scores against every other node at the time this word was added */
   scores?: SharedWordScore[];
 }
@@ -32,6 +34,8 @@ export interface GameEdge {
   via?: 'auto' | 'vote';
   /** Similarity score that created an auto edge */
   score?: number;
+  /** Datamuse part of that score (0 = linked by the embedding model alone) */
+  datamuse?: number;
 }
 
 /**

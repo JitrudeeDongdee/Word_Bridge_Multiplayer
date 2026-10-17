@@ -24,6 +24,7 @@ import type { Room } from '../types';
 import { useGameActions } from '../hooks/useGameActions';
 import { useCustomWordsSubscription } from '../hooks/useCustomWordsSubscription';
 import { getPairVoteCount, pairKey, PAIR_VOTE_THRESHOLD } from '../services/pairVotesService';
+import { lookupDefinition } from '../services/dictionary';
 
 const nodeTypes = { wordNode: WordNode };
 
@@ -120,16 +121,8 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
   const fetchDictCard = useCallback(async (rawWord: string): Promise<DictCard> => {
     const word = rawWord.trim().toLowerCase();
     if (defCache.current.has(word)) return { word, ...defCache.current.get(word)! };
-    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if (res.ok) {
-      const data = (await res.json()) as Array<{
-        meanings?: Array<{ partOfSpeech?: string; definitions?: Array<{ definition?: string }> }>;
-      }>;
-      const meaning = data[0]?.meanings?.[0];
-      const entry = {
-        definition: meaning?.definitions?.[0]?.definition ?? 'No definition found.',
-        partOfSpeech: meaning?.partOfSpeech ?? '',
-      };
+    const entry = await lookupDefinition(word);
+    if (entry) {
       defCache.current.set(word, entry);
       return { word, ...entry };
     }
@@ -265,7 +258,9 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
       data: {
         word: n.word,
         isStart: n.isStart,
-        canDelete: n.createdBy === playerId && !n.isStart,
+        // Not while pending: its background check would keep linking a deleted node
+        canDelete: n.createdBy === playerId && !n.isStart && !n.pending,
+        isPending: !!n.pending,
         onDelete: handleDeleteNode,
         playerColor: n.isStart ? undefined : (playerColorMap[n.createdBy] ?? '#94a3b8'),
         isPathNode: pathIds.has(n.id),

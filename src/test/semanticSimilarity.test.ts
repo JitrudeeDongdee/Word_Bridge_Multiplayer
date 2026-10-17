@@ -94,6 +94,16 @@ describe('semanticSimilarity', () => {
     expect(await semanticSimilarity('fire', 'smoke')).toBeCloseTo(1.0);
   });
 
+  it('does not link common nouns the model scores in its noise band (0.35–0.45)', async () => {
+    const semanticSimilarity = await importFresh();
+    mockFetch.mockImplementation(() => empty());
+    for (const cos of [0.392, 0.418]) {
+      // dog–king and puppet–dog, measured: neither is related, Datamuse knows neither
+      mockEmbedding.mockResolvedValueOnce(cos);
+      expect(await semanticSimilarity('dog', `king${cos}`)).toBeLessThan(0.15);
+    }
+  });
+
   it('stays below the bridge threshold for unrelated embedding scores', async () => {
     const semanticSimilarity = await importFresh();
     mockFetch.mockImplementation(() => empty());

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Room, Player } from '../types';
+import type { Room } from '../types';
 
 interface GameStore {
   // Identity
@@ -10,9 +10,6 @@ interface GameStore {
   // Current room (mirrored from Firebase)
   room: Room | null;
 
-  // Derived convenience getters
-  currentPlayer: Player | null;
-
   // Actions
   setIdentity: (playerId: string, playerName: string) => void;
   setRoom: (room: Room | null) => void;
@@ -21,16 +18,13 @@ interface GameStore {
 
 export const useGameStore = create<GameStore>()(
   persist(
-    (set, get) => ({
+    // No getters in this state object: persist's hydration spreads it, which would run the
+    // getter before the store exists, throw, and silently skip restoring the saved identity
+    // (every reload logged the player out of their room).
+    (set) => ({
       playerId: null,
       playerName: null,
       room: null,
-
-      get currentPlayer() {
-        const { room, playerId } = get();
-        if (!room || !playerId) return null;
-        return room.players?.[playerId] ?? null;
-      },
 
       setIdentity: (playerId, playerName) => set({ playerId, playerName }),
       setRoom: (room) => set({ room }),

@@ -303,7 +303,27 @@ export async function fetchEdges(roomId: string): Promise<Record<string, GameEdg
   return snapshot.exists() ? (snapshot.val() as Record<string, GameEdge>) : {};
 }
 
-export async function addNode(roomId: string, word: string, playerId: string): Promise<string> {
+export async function addNode(
+  roomId: string,
+  word: string,
+  playerId: string,
+  pending = false,
+): Promise<string> {
+  const { nodeId, saved } = placeNode(roomId, word, playerId, pending);
+  await saved;
+  return nodeId;
+}
+
+/**
+ * Like addNode, but returns the new id immediately. The Firebase SDK shows the write to
+ * local listeners straight away; `saved` resolves when the server confirms it (~1s).
+ */
+export function placeNode(
+  roomId: string,
+  word: string,
+  playerId: string,
+  pending = false,
+): { nodeId: string; saved: Promise<void> } {
   const nodeId = uuidv4();
   const node: GameNode = {
     id: nodeId,
@@ -312,12 +332,13 @@ export async function addNode(roomId: string, word: string, playerId: string): P
     y: 100 + Math.random() * 400,
     createdBy: playerId,
     isStart: false,
+    ...(pending ? { pending: true } : {}),
   };
-  await Promise.all([
+  const saved = Promise.all([
     set(ref(db, `rooms/${roomId}/nodes/${nodeId}`), node),
     update(ref(db, `rooms/${roomId}`), { lastActiveAt: Date.now() }),
-  ]);
-  return nodeId;
+  ]).then(() => undefined);
+  return { nodeId, saved };
 }
 
 export async function updateNodePosition(
@@ -343,6 +364,11 @@ export async function batchUpdateNodePositions(
   }
 }
 
+/** Clears a node's pending flag once its word has been checked and linked. */
+export async function markNodeChecked(roomId: string, nodeId: string): Promise<void> {
+  await update(ref(db, `rooms/${roomId}/nodes/${nodeId}`), { pending: null });
+}
+
 export async function deleteNode(roomId: string, nodeId: string): Promise<void> {
   await remove(ref(db, `rooms/${roomId}/nodes/${nodeId}`));
 }
@@ -355,12 +381,13 @@ export async function addEdge(
   target: string,
   createdBy: string,
   via: 'auto' | 'vote',
-  score?: number,
+  /** For auto edges: the similarity that created the link */
+  sim?: { score: number; datamuse: number },
 ): Promise<void> {
   const edgeId = uuidv4();
   const edge: GameEdge = {
     id: edgeId, source, target, createdBy, createdAt: Date.now(), via,
-    ...(score !== undefined ? { score } : {}),
+    ...(sim ? { score: sim.score, datamuse: sim.datamuse } : {}),
   };
   await Promise.all([
     set(ref(db, `rooms/${roomId}/edges/${edgeId}`), edge),

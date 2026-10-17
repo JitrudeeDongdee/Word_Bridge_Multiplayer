@@ -103,40 +103,46 @@ describe('computeRoundScores', () => {
     expect(computeRoundScores(nodes, edges, A, B)!.breakdown.finisherId).toBeNull();
   });
 
-  it('gives a creative bonus for a valid but non-obvious auto link', () => {
+  it('gives a creative bonus for a Datamuse-confirmed but non-obvious auto link', () => {
     const { nodes, edges } = room(
-      { ...start, n: ['nest', 'p1', { bird: 0.9, baby: 0.2 }] }, // nest–baby is creative
-      [[A, 'n', { via: 'auto' }], ['n', B, { via: 'auto' }]],
+      { ...start, n: ['nest', 'p1'] },
+      [
+        [A, 'n', { via: 'auto', score: 0.9, datamuse: 0.9 }],
+        ['n', B, { via: 'auto', score: 0.2, datamuse: 0.2 }], // creative
+      ],
     );
     const r = computeRoundScores(nodes, edges, A, B)!;
     expect(r.breakdown.creativeNodeIds).toEqual(['n']);
     expect(r.roundScores).toEqual({ p1: 11 });
   });
 
-  it('uses the score stored on the edge when node scores are not saved yet', () => {
-    // The finishing word's node scores are written after its edges, so win detection
-    // can run before they exist
+  it('does not count embedding-only links as creative (that range is mostly noise)', () => {
+    // puppet–dog style: linked by the model alone, Datamuse knows no relation
     const { nodes, edges } = room(
-      { ...start, n: ['nest', 'p1'] },
-      [[A, 'n', { via: 'auto', score: 0.8 }], ['n', B, { via: 'auto', score: 0.17 }]],
+      { ...start, n: ['dog', 'p1'] },
+      [[A, 'n', { via: 'auto', score: 0.2, datamuse: 0 }], ['n', B, { via: 'auto', score: 0.18, datamuse: 0 }]],
     );
-    expect(computeRoundScores(nodes, edges, A, B)!.breakdown.creativeNodeIds).toEqual(['n']);
+    expect(computeRoundScores(nodes, edges, A, B)!.breakdown.creativeNodeIds).toEqual([]);
   });
 
-  it('does not count obvious links, vote links or links without a score as creative', () => {
+  it('does not count obvious links, vote links or edges without a Datamuse score', () => {
     const obvious = room(
-      { ...start, n: ['nest', 'p1', { bird: 0.9, baby: 0.5 }] },
-      [[A, 'n'], ['n', B]],
+      { ...start, n: ['nest', 'p1'] },
+      [[A, 'n', { score: 0.9, datamuse: 0.9 }], ['n', B, { score: 0.5, datamuse: 0.5 }]],
     );
     expect(computeRoundScores(obvious.nodes, obvious.edges, A, B)!.breakdown.creativeNodeIds).toEqual([]);
 
     const voted = room(
-      { ...start, n: ['nest', 'p1', { bird: 0.9, baby: 0.2 }] },
-      [[A, 'n'], ['n', B, { via: 'vote' }]],
+      { ...start, n: ['nest', 'p1'] },
+      [[A, 'n'], ['n', B, { via: 'vote', score: 0.2, datamuse: 0.2 }]],
     );
     expect(computeRoundScores(voted.nodes, voted.edges, A, B)!.breakdown.creativeNodeIds).toEqual([]);
 
-    const unscored = room({ ...start, n: ['nest', 'p1'] }, [[A, 'n'], ['n', B]]);
-    expect(computeRoundScores(unscored.nodes, unscored.edges, A, B)!.breakdown.creativeNodeIds).toEqual([]);
+    // Older rooms: score only on the nodes / edge, no Datamuse part recorded
+    const legacy = room(
+      { ...start, n: ['nest', 'p1', { bird: 0.9, baby: 0.2 }] },
+      [[A, 'n', { score: 0.9 }], ['n', B, { score: 0.2 }]],
+    );
+    expect(computeRoundScores(legacy.nodes, legacy.edges, A, B)!.breakdown.creativeNodeIds).toEqual([]);
   });
 });
