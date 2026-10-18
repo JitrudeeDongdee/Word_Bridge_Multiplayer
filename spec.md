@@ -87,7 +87,8 @@ Still open:
   `joinRoom` returns `password_required` / `wrong_password`. Asked on every join path (code,
   list, invite link, direct game link). Soft lock: rooms are readable and writable by
   anyone, so it only stops joining through the game UI.
-- **Room settings** (host only; room lobby + in-game drawer, `RoomSettings` →
+- **Room settings** (host only; room lobby behind a gear at the card's top-right corner,
+  collapsed by default (2026-10-18) + in-game drawer, `RoomSettings` →
   `updateRoomSettings`): rename (empty = default name), set a new password **without the old
   one** (the old one can't be shown — only its hash is stored), or remove the lock. Players
   already in the room stay; the password only applies to new joiners. A host who lost their

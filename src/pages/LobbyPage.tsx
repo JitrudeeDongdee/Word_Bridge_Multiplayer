@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Link2, Lock } from 'lucide-react';
+import { ArrowLeft, Check, Link2, Lock, Settings } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { useRoomSubscription } from '../hooks/useRoomSubscription';
@@ -17,6 +17,7 @@ export default function LobbyPage() {
   const [deleting, setDeleting] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleCopyLink = () => {
     const url = `${window.location.origin}${window.location.pathname}#/join/${roomId}`;
@@ -104,10 +105,26 @@ export default function LobbyPage() {
         >
           <ArrowLeft className="w-4 h-4" aria-hidden /> Main lobby
         </button>
-        <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6">
+        <div className="relative bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6">
+          {/* Host-only: room settings live behind the gear so they don't take space all the time */}
+          {isHost && (
+            <button
+              onClick={() => setShowSettings((v) => !v)}
+              aria-label="Room settings"
+              aria-expanded={showSettings}
+              aria-controls="lobby-room-settings"
+              title="Room settings"
+              className={`absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
+                showSettings ? 'bg-brand-50 text-brand-600' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+              }`}
+            >
+              <Settings className={`w-5 h-5 transition-transform ${showSettings ? 'rotate-90' : ''}`} aria-hidden />
+            </button>
+          )}
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Room Lobby</p>
-            <h2 className="text-2xl font-black text-brand-600 break-words">
+            {/* pr leaves room for the host's gear */}
+            <h2 className={`text-2xl font-black text-brand-600 break-words${isHost ? ' pr-8' : ''}`}>
               {room.name || defaultRoomName(players[room.hostId]?.name ?? 'Someone')}
             </h2>
             <p className="text-xs text-gray-400 mt-1 mb-3">
@@ -148,7 +165,11 @@ export default function LobbyPage() {
             />
           </div>
 
-          {isHost && <RoomSettings room={room} roomId={roomId} />}
+          {isHost && showSettings && (
+            <div id="lobby-room-settings">
+              <RoomSettings room={room} roomId={roomId} />
+            </div>
+          )}
 
           {isHost ? (
             <div className="flex flex-col gap-2">
