@@ -8,6 +8,8 @@ interface ChatPanelProps {
   playerId: string;
   playerColorMap: Record<string, string>;
   autoFocus?: boolean;
+  /** Fill the parent's height (side panel) instead of a capped list height */
+  fill?: boolean;
 }
 
 function formatTime(ts: number): string {
@@ -15,7 +17,7 @@ function formatTime(ts: number): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function ChatPanel({ messages, sendMessage, playerId, playerColorMap, autoFocus }: ChatPanelProps) {
+export default function ChatPanel({ messages, sendMessage, playerId, playerColorMap, autoFocus, fill = false }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -50,12 +52,12 @@ export default function ChatPanel({ messages, sendMessage, playerId, playerColor
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={`flex flex-col gap-2${fill ? ' flex-1 min-h-0' : ''}`}>
       {/* Message list */}
       <div
         ref={listRef}
         onScroll={handleScroll}
-        className="flex flex-col gap-1.5 max-h-[50vh] md:max-h-80 overflow-y-auto pr-1"
+        className={`flex flex-col gap-1.5 overflow-y-auto pr-1 ${fill ? 'flex-1 min-h-0' : 'max-h-[50vh] md:max-h-80'}`}
       >
         {messages.length === 0 && (
           <p className="text-xs text-gray-400 italic text-center py-3">No messages yet</p>
