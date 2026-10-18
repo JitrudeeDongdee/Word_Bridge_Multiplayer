@@ -140,6 +140,9 @@ Still open:
 ## Icons
 UI uses `lucide-react` icons (no emoji or symbol glyphs in components); decorative icons are
 `aria-hidden`, icon-only buttons have an `aria-label`.
+- App icon / favicon (2026-10-19): `public/favicon.svg` (three linked word dots on the brand blue,
+  replaced Vite's default logo), `public/apple-touch-icon.png` (180 px, full bleed), tab title
+  "Word Bridge", `theme-color` #0284c7. The 1024 px PNG of the same design is the Meta app icon.
 - Player counts include players who closed the tab without leaving (no disconnect cleanup).
 
 ## Game screen layout
