@@ -7,6 +7,7 @@ import { useWinDetection } from '../hooks/useWinDetection';
 import GameCanvas from '../components/GameCanvas';
 import AddWordPanel from '../components/AddWordPanel';
 import ChatDock from '../components/ChatDock';
+import ChatSidePanel from '../components/ChatSidePanel';
 import { useKeyboardInset } from '../hooks/useKeyboardInset';
 import VictoryModal from '../components/VictoryModal';
 import NewGameModal from '../components/NewGameModal';
@@ -18,6 +19,8 @@ import { resetToLobby, requestJoinGame, leaveRoom } from '../services/roomServic
 import { useHasHydrated } from '../hooks/useHasHydrated';
 import { preloadEmbeddingModel } from '../utils/embeddingSimilarity';
 import type { Room } from '../types';
+
+const CHAT_PINNED_KEY = 'wb-chat-pinned';
 
 export default function GamePage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -38,6 +41,14 @@ export default function GamePage() {
   const [copied, setCopied] = useState(false);
   const fitViewRef = useRef<(() => void) | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  // Chat pinned to the right edge on md+ screens (remembered per browser; on by default)
+  const [chatPinned, setChatPinned] = useState(() => {
+    try { return localStorage.getItem(CHAT_PINNED_KEY) !== '0'; } catch { return true; }
+  });
+  const pinChat = (pinned: boolean) => {
+    setChatPinned(pinned);
+    try { localStorage.setItem(CHAT_PINNED_KEY, pinned ? '1' : '0'); } catch { /* private mode: keep it for this visit */ }
+  };
   // dockTop: y just under the header, set while a keyboard we can't measure covers the bottom
   const { inset: keyboardInset, coveredTop: dockTop } = useKeyboardInset();
 
@@ -199,7 +210,7 @@ export default function GamePage() {
               (moved under the header while a keyboard we can't measure covers the bottom) */}
           {room.status === 'playing' && (
             <div
-              className="fixed inset-x-0 z-30 flex justify-center px-4 pointer-events-none"
+              className={`fixed inset-x-0 z-30 flex justify-center px-4 pointer-events-none${chatPinned ? ' md:right-80' : ''}`}
               style={dockTop != null ? { top: dockTop } : { bottom: 16 + keyboardInset }}
             >
               <div className="pointer-events-auto relative w-full max-w-xl flex items-end gap-2">
@@ -231,11 +242,23 @@ export default function GamePage() {
                   playerColorMap={playerColorMap}
                   keyboardInset={keyboardInset}
                   sheetTop={dockTop}
+                  pinnedOnDesktop={chatPinned}
+                  onPin={() => pinChat(true)}
                 />
               </div>
             </div>
           )}
         </main>
+
+        {chatPinned && playerId && (
+          <ChatSidePanel
+            roomId={roomId}
+            playerId={playerId}
+            playerName={room.players?.[playerId]?.name ?? 'Player'}
+            playerColorMap={playerColorMap}
+            onCollapse={() => pinChat(false)}
+          />
+        )}
 
         {/* Drawer backdrop */}
         {sidebarOpen && (

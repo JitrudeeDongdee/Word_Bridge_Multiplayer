@@ -115,6 +115,10 @@ UI uses `lucide-react` icons (no emoji or symbol glyphs in components); decorati
 - Bottom dock (`GamePage`), centered, max-width 36rem: add-word input (or the spectator
   "Watching / Join now" card) + 💬 chat button. Shown only while `status === 'playing'`.
   It follows the on-screen keyboard via `useKeyboardInset` (visualViewport).
+- Chat pinned to the right edge on md+ screens (`ChatSidePanel`, 320 px, on by default,
+  remembered per browser in `localStorage['wb-chat-pinned']`) so it's visible while playing;
+  collapse → back to the icon below, whose popover has a pin button (2026-10-18).
+  Mobile always uses the icon / sheet.
 - Chat (`ChatDock`): icon with an unread badge (messages from others since the panel was
   last closed; history from before the page opened counts as read). Opens as a popover on
   desktop, a bottom sheet on mobile.

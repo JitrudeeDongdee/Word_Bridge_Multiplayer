@@ -1,4 +1,4 @@
-import { MessageCircle, X } from 'lucide-react';
+import { MessageCircle, PanelRightOpen, X } from 'lucide-react';
 import { useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import ChatPanel from './ChatPanel';
@@ -12,13 +12,17 @@ interface ChatDockProps {
   keyboardInset?: number;
   /** When set, the keyboard covers the bottom of the screen: open the mobile sheet from this y instead */
   sheetTop?: number | null;
+  /** The chat is pinned to the right edge on md+ screens: this dock is for small screens only */
+  pinnedOnDesktop?: boolean;
+  /** Pin the chat to the right edge (md+) */
+  onPin?: () => void;
 }
 
 /**
  * Chat collapsed to an icon button with an unread badge.
  * Opens as a popover above the word dock (a bottom sheet on mobile).
  */
-export default function ChatDock({ roomId, playerId, playerName, playerColorMap, keyboardInset = 0, sheetTop = null }: ChatDockProps) {
+export default function ChatDock({ roomId, playerId, playerName, playerColorMap, keyboardInset = 0, sheetTop = null, pinnedOnDesktop = false, onPin }: ChatDockProps) {
   const { messages, sendMessage } = useChat(roomId, playerId, playerName);
   const [open, setOpen] = useState(false);
   // Messages from before this player opened the page count as already read
@@ -50,10 +54,22 @@ export default function ChatDock({ roomId, playerId, playerName, playerColorMap,
               // desktop: popover above the dock, right-aligned
               sheetTop != null ? 'fixed inset-x-0 top-[var(--sheet-top)] rounded-b-2xl' : 'fixed inset-x-0 bottom-[var(--kb)] rounded-t-2xl',
               'md:absolute md:inset-x-auto md:right-0 md:bottom-full md:mb-2 md:w-80 md:rounded-2xl',
+              pinnedOnDesktop ? 'md:hidden' : '',
             ].join(' ')}
           >
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Chat</p>
+              <div className="flex items-center gap-1">
+              {onPin && (
+                <button
+                  onClick={() => { toggle(); onPin(); }}
+                  aria-label="Pin chat to the right"
+                  title="Keep chat open on the right"
+                  className="hidden md:flex w-7 h-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                >
+                  <PanelRightOpen className="w-4 h-4" aria-hidden />
+                </button>
+              )}
               <button
                 onClick={toggle}
                 aria-label="Close chat"
@@ -61,6 +77,7 @@ export default function ChatDock({ roomId, playerId, playerName, playerColorMap,
               >
                 <X className="w-4 h-4" aria-hidden />
               </button>
+              </div>
             </div>
             <ChatPanel
               messages={messages}
@@ -77,6 +94,7 @@ export default function ChatDock({ roomId, playerId, playerName, playerColorMap,
         aria-label={unread > 0 ? `Chat, ${unread} unread` : 'Chat'}
         className={[
           'relative flex-shrink-0 w-12 h-12 rounded-2xl border shadow-lg flex items-center justify-center transition-colors',
+          pinnedOnDesktop ? 'md:hidden' : '',
           open ? 'bg-brand-500 border-brand-600 text-white' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50',
         ].join(' ')}
       >
