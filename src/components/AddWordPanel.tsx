@@ -6,9 +6,11 @@ import { useCustomWordsSubscription } from '../hooks/useCustomWordsSubscription'
 interface AddWordPanelProps {
   roomId: string;
   onSuccess?: () => void;
+  /** Show the error bubble under the input (when the dock sits at the top of the screen) */
+  popupBelow?: boolean;
 }
 
-export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
+export default function AddWordPanel({ roomId, onSuccess, popupBelow = false }: AddWordPanelProps) {
   const [word, setWord] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
@@ -240,7 +242,7 @@ export default function AddWordPanel({ roomId, onSuccess }: AddWordPanelProps) {
       {error && (
         <p
           role="alert"
-          className="absolute bottom-full left-0 right-0 mb-3 px-3 py-2 rounded-xl bg-white border border-red-200 shadow-lg text-red-500 text-xs"
+          className={`absolute left-0 right-0 px-3 py-2 rounded-xl bg-white border border-red-200 shadow-lg text-red-500 text-xs ${popupBelow ? 'top-full mt-3' : 'bottom-full mb-3'}`}
         >
           {error}
         </p>

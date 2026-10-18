@@ -38,7 +38,8 @@ export default function GamePage() {
   const [copied, setCopied] = useState(false);
   const fitViewRef = useRef<(() => void) | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const keyboardInset = useKeyboardInset();
+  // dockTop: y just under the header, set while a keyboard we can't measure covers the bottom
+  const { inset: keyboardInset, coveredTop: dockTop } = useKeyboardInset();
 
   // Download the word-similarity model in the background so the first word isn't slow
   useEffect(() => {
@@ -194,11 +195,12 @@ export default function GamePage() {
             />
           )}
 
-          {/* Word dock: add-word input + chat, floating at the bottom of the canvas */}
+          {/* Word dock: add-word input + chat, floating at the bottom of the canvas
+              (moved under the header while a keyboard we can't measure covers the bottom) */}
           {room.status === 'playing' && (
             <div
               className="fixed inset-x-0 z-30 flex justify-center px-4 pointer-events-none"
-              style={{ bottom: 16 + keyboardInset }}
+              style={dockTop != null ? { top: dockTop } : { bottom: 16 + keyboardInset }}
             >
               <div className="pointer-events-auto relative w-full max-w-xl flex items-end gap-2">
                 <div className="flex-1 min-w-0 bg-white/95 backdrop-blur border border-gray-200 rounded-2xl shadow-lg px-3 py-2">
@@ -219,7 +221,7 @@ export default function GamePage() {
                       )}
                     </div>
                   ) : (
-                    <AddWordPanel roomId={roomId} />
+                    <AddWordPanel roomId={roomId} popupBelow={dockTop != null} />
                   )}
                 </div>
                 <ChatDock
@@ -228,6 +230,7 @@ export default function GamePage() {
                   playerName={room.players?.[playerId]?.name ?? 'Player'}
                   playerColorMap={playerColorMap}
                   keyboardInset={keyboardInset}
+                  sheetTop={dockTop}
                 />
               </div>
             </div>
