@@ -7,6 +7,7 @@ import { useGameStore } from '../store/useGameStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { usePresence } from '../hooks/usePresence';
 import AccountButtons from '../components/AccountButtons';
+import PolicyLinks from '../components/PolicyLinks';
 import { defaultRoomName, joinErrorMessage } from '../services/roomIndexService';
 import type { RoomIndexEntry } from '../types';
 
@@ -322,6 +323,7 @@ export default function HomePage() {
             {totalCount === null ? '…' : totalCount.toLocaleString()} total players
           </div>
         </div>
+        <PolicyLinks className="mt-3" />
       </div>
     </div>
   );

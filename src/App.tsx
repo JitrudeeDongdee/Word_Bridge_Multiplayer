@@ -7,6 +7,7 @@ import GamePage from './pages/GamePage';
 import VictoryPage from './pages/VictoryPage';
 import RoomsPage from './pages/RoomsPage';
 import AuthPage from './pages/AuthPage';
+import DeleteDataPage from './pages/DeleteDataPage';
 import { useVersionCheck } from './hooks/useVersionCheck';
 import AuthGate from './components/AuthGate';
 
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/rooms" element={<RoomsPage />} />
           <Route path="/login" element={<AuthPage key="login" mode="login" />} />
           <Route path="/signup" element={<AuthPage key="signup" mode="signup" />} />
+          <Route path="/delete-data" element={<DeleteDataPage />} />
           <Route path="/join/:roomId" element={<HomePage />} />
           <Route path="/lobby/:roomId" element={<LobbyPage />} />
           <Route path="/game/:roomId" element={<GamePage />} />

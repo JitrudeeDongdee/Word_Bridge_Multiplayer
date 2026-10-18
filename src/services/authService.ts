@@ -11,13 +11,14 @@ import {
   signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
+  deleteUser,
   signOut as fbSignOut,
   updateProfile,
   type AuthProvider,
   type User,
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
-import { get, ref, set, update } from 'firebase/database';
+import { get, ref, remove, set, update } from 'firebase/database';
 import { auth, db } from './firebase';
 
 /**
@@ -150,6 +151,31 @@ export async function logOut(): Promise<User | null> {
   return ensureSignedIn();
 }
 
+/**
+ * Deletes everything stored about the signed-in player (guest or member): their profile,
+ * their link votes, their seat in any room, and the sign-in account itself. Rooms, chat and
+ * words already expire on their own. Afterwards the browser continues as a fresh guest.
+ */
+export async function deleteMyData(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('not signed in');
+  const uid = user.uid;
+  const [votes, rooms] = await Promise.all([get(ref(db, 'pairVotes')), get(ref(db, 'rooms'))]);
+  const removals: Promise<void>[] = [remove(ref(db, `users/${uid}`))];
+  for (const [pair, record] of Object.entries((votes.val() ?? {}) as Record<string, { voters?: Record<string, { playerId?: string }> }>)) {
+    for (const [voter, v] of Object.entries(record.voters ?? {})) {
+      if (v?.playerId === uid) removals.push(remove(ref(db, `pairVotes/${pair}/voters/${voter}`)));
+    }
+  }
+  for (const [roomId, room] of Object.entries((rooms.val() ?? {}) as Record<string, { players?: Record<string, unknown> }>)) {
+    if (room.players?.[uid]) removals.push(remove(ref(db, `rooms/${roomId}/players/${uid}`)));
+  }
+  await Promise.all(removals);
+  // Last: needs a recent sign-in for members (auth/requires-recent-login)
+  await deleteUser(user);
+  await ensureSignedIn();
+}
+
 /** Friendly text for Firebase Auth errors. */
 export function authErrorMessage(e: unknown): string {
   const code = e instanceof FirebaseError ? e.code : '';
@@ -182,6 +208,8 @@ export function authErrorMessage(e: unknown): string {
       return "This sign-in method isn't turned on yet.";
     case 'auth/unauthorized-domain':
       return "Sign-in isn't set up for this website address yet.";
+    case 'auth/requires-recent-login':
+      return 'For your security, log out and log in again, then delete your data.';
     case 'auth/network-request-failed':
       return 'Network error. Check your connection.';
     default:

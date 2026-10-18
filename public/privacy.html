@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy Policy · Word Bridge</title>
+<meta name="description" content="What Word Bridge collects, why, who it is shared with, how long it is kept, and how to delete it." />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<style>
+  :root { color-scheme: light; --brand: #0284c7; --text: #1f2937; --muted: #6b7280; --line: #e5e7eb; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f0f9ff; color: var(--text); font: 16px/1.65 system-ui, -apple-system, "Segoe UI", "Noto Sans Thai", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(2, 32, 71, .08); padding: 28px 24px; }
+  h1 { color: var(--brand); margin: 0 0 4px; font-size: 1.9rem; }
+  h2 { margin: 28px 0 8px; font-size: 1.15rem; }
+  .meta { color: var(--muted); font-size: .9rem; margin: 0 0 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; margin: 8px 0; }
+  th, td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px solid var(--line); }
+  th { background: #f8fafc; }
+  a { color: var(--brand); overflow-wrap: anywhere; }
+  .lang { display: flex; gap: 12px; font-size: .9rem; margin-bottom: 16px; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 40px 0; }
+  @media (max-width: 560px) { table, thead, tbody, tr, th, td { display: block; } thead { display: none; } td { border: 0; padding: 2px 0; } tr { border-bottom: 1px solid var(--line); padding: 8px 0; } td:first-child { font-weight: 600; } }
+</style>
+</head>
+<body>
+<main>
+<div class="card">
+  <div class="lang"><a href="#en">English</a><a href="#th">ภาษาไทย</a><a href="./">← Back to the game</a></div>
+
+  <section id="en" lang="en">
+    <h1>Privacy Policy</h1>
+    <p class="meta">Word Bridge · Effective October 19, 2026</p>
+
+    <p>Word Bridge is a free multiplayer word game played in the browser at
+      <a href="./">jitrudeedongdee.github.io/Word_Bridge_Multiplayer</a>. This page explains what the game stores,
+      why, who else receives it, how long it is kept, and how you can delete it.</p>
+
+    <h2>What we collect</h2>
+    <table>
+      <thead><tr><th>Data</th><th>When</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>A random player ID (Firebase user ID)</td><td>Every visitor, including guests</td><td>To know which player you are in a room and to protect the database</td></tr>
+        <tr><td>Display name</td><td>When you create or join a room, or sign up</td><td>Shown to other players</td></tr>
+        <tr><td>Email address, and the name / profile photo link from Google or Facebook</td><td>Only if you sign up or log in with email, Google or Facebook</td><td>To log you in on any device. Stored by Firebase Authentication; the game itself only keeps your display name</td></tr>
+        <tr><td>Public IP address</td><td>When you create or join a room or vote to link two words</td><td>Stored with your seat in the room, and to count one vote per person</td></tr>
+        <tr><td>Game content: words you add, chat messages, scores, room name and password lock</td><td>While you play</td><td>To run the game for everyone in the room</td></tr>
+        <tr><td>Votes to link two words (the two words, a voter key based on your IP or player ID, your player ID, time)</td><td>When you use “Vote link”</td><td>To teach the game which words belong together</td></tr>
+        <tr><td>Online status and device type (mobile / desktop)</td><td>While the game is open</td><td>To show how many players are online</td></tr>
+        <tr><td>Browser storage: your player ID and name, display preferences (chat panel, dictionary images), sign-in session</td><td>On your own device</td><td>To keep you in your room after a reload and remember your settings</td></tr>
+      </tbody>
+    </table>
+    <p>We do not sell your data, show ads, or use it to build advertising profiles.</p>
+
+    <h2>Who else receives data</h2>
+    <ul>
+      <li><b>Google Firebase</b> (Realtime Database and Authentication, United States) stores the game data and accounts.</li>
+      <li><b>Google</b> or <b>Meta (Facebook)</b> handle the sign-in if you choose them.</li>
+      <li><b>GitHub Pages</b> hosts the website.</li>
+      <li><b>ipify</b> (api.ipify.org) is asked for your public IP address.</li>
+      <li>Words you type are sent to <b>Datamuse</b>, <b>Free Dictionary API</b> (dictionaryapi.dev) and <b>Wikipedia</b> to check them, find definitions and pictures. They receive the word, not your name.</li>
+      <li>The word-meaning model is downloaded from <b>Hugging Face</b> and runs on your device; your words are not sent to it.</li>
+      <li>Pronunciation uses your browser's built-in speech voices.</li>
+    </ul>
+    <p>Other players in your room see your display name, your words, chat messages and scores.</p>
+
+    <h2>How long we keep it</h2>
+    <ul>
+      <li>Rooms — including players' names, IP addresses, words and chat — are deleted automatically: after 30 minutes of inactivity once a game is won, after 2 hours of inactivity, and at the latest 24 hours after the room was created (cleanup runs whenever a new room is created).</li>
+      <li>Online status is removed when you close the game.</li>
+      <li>Your account, display name and link votes are kept until you delete them.</li>
+      <li>New words added to the shared word list and pairs the players taught the game are kept; they contain no personal data.</li>
+    </ul>
+
+    <h2>Your choices and rights</h2>
+    <ul>
+      <li>You can play as a guest without giving an email address.</li>
+      <li><b>Delete your data</b> at any time on the <a href="data-deletion.html">data deletion page</a>.</li>
+      <li>To ask what we hold about you, to correct it, or anything else about privacy, email
+        <a href="mailto:jitrudee9723@gmail.com">jitrudee9723@gmail.com</a>.</li>
+    </ul>
+
+    <h2>Children</h2>
+    <p>Word Bridge is a general-audience game and does not knowingly collect more than a display name from children. Chat is visible to everyone in the room, so don't share personal details there.</p>
+
+    <h2>Security</h2>
+    <p>Data is sent over HTTPS. Database rules only allow signed-in players, and players can change only their own data and the rooms they are in. Room passwords are stored as salted hashes.</p>
+
+    <h2>Changes</h2>
+    <p>If this policy changes, the new version and its date will be posted on this page.</p>
+  </section>
+
+  <hr />
+
+  <section id="th" lang="th">
+    <h1>นโยบายความเป็นส่วนตัว</h1>
+    <p class="meta">Word Bridge · มีผลตั้งแต่ 19 ตุลาคม 2569</p>
+
+    <p>Word Bridge เป็นเกมเชื่อมคำแบบผู้เล่นหลายคน เล่นฟรีบนเบราว์เซอร์ หน้านี้อธิบายว่าเกมเก็บข้อมูลอะไร เพื่ออะไร ส่งให้ใคร เก็บนานแค่ไหน และลบได้อย่างไร</p>
+
+    <h2>ข้อมูลที่เก็บ</h2>
+    <ul>
+      <li><b>รหัสผู้เล่นแบบสุ่ม</b> (Firebase user ID) — ทุกคนรวมถึง guest ใช้ระบุตัวผู้เล่นในห้องและป้องกันฐานข้อมูล</li>
+      <li><b>ชื่อที่แสดง</b> — ตอนสร้าง/เข้าห้อง หรือสมัครสมาชิก ผู้เล่นคนอื่นจะเห็นชื่อนี้</li>
+      <li><b>อีเมล และชื่อ/ลิงก์รูปโปรไฟล์จาก Google หรือ Facebook</b> — เฉพาะเมื่อสมัครหรือล็อกอินด้วยช่องทางเหล่านี้ เก็บโดย Firebase Authentication ส่วนตัวเกมเก็บแค่ชื่อที่แสดง</li>
+      <li><b>IP address สาธารณะ</b> — ตอนสร้าง/เข้าห้อง และตอนโหวตเชื่อมคำ เก็บไว้กับที่นั่งในห้อง และใช้นับหนึ่งเสียงต่อหนึ่งคน</li>
+      <li><b>เนื้อหาในเกม</b> — คำที่พิมพ์ ข้อความแชท คะแนน ชื่อห้อง และการล็อกห้อง</li>
+      <li><b>การโหวตเชื่อมคำ</b> — คำทั้งสอง คีย์ผู้โหวต (จาก IP หรือรหัสผู้เล่น) รหัสผู้เล่น และเวลา</li>
+      <li><b>สถานะออนไลน์และชนิดอุปกรณ์</b> (มือถือ/คอม) — ใช้แสดงจำนวนคนออนไลน์</li>
+      <li><b>ข้อมูลในเบราว์เซอร์ของคุณเอง</b> — รหัสผู้เล่น ชื่อ การตั้งค่าการแสดงผล และ session การล็อกอิน</li>
+    </ul>
+    <p>เราไม่ขายข้อมูล ไม่มีโฆษณา และไม่นำข้อมูลไปทำโปรไฟล์โฆษณา</p>
+
+    <h2>ผู้ที่ได้รับข้อมูล</h2>
+    <ul>
+      <li><b>Google Firebase</b> (สหรัฐอเมริกา) เก็บข้อมูลเกมและบัญชี</li>
+      <li><b>Google</b> หรือ <b>Meta (Facebook)</b> เมื่อคุณเลือกล็อกอินด้วยช่องทางนั้น</li>
+      <li><b>GitHub Pages</b> โฮสต์เว็บไซต์ · <b>ipify</b> ใช้หา IP สาธารณะ</li>
+      <li>คำที่พิมพ์ถูกส่งไปที่ <b>Datamuse</b>, <b>dictionaryapi.dev</b> และ <b>Wikipedia</b> เพื่อตรวจคำ หาความหมายและรูป (ส่งแค่คำ ไม่ส่งชื่อ)</li>
+      <li>โมเดลเทียบความหมายดาวน์โหลดจาก <b>Hugging Face</b> และประมวลผลในเครื่องของคุณ · เสียงอ่านใช้เสียงของเบราว์เซอร์</li>
+    </ul>
+    <p>ผู้เล่นในห้องเดียวกันจะเห็นชื่อ คำ แชท และคะแนนของคุณ</p>
+
+    <h2>ระยะเวลาเก็บ</h2>
+    <ul>
+      <li>ห้อง (รวมชื่อ IP คำ และแชท) ถูกลบอัตโนมัติ: 30 นาทีหลังจบเกมที่ไม่มีความเคลื่อนไหว, 2 ชั่วโมงที่ไม่มีความเคลื่อนไหว และไม่เกิน 24 ชั่วโมงหลังสร้างห้อง (ระบบล้างทำงานทุกครั้งที่มีการสร้างห้องใหม่)</li>
+      <li>สถานะออนไลน์ถูกลบเมื่อปิดเกม</li>
+      <li>บัญชี ชื่อที่แสดง และการโหวต เก็บไว้จนกว่าคุณจะลบ</li>
+      <li>คำใหม่ในคลังคำรวม และคู่คำที่ผู้เล่นสอนเกม ถูกเก็บไว้ โดยไม่มีข้อมูลส่วนบุคคล</li>
+    </ul>
+
+    <h2>สิทธิ์ของคุณ</h2>
+    <ul>
+      <li>เล่นแบบ guest ได้โดยไม่ต้องให้อีเมล</li>
+      <li><b>ลบข้อมูลของคุณ</b> ได้ทุกเมื่อที่ <a href="data-deletion.html">หน้าลบข้อมูล</a></li>
+      <li>ขอดู แก้ไขข้อมูล หรือสอบถามเรื่องความเป็นส่วนตัว อีเมล <a href="mailto:jitrudee9723@gmail.com">jitrudee9723@gmail.com</a></li>
+    </ul>
+
+    <h2>ความปลอดภัย</h2>
+    <p>ข้อมูลส่งผ่าน HTTPS · กฎฐานข้อมูลให้เฉพาะผู้ที่ล็อกอิน (รวม guest) และแก้ได้เฉพาะข้อมูลของตัวเองและห้องที่อยู่ · รหัสผ่านห้องเก็บแบบ hash พร้อม salt</p>
+
+    <h2>การเปลี่ยนแปลง</h2>
+    <p>ถ้านโยบายนี้เปลี่ยน จะแจ้งเวอร์ชันใหม่และวันที่ไว้ที่หน้านี้</p>
+  </section>
+</div>
+</main>
+</body>
+</html>

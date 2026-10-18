@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, LogOut, Mail, UserRound } from 'lucide-react';
 import { FacebookIcon, GoogleIcon } from '../components/BrandIcons';
+import PolicyLinks from '../components/PolicyLinks';
 import {
   NAME_MAX,
   authErrorMessage,
@@ -248,6 +249,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
         >
           {isMember(user) ? 'Back to the game' : 'Continue as guest'}
         </button>
+        <PolicyLinks />
       </div>
     </div>
   );

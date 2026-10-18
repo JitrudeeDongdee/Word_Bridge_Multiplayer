@@ -106,6 +106,15 @@ Still open:
   `users/{uid}` ({name, createdAt}); `AccountButtons` shows it. Phone sign-in not built.
   If anonymous sign-in fails (provider off / offline) the app runs without auth — works only
   while the database rules are open. Popups fail in some in-app browsers (error says so).
+- **Privacy & data deletion (2026-10-19):** static `public/privacy.html` and
+  `public/data-deletion.html` (EN + TH, no JS needed — Meta's checker can read them), linked from
+  Home and the auth pages (`PolicyLinks`). In-app `/delete-data` (`DeleteDataPage` →
+  `deleteMyData()`): removes `users/{uid}`, the player's link votes (matched by `playerId`), their
+  seat in every room, then the auth user (members may need a fresh login:
+  `auth/requires-recent-login`), and continues as a new guest. Keep the policy in step with the
+  code: it lists ipify (IP stored with room seats + vote keys), Datamuse / dictionaryapi.dev /
+  Wikipedia (words), Hugging Face (model download, runs locally), room expiry times, and the
+  contact email (owner's Gmail). Meta URLs: `…/privacy.html` and `…/data-deletion.html`.
 - **Database rules** live in `database.rules.json` (repo is the source; publish via the
   console). Signed-in users only; room members edit their room, outsiders may only add/remove
   themselves (`players/{uid}`), host-only delete (or empty / stale rooms), no host takeover,
