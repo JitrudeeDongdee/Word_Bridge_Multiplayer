@@ -140,6 +140,12 @@ Points are awarded only when the round is won (`useWinDetection`, host's client)
   pairs (1.0) and older edges without `datamuse` don't count either.
 - No per-player word cap (a 5-word cap was tried and removed 2026-10-17 at the owner's request;
   only the 50-node room limit applies).
+- **Ghost nodes** (bug found 2026-10-18 in a live room, 2JN383): a position write that landed
+  after its node was deleted (a word rejected while dragged / relaid out) recreated it as a
+  word-less `{x, y}`; `validateWord` then crashed on `n.word` and nobody could add words.
+  Position writes now use a transaction that does nothing if the node is gone, and
+  `dropGhostNodes` filters word-less nodes on every read (`subscribeRoom`, `fetchNodes`) and
+  removes them from the room.
 - Breakdown saved as `room.roundBreakdown` and shown on the victory screen. Firebase drops
   empty arrays, so its arrays may be missing when read back.
   The victory box lays every line out on one grid (icon | item · who | points, right-aligned)

@@ -6,10 +6,12 @@ import {
   remove,
   onValue,
   off,
+  runTransaction,
   serverTimestamp,
 } from 'firebase/database';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from './firebase';
+import { dropGhostNodes } from '../utils/ghostNodes';
 import type { Room, Player, GameNode, GameEdge, SharedWordScore, LastWordScores, RoundBreakdown } from '../types';
 import { pickWordPair } from '../utils/wordPairs';
 import { generateRoomCode } from '../utils/generateRoomCode';
@@ -368,7 +370,8 @@ export async function resetToLobby(roomId: string): Promise<void> {
 
 export async function fetchNodes(roomId: string): Promise<Record<string, GameNode>> {
   const snapshot = await get(ref(db, `rooms/${roomId}/nodes`));
-  return snapshot.exists() ? (snapshot.val() as Record<string, GameNode>) : {};
+  if (!snapshot.exists()) return {};
+  return dropGhostNodes({ nodes: snapshot.val() } as Room).room.nodes ?? {};
 }
 
 export async function fetchEdges(roomId: string): Promise<Record<string, GameEdge>> {
@@ -420,21 +423,24 @@ export async function updateNodePosition(
   x: number,
   y: number,
 ): Promise<void> {
-  await update(ref(db, `rooms/${roomId}/nodes/${nodeId}`), { x, y });
+  await moveNodeIfExists(roomId, nodeId, x, y);
+}
+
+/**
+ * Transaction, not update(): update() would recreate a node that was deleted meanwhile
+ * (a word rejected while being dragged / relaid out) as a word-less `{ x, y }` ghost.
+ */
+async function moveNodeIfExists(roomId: string, nodeId: string, x: number, y: number): Promise<void> {
+  await runTransaction(ref(db, `rooms/${roomId}/nodes/${nodeId}`), (node) =>
+    node ? { ...node, x, y } : undefined,
+  );
 }
 
 export async function batchUpdateNodePositions(
   roomId: string,
   positions: Record<string, { x: number; y: number }>,
 ): Promise<void> {
-  const updates: Record<string, number> = {};
-  for (const [nodeId, pos] of Object.entries(positions)) {
-    updates[`rooms/${roomId}/nodes/${nodeId}/x`] = pos.x;
-    updates[`rooms/${roomId}/nodes/${nodeId}/y`] = pos.y;
-  }
-  if (Object.keys(updates).length > 0) {
-    await update(ref(db), updates);
-  }
+  await Promise.all(Object.entries(positions).map(([nodeId, pos]) => moveNodeIfExists(roomId, nodeId, pos.x, pos.y)));
 }
 
 /** Clears a node's pending flag once its word has been checked and linked. */
@@ -537,7 +543,13 @@ export async function markRoomWon(
 export function subscribeRoom(roomId: string, callback: (room: Room | null) => void): () => void {
   const roomRef = ref(db, `rooms/${roomId}`);
   onValue(roomRef, (snapshot) => {
-    callback(snapshot.exists() ? (snapshot.val() as Room) : null);
+    if (!snapshot.exists()) return callback(null);
+    // Hide word-less ghost nodes and clean them out of the room (any client may do it)
+    const { room, ghostIds } = dropGhostNodes(snapshot.val() as Room);
+    if (ghostIds.length > 0) {
+      update(ref(db, `rooms/${roomId}/nodes`), Object.fromEntries(ghostIds.map((id) => [id, null]))).catch(() => {});
+    }
+    callback(room);
   });
   return () => off(roomRef);
 }
