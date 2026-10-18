@@ -5,6 +5,7 @@ import { useRoomSubscription } from '../hooks/useRoomSubscription';
 import { startGame, deleteRoom, kickPlayer, leaveRoom } from '../services/roomService';
 import PlayerList from '../components/PlayerList';
 import RoomSettings from '../components/RoomSettings';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useState } from 'react';
 import { defaultRoomName } from '../services/roomIndexService';
 
@@ -18,6 +19,7 @@ export default function LobbyPage() {
   const [leaving, setLeaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [confirming, setConfirming] = useState<'delete' | 'leaveLast' | null>(null);
 
   const handleCopyLink = () => {
     const url = `${window.location.origin}${window.location.pathname}#/join/${roomId}`;
@@ -67,14 +69,18 @@ export default function LobbyPage() {
   };
 
   /** Leave the room (if in it) and open the main lobby. */
-  const handleMainLobby = async () => {
+  const handleMainLobby = () => {
     if (!roomId || !playerId || !players[playerId]) {
       navigate('/rooms');
       return;
     }
-    if (playerCount === 1 && !window.confirm('You are the only player — leaving closes this room. Go to the main lobby?')) {
-      return;
-    }
+    // Last one out closes the room: ask first
+    if (playerCount === 1) setConfirming('leaveLast');
+    else void leaveToMainLobby();
+  };
+
+  const leaveToMainLobby = async () => {
+    if (!playerId) return;
     setLeaving(true);
     try {
       await leaveRoom(roomId, playerId, players);
@@ -85,11 +91,10 @@ export default function LobbyPage() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Delete this room? All players will be removed.')) return;
     setDeleting(true);
     try {
       await deleteRoom(roomId);
-      navigate('/');
+      navigate('/rooms');
     } catch {
       setDeleting(false);
     }
@@ -181,7 +186,7 @@ export default function LobbyPage() {
                 {starting ? 'Starting…' : 'Start Game'}
               </button>
               <button
-                onClick={handleDelete}
+                onClick={() => setConfirming('delete')}
                 disabled={starting || deleting}
                 className="w-full py-2 rounded-xl border border-red-300 text-red-500 text-sm font-semibold hover:bg-red-50 disabled:opacity-50 transition-colors"
               >
@@ -207,6 +212,28 @@ export default function LobbyPage() {
           )}
         </div>
       </div>
+
+      {confirming === 'delete' && (
+        <ConfirmDialog
+          title="Delete this room?"
+          message="All players will be removed."
+          confirmLabel="Delete Room"
+          danger
+          busy={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirming(null)}
+        />
+      )}
+      {confirming === 'leaveLast' && (
+        <ConfirmDialog
+          title="Close this room?"
+          message="You are the only player — leaving closes this room."
+          confirmLabel="Go to main lobby"
+          busy={leaving}
+          onConfirm={leaveToMainLobby}
+          onCancel={() => setConfirming(null)}
+        />
+      )}
     </div>
   );
 }

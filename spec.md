@@ -87,6 +87,9 @@ Still open:
   `joinRoom` returns `password_required` / `wrong_password`. Asked on every join path (code,
   list, invite link, direct game link). Soft lock: rooms are readable and writable by
   anyone, so it only stops joining through the game UI.
+- Lobby confirmations (Delete Room, leaving as the last player) use the in-page
+  `ConfirmDialog`, not `window.confirm()` — in-app browsers / embedded previews never show
+  native dialogs, so the button looked dead (2026-10-18). Delete Room → main lobby (`/rooms`).
 - **Room settings** (host only; room lobby behind a gear at the card's top-right corner,
   collapsed by default (2026-10-18) + in-game drawer, `RoomSettings` →
   `updateRoomSettings`): rename (empty = default name), set a new password **without the old
