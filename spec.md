@@ -116,6 +116,12 @@ UI uses `lucide-react` icons (no emoji or symbol glyphs in components); decorati
   desktop, a bottom sheet on mobile.
 - Vote-link confirm panel sits top-center; MiniMap top-right (desktop only); zoom controls
   hidden on mobile (pinch zoom). `minZoom` 0.2 so both goal words fit on a phone.
+- On-screen keyboard: the word dock / chat sheet sit above it via `visualViewport`
+  (`useKeyboardInset`); `index.html` asks Chrome for `interactive-widget=resizes-content`.
+  Some in-app browsers (Messenger on Android, reported 2026-10-18) draw the keyboard over the
+  page without resizing anything, so nothing can be measured: when a text field is focused on
+  a touch screen and neither viewport shrank after 500 ms, the dock and chat sheet move just
+  under the header until the field loses focus.
 - Arrow keys pan the board (Shift = 3× step, 80 px base). Ignored while a field with text
   is focused or another handler used the key (suggestion list), so typing is unaffected.
 

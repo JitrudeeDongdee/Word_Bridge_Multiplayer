@@ -10,13 +10,15 @@ interface ChatDockProps {
   playerColorMap: Record<string, string>;
   /** Height hidden by the on-screen keyboard, so the mobile sheet stays above it */
   keyboardInset?: number;
+  /** When set, the keyboard covers the bottom of the screen: open the mobile sheet from this y instead */
+  sheetTop?: number | null;
 }
 
 /**
  * Chat collapsed to an icon button with an unread badge.
  * Opens as a popover above the word dock (a bottom sheet on mobile).
  */
-export default function ChatDock({ roomId, playerId, playerName, playerColorMap, keyboardInset = 0 }: ChatDockProps) {
+export default function ChatDock({ roomId, playerId, playerName, playerColorMap, keyboardInset = 0, sheetTop = null }: ChatDockProps) {
   const { messages, sendMessage } = useChat(roomId, playerId, playerName);
   const [open, setOpen] = useState(false);
   // Messages from before this player opened the page count as already read
@@ -41,11 +43,12 @@ export default function ChatDock({ roomId, playerId, playerName, playerColorMap,
           {/* Mobile backdrop */}
           <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={toggle} />
           <div
-            style={{ '--kb': `${keyboardInset}px` } as React.CSSProperties}
+            style={{ '--kb': `${keyboardInset}px`, '--sheet-top': `${sheetTop ?? 0}px` } as React.CSSProperties}
             className={[
               'z-50 bg-white border border-gray-200 shadow-xl p-3 flex flex-col gap-2',
-              // Mobile: bottom sheet above the keyboard; desktop: popover above the dock, right-aligned
-              'fixed inset-x-0 bottom-[var(--kb)] rounded-t-2xl',
+              // Mobile: bottom sheet above the keyboard, or a top sheet when the keyboard covers the bottom;
+              // desktop: popover above the dock, right-aligned
+              sheetTop != null ? 'fixed inset-x-0 top-[var(--sheet-top)] rounded-b-2xl' : 'fixed inset-x-0 bottom-[var(--kb)] rounded-t-2xl',
               'md:absolute md:inset-x-auto md:right-0 md:bottom-full md:mb-2 md:w-80 md:rounded-2xl',
             ].join(' ')}
           >
