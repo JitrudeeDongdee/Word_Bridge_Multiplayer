@@ -4,6 +4,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { createRoom, joinRoom } from '../services/roomService';
 import { getPublicIP } from '../utils/network';
 import { useGameStore } from '../store/useGameStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { usePresence } from '../hooks/usePresence';
 import AccountButtons from '../components/AccountButtons';
 import { defaultRoomName, joinErrorMessage } from '../services/roomIndexService';
@@ -24,7 +25,13 @@ export default function HomePage() {
   const navState = useLocation().state as { room?: RoomIndexEntry; mode?: 'create' } | null;
   const fromLobby = navState?.room ?? null;
   const [mode, setMode] = useState<'menu' | 'create' | 'join'>(navState?.mode === 'create' ? 'create' : 'menu');
-  const [name, setName] = useState(randomName);
+  // A member plays under their account name; a guest gets their last name back, or a random one
+  const memberName = useAuthStore((s) => s.memberName);
+  const lastName = useGameStore((s) => s.playerName);
+  const [fallbackName] = useState(randomName);
+  // Until the player types one; the member's saved name arrives a moment after sign-in
+  const [typedName, setName] = useState<string | null>(null);
+  const name = typedName ?? (memberName || lastName || fallbackName);
   const [code, setCode] = useState('');
   const [roomName, setRoomName] = useState('');
   const [createPassword, setCreatePassword] = useState('');

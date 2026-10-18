@@ -8,6 +8,7 @@ import VictoryPage from './pages/VictoryPage';
 import RoomsPage from './pages/RoomsPage';
 import AuthPage from './pages/AuthPage';
 import { useVersionCheck } from './hooks/useVersionCheck';
+import AuthGate from './components/AuthGate';
 
 /**
  * "New version" notice: a small dismissible card under the header (on phones, below the
@@ -46,6 +47,7 @@ function UpdateBanner() {
 export default function App() {
   return (
     <>
+      <AuthGate>
       <HashRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -58,6 +60,7 @@ export default function App() {
           <Route path="/victory/:roomId" element={<VictoryPage />} />
         </Routes>
       </HashRouter>
+      </AuthGate>
       <UpdateBanner />
     </>
   );

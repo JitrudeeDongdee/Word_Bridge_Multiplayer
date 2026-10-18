@@ -1,0 +1,87 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "rooms": {
+      ".read": "auth != null",
+      "$roomId": {
+        ".write": "auth != null && ((!data.exists() && newData.child('hostId').val() === auth.uid && newData.child('players').hasChild(auth.uid)) || (data.exists() && newData.exists() && data.child('players').hasChild(auth.uid)) || (data.exists() && !newData.exists() && (data.child('hostId').val() === auth.uid || !data.child('players').exists() || !data.child('lastActiveAt').exists() || data.child('lastActiveAt').val() < now - 7200000 || data.child('createdAt').val() < now - 86400000 || (data.child('status').val() === 'won' && data.child('lastActiveAt').val() < now - 1800000))))",
+        "hostId": {
+          ".validate": "newData.isString() && (!data.exists() || data.val() === auth.uid || newData.val() === data.val())"
+        },
+        "players": {
+          "$playerId": {
+            ".write": "auth != null && $playerId === auth.uid && root.child('rooms').child($roomId).exists()",
+            ".validate": "newData.hasChildren(['id', 'name']) && newData.child('id').val() === $playerId && newData.child('name').isString() && newData.child('name').val().length <= 30"
+          }
+        },
+        "chat": {
+          "$messageId": {
+            ".validate": "newData.child('playerId').val() === auth.uid && newData.child('text').isString() && newData.child('text').val().length <= 200"
+          }
+        }
+      }
+    },
+
+    "roomIndex": {
+      ".read": "auth != null",
+      "$roomId": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['id', 'name', 'playerCount', 'status', 'hasPassword', 'lastActiveAt']) && newData.child('id').val() === $roomId"
+      }
+    },
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['name']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 20"
+      }
+    },
+
+    "presence": {
+      ".read": "auth != null",
+      "$sessionId": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['joinedAt'])"
+      }
+    },
+
+    "stats": {
+      ".read": "auth != null",
+      "totalPlayers": {
+        ".write": "auth != null",
+        ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+      }
+    },
+
+    "globalCustomWords": {
+      ".read": "auth != null",
+      "$word": {
+        ".write": "auth != null",
+        ".validate": "newData.child('word').val() === $word && $word.length <= 30"
+      }
+    },
+
+    "pairVotes": {
+      ".read": "auth != null",
+      "$pair": {
+        ".write": "auth != null",
+        "voters": {
+          "$voter": {
+            ".validate": "newData.hasChildren(['playerId', 'at']) && newData.child('playerId').val() === auth.uid"
+          }
+        }
+      }
+    },
+
+    "learnedPairs": {
+      ".read": "auth != null",
+      "$pair": {
+        ".write": "auth != null",
+        ".validate": "newData.val() === true"
+      }
+    }
+  }
+}

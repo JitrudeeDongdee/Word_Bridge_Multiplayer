@@ -1,42 +1,98 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Info, ShieldCheck, Smartphone } from 'lucide-react';
+import { ArrowLeft, LogOut, Mail, UserRound } from 'lucide-react';
 import { FacebookIcon, GoogleIcon } from '../components/BrandIcons';
+import {
+  NAME_MAX,
+  authErrorMessage,
+  isMember,
+  logInWithEmail,
+  logOut,
+  resetPassword,
+  signInWithFacebook,
+  signInWithGoogle,
+  signUpWithEmail,
+  type SignedIn,
+} from '../services/authService';
+import { useAuthStore } from '../store/useAuthStore';
+import { useGameStore } from '../store/useGameStore';
 
 type Mode = 'login' | 'signup';
 
 /**
- * Log in / Sign up — UI preview only. Accounts aren't built yet: no provider is
- * contacted, no SMS is sent and nothing is stored. Every action ends in a
- * "coming soon" notice; wire the handlers up when auth lands.
+ * Log in / Sign up with Google, Facebook or email + password (Firebase Auth).
+ * A guest who signs up keeps their player id (the anonymous account is upgraded).
  */
 export default function AuthPage({ mode }: { mode: Mode }) {
   const navigate = useNavigate();
   const isSignup = mode === 'signup';
+  const user = useAuthStore((s) => s.user);
+  const memberName = useAuthStore((s) => s.memberName);
+  const setAuth = useAuthStore((s) => s.set);
+  const guestName = useGameStore((s) => s.playerName) ?? '';
+
+  const [displayName, setDisplayName] = useState(guestName);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [phoneStep, setPhoneStep] = useState<'number' | 'code'>('number');
-  const [country, setCountry] = useState('+66');
-  const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
-  const [displayName, setDisplayName] = useState('');
 
-  const comingSoon = (what: string) =>
-    setNotice(`${what} isn't available yet — this page is a preview. You can keep playing as a guest.`);
-
-  const sendCode = (e: FormEvent) => {
-    e.preventDefault();
-    // Preview: move to the code step without sending anything
-    setNotice(null);
-    setPhoneStep('code');
+  const done = ({ name }: SignedIn) => {
+    setAuth({ memberName: name });
+    useGameStore.setState({ playerName: name });
+    navigate('/');
   };
 
-  const verifyCode = (e: FormEvent) => {
+  const run = async (action: () => Promise<SignedIn>) => {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      done(await action());
+    } catch (e) {
+      setError(authErrorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const fallbackName = displayName.trim() || guestName || 'Player';
+
+  const submitEmail = (e: FormEvent) => {
     e.preventDefault();
-    comingSoon('Phone sign-in');
+    if (isSignup) run(() => signUpWithEmail(email.trim(), password, fallbackName));
+    else run(() => logInWithEmail(email.trim(), password, fallbackName));
+  };
+
+  const forgotPassword = async () => {
+    if (!email.trim()) { setError('Enter your email above first.'); return; }
+    setBusy(true);
+    setError(null);
+    try {
+      await resetPassword(email.trim());
+      setNotice(`If ${email.trim()} has an account, a reset link is on its way.`);
+    } catch (e) {
+      setError(authErrorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleLogOut = async () => {
+    setBusy(true);
+    try {
+      await logOut();
+      setAuth({ memberName: null });
+      navigate('/');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const providerBtn =
-    'w-full inline-flex items-center justify-center gap-3 py-2.5 rounded-xl border font-semibold text-sm transition-colors';
+    'w-full inline-flex items-center justify-center gap-3 py-2.5 rounded-xl border font-semibold text-sm transition-colors disabled:opacity-60';
+  const field = 'px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 to-sky-100 flex items-center justify-center p-4">
@@ -49,149 +105,148 @@ export default function AuthPage({ mode }: { mode: Mode }) {
         </button>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-5">
-          <div className="text-center">
-            <h1 className="text-2xl font-black text-brand-600">
-              {isSignup ? 'Create your account' : 'Welcome back'}
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {isSignup
-                ? 'Keep your name, scores and rooms across devices.'
-                : 'Log in to pick up where you left off.'}
-            </p>
-          </div>
-
-          <p className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
-            <Info className="w-4 h-4 flex-shrink-0 mt-px" aria-hidden />
-            <span>
-              <b>Preview.</b> Accounts aren't live yet — nothing is sent or saved.
-            </span>
-          </p>
-
-          {isSignup && (
-            <label className="flex flex-col gap-1">
-              <span className="text-sm text-gray-600">Display name</span>
-              <input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="What other players see"
-                maxLength={20}
-                className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-            </label>
-          )}
-
-          <div className="flex flex-col gap-2.5">
-            <button
-              type="button"
-              onClick={() => comingSoon('Google sign-in')}
-              className={`${providerBtn} bg-white border-gray-300 text-gray-700 hover:bg-gray-50`}
-            >
-              <GoogleIcon /> Continue with Google
-            </button>
-            <button
-              type="button"
-              onClick={() => comingSoon('Facebook sign-in')}
-              className={`${providerBtn} bg-[#1877F2] border-[#1877F2] text-white hover:bg-[#166FE5]`}
-            >
-              <FacebookIcon /> Continue with Facebook
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3 text-xs text-gray-400">
-            <span className="flex-1 h-px bg-gray-200" />
-            or use your phone
-            <span className="flex-1 h-px bg-gray-200" />
-          </div>
-
-          {phoneStep === 'number' ? (
-            <form onSubmit={sendCode} className="flex flex-col gap-2">
-              <label htmlFor="auth-phone" className="text-sm text-gray-600 inline-flex items-center gap-1">
-                <Smartphone className="w-4 h-4" aria-hidden /> Phone number
-              </label>
-              <div className="flex gap-2">
-                <select
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  aria-label="Country code"
-                  className="px-2 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="+66">TH +66</option>
-                  <option value="+1">US +1</option>
-                  <option value="+44">UK +44</option>
-                  <option value="+65">SG +65</option>
-                  <option value="+81">JP +81</option>
-                </select>
-                <input
-                  id="auth-phone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel-national"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/[^\d\s-]/g, ''))}
-                  placeholder="81 234 5678"
-                  maxLength={15}
-                  className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
+          {isMember(user) ? (
+            <div className="flex flex-col items-center gap-4 text-center">
+              <UserRound className="w-10 h-10 text-brand-500" aria-hidden />
+              <div>
+                <h1 className="text-2xl font-black text-brand-600">You're logged in</h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  as <b>{memberName ?? user?.displayName ?? 'Player'}</b>
+                  {user?.email ? <> · {user.email}</> : null}
+                </p>
               </div>
               <button
-                type="submit"
-                disabled={phone.replace(/\D/g, '').length < 8}
-                className="py-2.5 rounded-xl bg-brand-500 text-white font-semibold text-sm hover:bg-brand-600 disabled:opacity-50 transition-colors"
+                onClick={handleLogOut}
+                disabled={busy}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
               >
-                Send code
+                <LogOut className="w-4 h-4" aria-hidden /> Log out
               </button>
-            </form>
+            </div>
           ) : (
-            <form onSubmit={verifyCode} className="flex flex-col gap-2">
-              <label htmlFor="auth-code" className="text-sm text-gray-600 inline-flex items-center gap-1">
-                <ShieldCheck className="w-4 h-4" aria-hidden /> Enter the 6-digit code sent to {country} {phone}
-              </label>
-              <input
-                id="auth-code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="••••••"
-                className="px-3 py-2 rounded-lg border border-gray-300 text-center tracking-[0.5em] font-mono text-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-              <button
-                type="submit"
-                disabled={code.length < 6}
-                className="py-2.5 rounded-xl bg-brand-500 text-white font-semibold text-sm hover:bg-brand-600 disabled:opacity-50 transition-colors"
-              >
-                {isSignup ? 'Verify & create account' : 'Verify & log in'}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setPhoneStep('number'); setCode(''); setNotice(null); }}
-                className="text-xs text-gray-400 hover:text-gray-600"
-              >
-                Use a different number
-              </button>
-              <p className="text-[11px] text-gray-400 text-center">Preview: no SMS was actually sent.</p>
-            </form>
-          )}
+            <>
+              <div className="text-center">
+                <h1 className="text-2xl font-black text-brand-600">
+                  {isSignup ? 'Create your account' : 'Welcome back'}
+                </h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  {isSignup
+                    ? 'Keep your name and rooms across devices.'
+                    : 'Log in to pick up where you left off.'}
+                </p>
+              </div>
 
-          {notice && (
-            <p role="status" className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-600">
-              {notice}
-            </p>
-          )}
+              <div className="flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => run(() => signInWithGoogle(fallbackName))}
+                  className={`${providerBtn} bg-white border-gray-300 text-gray-700 hover:bg-gray-50`}
+                >
+                  <GoogleIcon /> Continue with Google
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => run(() => signInWithFacebook(fallbackName))}
+                  className={`${providerBtn} bg-[#1877F2] border-[#1877F2] text-white hover:bg-[#166FE5]`}
+                >
+                  <FacebookIcon /> Continue with Facebook
+                </button>
+              </div>
 
-          <p className="text-sm text-gray-500 text-center">
-            {isSignup ? 'Already have an account? ' : "Don't have an account? "}
-            <Link to={isSignup ? '/login' : '/signup'} className="font-semibold text-brand-600 hover:underline">
-              {isSignup ? 'Log in' : 'Sign up'}
-            </Link>
-          </p>
+              <div className="flex items-center gap-3 text-xs text-gray-400">
+                <span className="flex-1 h-px bg-gray-200" />
+                or use your email
+                <span className="flex-1 h-px bg-gray-200" />
+              </div>
+
+              <form onSubmit={submitEmail} className="flex flex-col gap-3">
+                {isSignup && (
+                  <label className="flex flex-col gap-1">
+                    <span className="text-sm text-gray-600">Display name</span>
+                    <input
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="What other players see"
+                      maxLength={NAME_MAX}
+                      required
+                      className={field}
+                    />
+                  </label>
+                )}
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm text-gray-600 inline-flex items-center gap-1">
+                    <Mail className="w-4 h-4" aria-hidden /> Email
+                  </span>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className={field}
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm text-gray-600 flex items-center justify-between">
+                    Password
+                    {!isSignup && (
+                      <button
+                        type="button"
+                        onClick={forgotPassword}
+                        disabled={busy}
+                        className="text-xs text-brand-600 hover:underline"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </span>
+                  <input
+                    type="password"
+                    autoComplete={isSignup ? 'new-password' : 'current-password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={6}
+                    required
+                    className={field}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="py-2.5 rounded-xl bg-brand-500 text-white font-semibold text-sm hover:bg-brand-600 disabled:opacity-60 transition-colors"
+                >
+                  {busy ? 'Please wait…' : isSignup ? 'Create account' : 'Log in'}
+                </button>
+              </form>
+
+              {error && (
+                <p role="alert" className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-600">
+                  {error}
+                </p>
+              )}
+              {notice && (
+                <p role="status" className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700">
+                  {notice}
+                </p>
+              )}
+
+              <p className="text-sm text-gray-500 text-center">
+                {isSignup ? 'Already have an account? ' : "Don't have an account? "}
+                <Link to={isSignup ? '/login' : '/signup'} className="font-semibold text-brand-600 hover:underline">
+                  {isSignup ? 'Log in' : 'Sign up'}
+                </Link>
+              </p>
+            </>
+          )}
         </div>
 
         <button
           onClick={() => navigate('/')}
           className="text-sm text-gray-500 hover:text-gray-700"
         >
-          Continue as guest
+          {isMember(user) ? 'Back to the game' : 'Continue as guest'}
         </button>
       </div>
     </div>

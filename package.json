@@ -12,7 +12,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "deploy": "npm run build && gh-pages -d dist",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:rules": "firebase emulators:exec --only database --project demo-word-bridge \"vitest run --config rules-tests/vitest.config.ts\""
   },
   "dependencies": {
     "@huggingface/transformers": "4.3.0",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^24.12.3",

@@ -12,6 +12,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { db } from './firebase';
 import { dropGhostNodes } from '../utils/ghostNodes';
+import { currentUid } from './authService';
 import type { Room, Player, GameNode, GameEdge, SharedWordScore, LastWordScores, RoundBreakdown } from '../types';
 import { pickWordPair } from '../utils/wordPairs';
 import { generateRoomCode } from '../utils/generateRoomCode';
@@ -69,7 +70,9 @@ export async function leaveRoom(
   const remaining = Object.values(players).filter((p) => p.id !== playerId);
 
   if (remaining.length === 0) {
-    // Last player leaving — delete the room entirely
+    // Last player leaving — delete the room entirely. Leave first: the database rules let
+    // anyone delete a room with no players, but only its host delete one that still has some.
+    await remove(ref(db, `rooms/${roomId}/players/${playerId}`));
     await remove(ref(db, `rooms/${roomId}`));
     await removeFromRoomIndex([roomId]);
     return;
@@ -122,7 +125,8 @@ export async function createRoom(
   await cleanOldRooms().catch(() => {});
 
   const roomId = generateRoomCode();
-  const playerId = uuidv4();
+  // The signed-in uid (database rules check it); a random id only if auth is unavailable
+  const playerId = currentUid() ?? uuidv4();
 
   const host: Player = {
     id: playerId,
@@ -213,7 +217,7 @@ export async function joinRoom(
     }
   }
 
-  const playerId = uuidv4();
+  const playerId = currentUid() ?? uuidv4();
   const player: Player = {
     id: playerId,
     name: playerName,
