@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { joinRoom } from '../services/roomService';
 import { joinErrorMessage } from '../services/roomIndexService';
 import { useGameStore } from '../store/useGameStore';
+import { useAuthStore } from '../store/useAuthStore';
 import type { Room } from '../types';
 
 const ADJ = ['Swift', 'Bright', 'Clever', 'Bold', 'Quick', 'Sharp', 'Witty', 'Calm'];
@@ -21,7 +22,9 @@ export default function JoinGameForm({ roomId, onJoined }: JoinGameFormProps) {
   const navigate = useNavigate();
   const setIdentity = useGameStore((s) => s.setIdentity);
   const setRoom = useGameStore((s) => s.setRoom);
-  const [joinName, setJoinName] = useState(randomName);
+  // A member plays under their account name; a guest gets their last name back, or a random one
+  const startName = useAuthStore((s) => s.memberName) ?? useGameStore.getState().playerName;
+  const [joinName, setJoinName] = useState(() => startName || randomName());
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   // Shown once the room turns out to be locked

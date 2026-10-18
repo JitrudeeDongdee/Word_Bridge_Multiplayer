@@ -97,12 +97,27 @@ Still open:
   already in the room stay; the password only applies to new joiners. A host who lost their
   identity (other device / cleared browser) can't recover — needs accounts.
 - Requires the `roomIndex` rule (published 2026-10-17).
-- **Accounts: UI preview only.** `AccountButtons` (home + main lobby) links to `/login` and
-  `/signup` (`AuthPage`): Continue with Google, Continue with Facebook, and phone number →
-  6-digit code. Every action ends in a "coming soon" notice — no provider is contacted, no
-  SMS is sent, nothing is stored (verified: zero external requests). To make it real:
-  Firebase Auth (Google / Facebook / Phone providers, Blaze plan needed for phone SMS),
-  then tie `playerId` to the auth uid.
+- **Accounts (Firebase Auth, 2026-10-19).** Everyone has an auth user: `AuthGate` signs
+  guests in anonymously before the app touches the database; `playerId` = auth uid
+  (`currentUid()` in `createRoom` / `joinRoom`). `/signup` + `/login` (`AuthPage`): Google,
+  Facebook (popup) and email + password (+ reset email). A guest who signs up is *linked*
+  (same uid → keeps their rooms); logging in to an existing account switches uid, and a
+  saved room identity that isn't the current uid is dropped (rejoin). Member name lives in
+  `users/{uid}` ({name, createdAt}); `AccountButtons` shows it. Phone sign-in not built.
+  If anonymous sign-in fails (provider off / offline) the app runs without auth — works only
+  while the database rules are open. Popups fail in some in-app browsers (error says so).
+- **Database rules** live in `database.rules.json` (repo is the source; publish via the
+  console). Signed-in users only; room members edit their room, outsiders may only add/remove
+  themselves (`players/{uid}`), host-only delete (or empty / stale rooms), no host takeover,
+  chat as yourself, own `users/{uid}` only, `stats/totalPlayers` +1 only. Tests:
+  `npm run test:rules` (Firebase Database emulator; needs Java — a Temurin 21 JRE is in
+  `~/.local/jdk-21*-jre` on the dev Mac, set `JAVA_HOME`). Full-app check:
+  `firebase emulators:start --only database,auth --project word-bridge-multiplayer` +
+  `VITE_USE_EMULATORS=1 npx vite`. Backup of the old open rules: see PR #29 description.
+- **Rollout order matters:** (1) enable Anonymous / Email / Google (and Facebook) in
+  Firebase Auth + add `jitrudeedongdee.github.io` to authorized domains, (2) deploy this
+  client, (3) only then publish the new rules (an old client without auth would be locked
+  out). Rooms in progress at the switch use old random ids → those players rejoin once.
 
 ## Icons
 UI uses `lucide-react` icons (no emoji or symbol glyphs in components); decorative icons are

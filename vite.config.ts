@@ -14,5 +14,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+    // Database rules tests need the Firebase emulator: npm run test:rules
+    exclude: ['**/node_modules/**', 'rules-tests/**'],
   },
 })

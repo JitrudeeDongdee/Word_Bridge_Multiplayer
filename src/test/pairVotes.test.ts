@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const store: Record<string, unknown> = {};
 const mockSet = vi.fn();
 
-vi.mock('../services/firebase', () => ({ db: {} }));
+vi.mock('../services/firebase', () => ({ db: {}, auth: { currentUser: null } }));
 vi.mock('firebase/database', () => ({
   ref: (_db: unknown, path: string) => path,
   get: async (path: string) => ({ val: () => store[path] ?? null }),

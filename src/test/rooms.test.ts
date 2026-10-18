@@ -5,7 +5,7 @@ import type { Room, RoomIndexEntry } from '../types';
 
 // In-memory stand-in for the Realtime Database
 const store: Record<string, unknown> = {};
-vi.mock('../services/firebase', () => ({ db: {} }));
+vi.mock('../services/firebase', () => ({ db: {}, auth: { currentUser: null } }));
 vi.mock('firebase/database', () => ({
   ref: (_db: unknown, path?: string) => path ?? '',
   get: async (path: string) => ({ exists: () => store[path] !== undefined, val: () => store[path] ?? null }),
