@@ -3,7 +3,9 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig({
-  base: '/Word_Bridge_Multiplayer/',
+  // Served at the root of wordbridgemultiplayer.thaidongdee.com (public/CNAME); GitHub redirects
+  // the old jitrudeedongdee.github.io/Word_Bridge_Multiplayer/ URLs there.
+  base: '/',
   plugins: [react()],
   resolve: {
     alias: {
