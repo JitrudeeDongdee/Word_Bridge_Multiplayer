@@ -118,6 +118,15 @@ Still open:
   Firebase Auth + add `jitrudeedongdee.github.io` to authorized domains, (2) deploy this
   client, (3) only then publish the new rules (an old client without auth would be locked
   out). Rooms in progress at the switch use old random ids → those players rejoin once.
+- **Rollout done 2026-10-19:** Auth providers on (Anonymous, Email/Password, Google, Facebook);
+  authorized domain `jitrudeedongdee.github.io` added; Google consent screen name "Word Bridge",
+  support email = the owner's Gmail. New rules published after the client was live, then checked
+  on production: unauthenticated REST read/write → Permission denied; two-player game passes.
+  Facebook: Meta app "Word Bridge" (App ID 1903973970770098, Facebook Login use case, `email`
+  permission, redirect URI `https://word-bridge-multiplayer.firebaseapp.com/__/auth/handler`).
+  It is still in **development mode** — only app roles can log in with Facebook. To open it to
+  everyone: publish the Meta app (needs a privacy policy URL + data deletion URL, maybe business
+  verification). Linking a guest to Facebook keeps the guest's name (Facebook's name isn't copied).
 
 ## Icons
 UI uses `lucide-react` icons (no emoji or symbol glyphs in components); decorative icons are
