@@ -21,6 +21,13 @@ import { useGameStore } from '../store/useGameStore';
 type Mode = 'login' | 'signup';
 
 /**
+ * Facebook Login stays off until the Meta app is published: it needs Meta business
+ * verification, and until then only the app's admins/testers can sign in (everyone else
+ * gets an error from Facebook). Flip to true once the app is Live.
+ */
+const FACEBOOK_LOGIN_ENABLED = false;
+
+/**
  * Log in / Sign up with Google, Facebook or email + password (Firebase Auth).
  * A guest who signs up keeps their player id (the anonymous account is upgraded).
  */
@@ -148,11 +155,16 @@ export default function AuthPage({ mode }: { mode: Mode }) {
                 </button>
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || !FACEBOOK_LOGIN_ENABLED}
                   onClick={() => run(() => signInWithFacebook(fallbackName))}
-                  className={`${providerBtn} bg-[#1877F2] border-[#1877F2] text-white hover:bg-[#166FE5]`}
+                  title={FACEBOOK_LOGIN_ENABLED ? undefined : 'Facebook sign-in is coming soon'}
+                  className={`${providerBtn} bg-[#1877F2] border-[#1877F2] text-white hover:bg-[#166FE5] disabled:cursor-not-allowed disabled:hover:bg-[#1877F2]`}
                 >
-                  <FacebookIcon /> Continue with Facebook
+                  <FacebookIcon />
+                  <span className="whitespace-nowrap">Continue with Facebook</span>
+                  {!FACEBOOK_LOGIN_ENABLED && (
+                    <span className="whitespace-nowrap rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">Soon</span>
+                  )}
                 </button>
               </div>
 
