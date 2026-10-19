@@ -20,13 +20,13 @@ export default function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
-      setAuth({ user, memberName: null });
+      setAuth({ user, memberName: null, memberPhoto: null });
       if (!user) return;
       const { playerId } = useGameStore.getState();
       if (playerId && playerId !== user.uid) useGameStore.setState({ playerId: null, room: null });
       if (!user.isAnonymous) {
         loadProfile(user.uid)
-          .then((p) => { if (auth.currentUser?.uid === user.uid) setAuth({ memberName: p?.name ?? user.displayName ?? null }); })
+          .then((p) => { if (auth.currentUser?.uid === user.uid) setAuth({ memberName: p?.name ?? user.displayName ?? null, memberPhoto: p?.photo ?? null }); })
           .catch(() => {});
       }
     });

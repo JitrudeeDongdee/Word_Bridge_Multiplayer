@@ -116,6 +116,9 @@ export default function AuthPage({ mode }: { mode: Mode }) {
                   {user?.email ? <> · {user.email}</> : null}
                 </p>
               </div>
+              <Link to="/profile" className="px-4 py-2 rounded-xl bg-brand-500 text-white text-sm font-semibold hover:bg-brand-600">
+                Profile settings
+              </Link>
               <button
                 onClick={handleLogOut}
                 disabled={busy}

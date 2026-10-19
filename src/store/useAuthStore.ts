@@ -6,6 +6,8 @@ interface AuthStore {
   user: User | null;
   /** Saved display name of a member (users/{uid}/name) */
   memberName: string | null;
+  /** Member's avatar (data URL), if they set one */
+  memberPhoto: string | null;
   /** The first sign-in attempt has finished */
   ready: boolean;
   set: (patch: Partial<Omit<AuthStore, 'set'>>) => void;
@@ -14,6 +16,7 @@ interface AuthStore {
 export const useAuthStore = create<AuthStore>()((set) => ({
   user: null,
   memberName: null,
+  memberPhoto: null,
   ready: false,
   set: (patch) => set(patch),
 }));

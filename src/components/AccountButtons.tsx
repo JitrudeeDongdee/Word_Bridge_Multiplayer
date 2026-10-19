@@ -2,20 +2,22 @@ import { Link } from 'react-router-dom';
 import { LogIn, UserPlus, UserRound } from 'lucide-react';
 import { isMember } from '../services/authService';
 import { useAuthStore } from '../store/useAuthStore';
+import Avatar from './Avatar';
 
 /** Account entry points: Log in / Sign up for guests, the member's name (→ account page) once logged in. */
 export default function AccountButtons() {
   const user = useAuthStore((s) => s.user);
   const memberName = useAuthStore((s) => s.memberName);
+  const memberPhoto = useAuthStore((s) => s.memberPhoto);
 
   if (isMember(user)) {
     return (
       <Link
-        to="/login"
-        title="Your account"
-        className="inline-flex items-center gap-1.5 max-w-[12rem] px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+        to="/profile"
+        title="Profile settings"
+        className="inline-flex items-center gap-1.5 max-w-[12rem] pl-1 pr-3 py-1 rounded-full border border-gray-200 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
       >
-        <UserRound className="w-3.5 h-3.5 flex-shrink-0 text-brand-500" aria-hidden />
+        <Avatar name={memberName ?? user?.displayName ?? 'Player'} photo={memberPhoto} size={22} />
         <span className="truncate">{memberName ?? user?.displayName ?? 'My account'}</span>
       </Link>
     );

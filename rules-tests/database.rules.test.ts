@@ -120,6 +120,11 @@ describe('users', () => {
     await assertFails(get(ref(db('bob'), 'users/alice')));
     await assertFails(set(ref(db('bob'), 'users/alice'), { name: 'Hacked' }));
     await assertFails(set(ref(db('alice'), 'users/alice'), { name: '' }));
+    // avatar: a small image data URL only
+    await assertSucceeds(update(ref(db('alice'), 'users/alice'), { photo: 'data:image/jpeg;base64,AAAA' }));
+    await assertFails(update(ref(db('alice'), 'users/alice'), { photo: 'https://evil.example/x.png' }));
+    await assertFails(update(ref(db('alice'), 'users/alice'), { photo: 'data:image/jpeg;base64,' + 'A'.repeat(70000) }));
+    await assertSucceeds(update(ref(db('alice'), 'users/alice'), { photo: null }));
   });
 });
 
