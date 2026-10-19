@@ -46,6 +46,29 @@
       }
     },
 
+    "publicProfiles": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['name']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 20",
+        "photo": {
+          ".validate": "newData.isString() && newData.val().beginsWith('data:image/') && newData.val().length <= 60000"
+        }
+      }
+    },
+
+    "winLog": {
+      ".read": "auth != null",
+      ".indexOn": ["at"],
+      "$round": {
+        ".write": "auth != null && !data.exists() && newData.child('roomId').isString() && root.child('rooms').child(newData.child('roomId').val()).child('players').hasChild(auth.uid)",
+        ".validate": "newData.hasChildren(['roomId', 'at', 'scores']) && newData.child('at').isNumber() && newData.child('at').val() <= now + 60000 && newData.child('at').val() >= now - 600000 && $round.beginsWith(newData.child('roomId').val() + '_')",
+        "scores": { "$uid": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" } },
+        "names": { "$uid": { ".validate": "newData.isString() && newData.val().length <= 30" } },
+        "crowns": { "$uid": { ".validate": "newData.val() === true && newData.parent().parent().child('scores').hasChild($uid)" } }
+      }
+    },
+
     "presence": {
       ".read": "auth != null",
       "$sessionId": {

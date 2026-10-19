@@ -25,6 +25,7 @@ import { pickWordPair } from '../utils/wordPairs';
 import { generateRoomCode } from '../utils/generateRoomCode';
 import { newPasswordSalt, hashRoomPassword, checkRoomPassword } from '../utils/roomPassword';
 import { syncRoomIndex, removeFromRoomIndex, findOrphanIndexIds } from './roomIndexService';
+import { logRound } from './leaderboardService';
 
 // --- Room operations ---
 
@@ -549,6 +550,8 @@ export async function markRoomWon(
     scores: merged,
   });
   await syncRoomIndex(roomId);
+  // Leaderboard (crowns + points across all rooms); never blocks the win
+  await logRound(roomId, roundScores).catch(() => {});
 }
 
 // --- Subscriptions ---

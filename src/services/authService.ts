@@ -23,6 +23,7 @@ import {
 import { FirebaseError } from 'firebase/app';
 import { get, ref, remove, set, update } from 'firebase/database';
 import { auth, db } from './firebase';
+import { savePublicProfile } from './leaderboardService';
 
 /**
  * Accounts. Everyone has a Firebase Auth user: guests are signed in anonymously, and
@@ -84,6 +85,7 @@ async function saveProfile(user: User, name: string): Promise<void> {
   const existing = await loadProfile(user.uid);
   if (existing) await update(ref(db, `users/${user.uid}`), { name: clean });
   else await set(ref(db, `users/${user.uid}`), { name: clean, createdAt: Date.now() });
+  await savePublicProfile(user.uid, { name: clean }).catch(() => {});
 }
 
 export async function setDisplayName(name: string): Promise<void> {
@@ -113,6 +115,7 @@ export async function updateMyProfile(changes: { name?: string; photo?: string |
     patch.name ??= (user.displayName || 'Player').slice(0, NAME_MAX);
   }
   await update(ref(db, `users/${user.uid}`), patch);
+  await savePublicProfile(user.uid, { name: patch.name as string | undefined, photo: changes.photo }).catch(() => {});
   // A new/removed picture also shows up in the rooms the member is sitting in right now
   if (changes.photo !== undefined) {
     const rooms = (await get(ref(db, 'rooms')).catch(() => null))?.val() as Record<string, { players?: Record<string, unknown> }> | null;

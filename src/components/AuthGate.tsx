@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { ensureSignedIn, loadProfile } from '../services/authService';
+import { savePublicProfile } from '../services/leaderboardService';
 import { useAuthStore } from '../store/useAuthStore';
 import { useGameStore } from '../store/useGameStore';
 
@@ -26,7 +27,11 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       if (playerId && playerId !== user.uid) useGameStore.setState({ playerId: null, room: null });
       if (!user.isAnonymous) {
         loadProfile(user.uid)
-          .then((p) => { if (auth.currentUser?.uid === user.uid) setAuth({ memberName: p?.name ?? user.displayName ?? null, memberPhoto: p?.photo ?? null }); })
+          .then((p) => {
+            if (auth.currentUser?.uid !== user.uid) return;
+            setAuth({ memberName: p?.name ?? user.displayName ?? null, memberPhoto: p?.photo ?? null });
+            if (p?.name) savePublicProfile(user.uid, { name: p.name, photo: p.photo ?? null }).catch(() => {});
+          })
           .catch(() => {});
       }
     });

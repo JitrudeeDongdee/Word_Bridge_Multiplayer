@@ -132,6 +132,31 @@ describe('users', () => {
   });
 });
 
+describe('leaderboard', () => {
+  const round = (over: Record<string, unknown> = {}) => ({ roomId: 'R1', at: Date.now(), scores: { host: 12, alice: 5 }, names: { host: 'H', alice: 'A' }, crowns: { host: true }, ...over });
+  it('a room member logs a finished round once; outsiders and replays are refused', async () => {
+    await seed('rooms/R1', roomData('host', ['alice']));
+    await assertFails(set(ref(db('mallory'), 'winLog/R1_1'), round()));
+    await assertSucceeds(set(ref(db('host'), 'winLog/R1_1'), round()));
+    await assertFails(set(ref(db('alice'), 'winLog/R1_1'), round({ scores: { alice: 99 }, crowns: { alice: true } })));
+    await assertSucceeds(get(ref(db('stranger'), 'winLog')));
+    await assertFails(get(ref(db(), 'winLog')));
+  });
+  it('rejects forged rounds: wrong key, old timestamp, silly scores, crown without a score', async () => {
+    await seed('rooms/R1', roomData('host', ['alice']));
+    await assertFails(set(ref(db('host'), 'winLog/OTHER_1'), round()));
+    await assertFails(set(ref(db('host'), 'winLog/R1_2'), round({ at: Date.now() - 3600_000 })));
+    await assertFails(set(ref(db('host'), 'winLog/R1_3'), round({ scores: { host: 1000 } })));
+    await assertFails(set(ref(db('host'), 'winLog/R1_4'), round({ crowns: { bob: true } })));
+  });
+  it('public profiles: anyone signed in reads, only the owner writes', async () => {
+    await assertSucceeds(set(ref(db('alice'), 'publicProfiles/alice'), { name: 'Alice', photo: 'data:image/jpeg;base64,AA' }));
+    await assertSucceeds(get(ref(db('bob'), 'publicProfiles/alice')));
+    await assertFails(set(ref(db('bob'), 'publicProfiles/alice'), { name: 'Hacked' }));
+    await assertFails(update(ref(db('alice'), 'publicProfiles/alice'), { photo: 'https://x/y.png' }));
+  });
+});
+
 describe('shared data', () => {
   it('room index, presence and the player counter', async () => {
     const entry = { id: 'R1', name: 'x', hostName: 'h', playerCount: 1, status: 'waiting', hasPassword: false, lastActiveAt: 1 };
