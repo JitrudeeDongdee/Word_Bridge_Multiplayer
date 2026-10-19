@@ -106,6 +106,13 @@ Still open:
   `users/{uid}` ({name, createdAt}); `AccountButtons` shows it. Phone sign-in not built.
   If anonymous sign-in fails (provider off / offline) the app runs without auth — works only
   while the database rules are open. Popups fail in some in-app browsers (error says so).
+- **Profile settings (`/profile`, `ProfilePage`, 2026-10-19):** members change display name,
+  picture (resized in the browser to a 128 px JPEG data URL, `utils/avatar.ts`, stored in
+  `users/{uid}/photo` — no Firebase Storage/billing; rules cap it at 60 000 chars and
+  `data:image/`), password (email accounts only; re-checks the current one), and delete the
+  account (`deleteMyData`; on `auth/requires-recent-login` asks for the password or the
+  Google/Facebook popup, then retries). Header chip shows the avatar and links here. Guests see
+  a sign-up prompt. The avatar is not shown to other players in rooms yet.
 - **Privacy & data deletion (2026-10-19):** static `public/privacy.html` and
   `public/data-deletion.html` (EN + TH, no JS needed — Meta's checker can read them), linked from
   Home and the auth pages (`PolicyLinks`). In-app `/delete-data` (`DeleteDataPage` →

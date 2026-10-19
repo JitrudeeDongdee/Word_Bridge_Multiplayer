@@ -5,6 +5,9 @@ import {
   createUserWithEmailAndPassword,
   linkWithCredential,
   linkWithPopup,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  updatePassword,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInAnonymously,
@@ -30,7 +33,12 @@ import { auth, db } from './firebase';
 export interface UserProfile {
   name: string;
   createdAt: number;
+  /** Small avatar as a data: URL (resized in the browser, see utils/avatar.ts) */
+  photo?: string;
 }
+
+/** Largest avatar data URL the database accepts (mirrors database.rules.json) */
+export const PHOTO_MAX_CHARS = 60000;
 
 export const NAME_MAX = 20;
 
@@ -82,6 +90,61 @@ export async function setDisplayName(name: string): Promise<void> {
   const user = auth.currentUser;
   if (!user || user.isAnonymous) return;
   await Promise.all([updateProfile(user, { displayName: name.trim().slice(0, NAME_MAX) }), saveProfile(user, name)]);
+}
+
+/** Rename and/or change the avatar of the signed-in member (photo: null removes it). */
+export async function updateMyProfile(changes: { name?: string; photo?: string | null }): Promise<void> {
+  const user = auth.currentUser;
+  if (!user || user.isAnonymous) throw new Error('not a member');
+  const patch: Record<string, unknown> = {};
+  if (changes.name !== undefined) {
+    const clean = changes.name.trim().slice(0, NAME_MAX);
+    if (!clean) throw new Error('empty name');
+    patch.name = clean;
+    await updateProfile(user, { displayName: clean }).catch(() => {});
+  }
+  if (changes.photo !== undefined) {
+    if (changes.photo && changes.photo.length > PHOTO_MAX_CHARS) throw new Error('photo too large');
+    patch.photo = changes.photo;
+  }
+  // First save for this member: the rules need a name, and keep when they joined
+  if (!(await loadProfile(user.uid))) {
+    patch.createdAt = Date.now();
+    patch.name ??= (user.displayName || 'Player').slice(0, NAME_MAX);
+  }
+  await update(ref(db, `users/${user.uid}`), patch);
+}
+
+/** Sign-in methods of the current user: 'password', 'google.com', 'facebook.com' */
+export function providerIds(user: User | null): string[] {
+  return user?.providerData.map((p) => p.providerId) ?? [];
+}
+
+/**
+ * Asks the member to prove it's them again (Firebase requires a recent sign-in before
+ * changing the password or deleting the account): with their password, or the provider popup.
+ */
+export async function reauthenticate(password?: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('not signed in');
+  const ids = providerIds(user);
+  if (password !== undefined && ids.includes('password') && user.email) {
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+  } else if (ids.includes('google.com')) {
+    await reauthenticateWithPopup(user, new GoogleAuthProvider());
+  } else if (ids.includes('facebook.com')) {
+    await reauthenticateWithPopup(user, new FacebookAuthProvider());
+  } else {
+    throw new FirebaseError('auth/requires-recent-login', 'password needed');
+  }
+}
+
+/** Change the password of an email account (checks the current one first). */
+export async function changePassword(current: string, next: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('not signed in');
+  await reauthenticate(current);
+  await updatePassword(user, next);
 }
 
 /** Name to play under after signing in: saved profile → provider name → fallback. */
