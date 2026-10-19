@@ -113,6 +113,15 @@ export async function updateMyProfile(changes: { name?: string; photo?: string |
     patch.name ??= (user.displayName || 'Player').slice(0, NAME_MAX);
   }
   await update(ref(db, `users/${user.uid}`), patch);
+  // A new/removed picture also shows up in the rooms the member is sitting in right now
+  if (changes.photo !== undefined) {
+    const rooms = (await get(ref(db, 'rooms')).catch(() => null))?.val() as Record<string, { players?: Record<string, unknown> }> | null;
+    await Promise.all(
+      Object.entries(rooms ?? {})
+        .filter(([, room]) => room.players?.[user.uid])
+        .map(([roomId]) => update(ref(db, `rooms/${roomId}/players/${user.uid}`), { photo: changes.photo }).catch(() => {})),
+    );
+  }
 }
 
 /** Sign-in methods of the current user: 'password', 'google.com', 'facebook.com' */

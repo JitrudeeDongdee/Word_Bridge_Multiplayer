@@ -13,7 +13,10 @@
         "players": {
           "$playerId": {
             ".write": "auth != null && $playerId === auth.uid && root.child('rooms').child($roomId).exists()",
-            ".validate": "newData.hasChildren(['id', 'name']) && newData.child('id').val() === $playerId && newData.child('name').isString() && newData.child('name').val().length <= 30"
+            ".validate": "newData.hasChildren(['id', 'name']) && newData.child('id').val() === $playerId && newData.child('name').isString() && newData.child('name').val().length <= 30",
+            "photo": {
+              ".validate": "newData.isString() && newData.val().beginsWith('data:image/') && newData.val().length <= 60000"
+            }
           }
         },
         "chat": {

@@ -1,6 +1,8 @@
 import { ArrowUp } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { ChatMessage } from '../types';
+import { useGameStore } from '../store/useGameStore';
+import Avatar from './Avatar';
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -23,6 +25,8 @@ export default function ChatPanel({ messages, sendMessage, playerId, playerColor
   const bottomRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
+  // Pictures of the players in this room (members who set one)
+  const players = useGameStore((s) => s.room?.players);
 
   // Auto-scroll to bottom when new messages arrive (only if already at bottom)
   useEffect(() => {
@@ -68,10 +72,14 @@ export default function ChatPanel({ messages, sendMessage, playerId, playerColor
           return (
             <div key={msg.id} className={`flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
               <div className="flex items-center gap-1">
-                <span
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: color }}
-                />
+                {players?.[msg.playerId]?.photo ? (
+                  <Avatar name={msg.playerName} photo={players[msg.playerId].photo} size={16} />
+                ) : (
+                  <span
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
+                )}
                 <span className="text-[10px] font-semibold" style={{ color }}>
                   {isMe ? 'You' : msg.playerName}
                 </span>

@@ -1,4 +1,5 @@
 import type { Player } from '../types';
+import Avatar from './Avatar';
 
 interface PlayerListProps {
   players: Record<string, Player>;
@@ -19,10 +20,17 @@ export default function PlayerList({ players, currentPlayerId, hostId, onKick, o
       {sorted.map((player) => (
         <div key={player.id} className="flex flex-col rounded-lg bg-gray-50 border border-gray-200 overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2">
-            <span
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: playerColorMap[player.id] ?? '#d1d5db' }}
-            />
+            {player.photo ? (
+              // Members' picture, ringed in their board colour so it still matches their words
+              <span className="rounded-full p-0.5 flex-shrink-0" style={{ backgroundColor: playerColorMap[player.id] ?? '#d1d5db' }}>
+                <Avatar name={player.name} photo={player.photo} size={20} />
+              </span>
+            ) : (
+              <span
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: playerColorMap[player.id] ?? '#d1d5db' }}
+              />
+            )}
             <span className="text-sm text-gray-800 flex-1 truncate">{player.name}</span>
             {player.spectator && !player.joinRequest && (
               <span className="text-xs font-medium text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">
