@@ -138,7 +138,9 @@ Still open:
   on production: unauthenticated REST read/write → Permission denied; two-player game passes.
   Facebook: Meta app "Word Bridge" (App ID 1903973970770098, Facebook Login use case, `email`
   permission, redirect URI `https://word-bridge-multiplayer.firebaseapp.com/__/auth/handler`).
-  It is still in **development mode** — only app roles can log in with Facebook. To open it to
+  It is still in **development mode** — only app roles can log in with Facebook. The button is
+  disabled with a "Soon" badge (`FACEBOOK_LOGIN_ENABLED = false` in `AuthPage.tsx`, 2026-10-19);
+  flip it once the app is Live (needs Meta business verification — documents pending). To open it to
   everyone: publish the Meta app (needs a privacy policy URL + data deletion URL, maybe business
   verification). Linking a guest to Facebook keeps the guest's name (Facebook's name isn't copied).
 
