@@ -154,6 +154,21 @@ Still open:
   everyone: publish the Meta app (needs a privacy policy URL + data deletion URL, maybe business
   verification). Linking a guest to Facebook keeps the guest's name (Facebook's name isn't copied).
 
+## Leaderboard (main lobby, 2026-10-19)
+- **Crowns** = rounds won across all rooms: the top scorer(s) of a round (ties share). The
+  room's `winnerId` is the *host* that detected the win, so it is not used for crowns.
+- Ranked by crowns, then total round points (shown smaller). Tabs: this week (Monday 00:00
+  ICT), this month (1st, ICT), all time. Guests count (their anonymous uid). Every round counts
+  (solo rooms too — owner's choice; easy to farm).
+- `markRoomWon` → `logRound` writes `winLog/{roomId}_{startedAt}` once: `{roomId, at, scores,
+  names, crowns}`. Rules: only a member of that room, only once, `at` within ±10 min of now,
+  scores 0–100, crowns only for players with a score. Client-side aggregation (`utils/leaderboard.ts`)
+  over up to 5 000 newest rounds — move to a Cloud Function if it grows.
+- `publicProfiles/{uid}` `{name, photo}` (readable by signed-in users; `users/` stays private),
+  synced on sign-up, member sign-in and profile edits; the board uses it for pictures.
+- Main lobby layout: room card fills the screen height (desktop: rooms left, board right;
+  phone: rooms fill the first screen); empty state = vector "unbuilt bridge" + Create Room.
+
 ## Icons
 UI uses `lucide-react` icons (no emoji or symbol glyphs in components); decorative icons are
 `aria-hidden`, icon-only buttons have an `aria-label`.

@@ -1,4 +1,4 @@
-import { Lock, Search, Users, X } from 'lucide-react';
+import { Lock, Plus, Search, SearchX, Users, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { filterRooms, subscribeRoomIndex } from '../services/roomIndexService';
 import type { RoomIndexEntry } from '../types';
@@ -11,10 +11,34 @@ const STATUS_LABEL: Record<RoomIndexEntry['status'], { text: string; className: 
 
 interface RoomListProps {
   onPick: (room: RoomIndexEntry) => void;
+  /** Shown as a button in the empty state */
+  onCreate?: () => void;
+}
+
+/** Empty-state art: two word dots waiting for a bridge (vector, brand colours). */
+function EmptyBridge() {
+  return (
+    <svg viewBox="0 0 200 120" className="w-44 h-auto" aria-hidden>
+      <defs>
+        <linearGradient id="eb-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#e0f2fe" />
+          <stop offset="1" stopColor="#bae6fd" />
+        </linearGradient>
+      </defs>
+      <ellipse cx="100" cy="104" rx="86" ry="10" fill="#e0f2fe" />
+      <path d="M40 78 Q100 10 160 78" fill="none" stroke="#7dd3fc" strokeWidth="6" strokeLinecap="round" strokeDasharray="2 14" />
+      <rect x="22" y="92" width="156" height="8" rx="4" fill="url(#eb-bg)" />
+      <circle cx="40" cy="78" r="17" fill="#0ea5e9" />
+      <circle cx="160" cy="78" r="17" fill="#0ea5e9" />
+      <circle cx="100" cy="36" r="13" fill="#fff" stroke="#fde68a" strokeWidth="5" strokeDasharray="5 6" />
+      <circle cx="40" cy="78" r="6" fill="#fff" />
+      <circle cx="160" cy="78" r="6" fill="#fff" />
+    </svg>
+  );
 }
 
 /** Central lobby: every active room, live. */
-export default function RoomList({ onPick }: RoomListProps) {
+export default function RoomList({ onPick, onCreate }: RoomListProps) {
   const [rooms, setRooms] = useState<RoomIndexEntry[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState('');
@@ -33,7 +57,8 @@ export default function RoomList({ onPick }: RoomListProps) {
   );
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-5 flex flex-col gap-3">
+    // Fills whatever height the page gives it; the list scrolls inside
+    <div className="flex-1 min-h-0 bg-white rounded-2xl shadow-xl p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Rooms</h2>
         {rooms && (
@@ -70,15 +95,32 @@ export default function RoomList({ onPick }: RoomListProps) {
       {failed && <p className="text-xs text-red-500">Couldn't load the room list.</p>}
       {!failed && rooms === null && <p className="text-xs text-gray-400">Loading rooms…</p>}
       {!failed && rooms?.length === 0 && (
-        <p className="text-xs text-gray-400">No rooms right now — create one and invite friends.</p>
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-8">
+          <EmptyBridge />
+          <div>
+            <p className="font-bold text-gray-700">No rooms right now</p>
+            <p className="text-sm text-gray-400">Create one and invite your friends to play.</p>
+          </div>
+          {onCreate && (
+            <button
+              onClick={onCreate}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-500 text-white text-sm font-bold hover:bg-brand-600 transition-colors"
+            >
+              <Plus className="w-4 h-4" aria-hidden /> Create Room
+            </button>
+          )}
+        </div>
       )}
 
       {rooms && rooms.length > 0 && shown?.length === 0 && (
-        <p className="text-xs text-gray-400">No rooms match “{query.trim()}”.</p>
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center py-8 text-gray-400">
+          <SearchX className="w-10 h-10 text-gray-300" aria-hidden />
+          <p className="text-sm">No rooms match “{query.trim()}”.</p>
+        </div>
       )}
 
       {shown && shown.length > 0 && (
-        <ul className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto -mx-1 px-1">
+        <ul className="flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto -mx-1 px-1">
           {shown.map((r) => {
             const status = STATUS_LABEL[r.status];
             return (
