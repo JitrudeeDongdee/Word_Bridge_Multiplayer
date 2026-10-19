@@ -57,6 +57,10 @@ describe('rooms', () => {
     // an outsider can't add someone else (members are trusted inside their room)
     await assertFails(update(ref(db('carol'), 'rooms/R1/players'), { bob: player('bob') }));
     await assertFails(set(ref(db('carol'), 'rooms/R1/players/carol'), { id: 'bob', name: 'x' })); // id must match
+    // a seat may carry the member's avatar, as a small image data URL only
+    await assertSucceeds(update(ref(db('alice'), 'rooms/R1/players/alice'), { photo: 'data:image/jpeg;base64,AAAA' }));
+    await assertFails(update(ref(db('alice'), 'rooms/R1/players/alice'), { photo: 'javascript:alert(1)' }));
+    await assertFails(update(ref(db('alice'), 'rooms/R1/players/alice'), { photo: 'data:image/jpeg;base64,' + 'A'.repeat(70000) }));
     await assertFails(set(ref(db('alice'), 'rooms/R9/players/alice'), player('alice'))); // room doesn't exist
   });
 

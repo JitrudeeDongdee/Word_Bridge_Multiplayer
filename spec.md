@@ -112,7 +112,10 @@ Still open:
   `data:image/`), password (email accounts only; re-checks the current one), and delete the
   account (`deleteMyData`; on `auth/requires-recent-login` asks for the password or the
   Google/Facebook popup, then retries). Header chip shows the avatar and links here. Guests see
-  a sign-up prompt. The avatar is not shown to other players in rooms yet.
+  a sign-up prompt. In rooms (2026-10-19): `createRoom` / `joinRoom` copy the member's photo into
+  `rooms/{id}/players/{uid}/photo`, so others see it without reading `users/` (private); a new or
+  removed picture is pushed to the rooms they're sitting in. Shown in `PlayerList` (ringed in the
+  board colour) and next to chat messages; guests keep the colour dot.
 - **Privacy & data deletion (2026-10-19):** static `public/privacy.html` and
   `public/data-deletion.html` (EN + TH, no JS needed — Meta's checker can read them), linked from
   Home and the auth pages (`PolicyLinks`). In-app `/delete-data` (`DeleteDataPage` →

@@ -8,6 +8,8 @@ export interface Player {
   ip?: string;
   spectator?: boolean;
   joinRequest?: boolean;
+  /** Member's avatar (data URL, copied from users/{uid}/photo when they join) */
+  photo?: string;
 }
 
 export interface GameNode {

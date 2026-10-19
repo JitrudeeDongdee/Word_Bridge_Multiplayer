@@ -13,6 +13,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from './firebase';
 import { dropGhostNodes } from '../utils/ghostNodes';
 import { currentUid } from './authService';
+import { useAuthStore } from '../store/useAuthStore';
+
+/** The signed-in member's avatar, shown to the others in the room (guests have none). */
+const myPhoto = (): { photo?: string } => {
+  const photo = useAuthStore.getState().memberPhoto;
+  return photo ? { photo } : {};
+};
 import type { Room, Player, GameNode, GameEdge, SharedWordScore, LastWordScores, RoundBreakdown } from '../types';
 import { pickWordPair } from '../utils/wordPairs';
 import { generateRoomCode } from '../utils/generateRoomCode';
@@ -134,6 +141,7 @@ export async function createRoom(
     isHost: true,
     joinedAt: Date.now(),
     ...(hostIp ? { ip: hostIp } : {}),
+    ...myPhoto(),
   };
 
   const room: Room = {
@@ -225,6 +233,7 @@ export async function joinRoom(
     joinedAt: Date.now(),
     ...(playerIp ? { ip: playerIp } : {}),
     ...(room.status !== 'waiting' ? { spectator: true } : {}),
+    ...myPhoto(),
   };
 
   await update(ref(db, `rooms/${roomId}/players`), { [playerId]: player });
