@@ -48,22 +48,37 @@
         <tr><td>Game content: words you add, chat messages, scores, room name and password lock</td><td>While you play</td><td>To run the game for everyone in the room</td></tr>
         <tr><td>Votes to link two words (the two words, a voter key based on your IP or player ID, your player ID, time)</td><td>When you use “Vote link”</td><td>To teach the game which words belong together</td></tr>
         <tr><td>Online status and device type (mobile / desktop)</td><td>While the game is open</td><td>To show how many players are online</td></tr>
-        <tr><td>Browser storage: your player ID and name, display preferences (chat panel, dictionary images), sign-in session</td><td>On your own device</td><td>To keep you in your room after a reload and remember your settings</td></tr>
+        <tr><td>Browser storage: your player ID and name, display preferences (chat panel, dictionary images), sign-in session, your analytics cookie choice</td><td>On your own device</td><td>To keep you in your room after a reload and remember your settings</td></tr>
       </tbody>
     </table>
-    <p>We do not sell your data, show ads, or use it to build advertising profiles.</p>
+    <p>We do not sell your data, show ads, or use it to build advertising profiles. Usage statistics are collected only with your consent (see <a href="#analytics">Analytics cookies</a>).</p>
 
     <h2>Who else receives data</h2>
     <ul>
       <li><b>Google Firebase</b> (Realtime Database and Authentication, United States) stores the game data and accounts.</li>
       <li><b>Google</b> or <b>Meta (Facebook)</b> handle the sign-in if you choose them.</li>
       <li><b>GitHub Pages</b> hosts the website.</li>
+      <li><b>Google Analytics</b> receives usage statistics, only if you accept analytics cookies (see below).</li>
       <li><b>ipify</b> (api.ipify.org) is asked for your public IP address.</li>
       <li>Words you type are sent to <b>Datamuse</b>, <b>Free Dictionary API</b> (dictionaryapi.dev) and <b>Wikipedia</b> to check them, find definitions and pictures. They receive the word, not your name.</li>
       <li>The word-meaning model is downloaded from <b>Hugging Face</b> and runs on your device; your words are not sent to it.</li>
       <li>Pronunciation uses your browser's built-in speech voices.</li>
     </ul>
     <p>Other players in your room see your display name, your words, chat messages and scores.</p>
+
+    <h2 id="analytics">Analytics cookies (Google Analytics)</h2>
+    <p>Only if you press <b>Accept</b> on the cookie banner, the game loads <b>Google Analytics 4</b> (Google LLC, United States)
+      to count visits and how the game is used, so we can improve it. Until then nothing is loaded or sent.</p>
+    <ul>
+      <li><b>What is sent:</b> pages opened (room codes removed), and counts of actions such as sign-up / log-in (with the method:
+        email, Google or Facebook), creating or joining a room, starting a game, finishing a round (number of players and path length),
+        adding a word, voting a link, looking up the dictionary, sending a chat message and copying an invite link.
+        Google also receives your browser's usual technical details (device, browser, approximate location from the IP address) and sets
+        cookies (<code>_ga</code>, <code>_ga_*</code>) that keep a random ID for up to 2 years.</li>
+      <li><b>What is not sent:</b> your words, chat text, display name, email, player ID or room code. Google Signals and ad features are off.</li>
+      <li><b>Changing your mind:</b> press <b>Cookie settings</b> at the bottom of the home or login page to see the banner again and decline.
+        You can also clear this site's cookies in your browser.</li>
+    </ul>
 
     <h2>How long we keep it</h2>
     <ul>
@@ -110,17 +125,31 @@
       <li><b>สถานะออนไลน์และชนิดอุปกรณ์</b> (มือถือ/คอม) — ใช้แสดงจำนวนคนออนไลน์</li>
       <li><b>ข้อมูลในเบราว์เซอร์ของคุณเอง</b> — รหัสผู้เล่น ชื่อ การตั้งค่าการแสดงผล และ session การล็อกอิน</li>
     </ul>
-    <p>เราไม่ขายข้อมูล ไม่มีโฆษณา และไม่นำข้อมูลไปทำโปรไฟล์โฆษณา</p>
+    <p>เราไม่ขายข้อมูล ไม่มีโฆษณา และไม่นำข้อมูลไปทำโปรไฟล์โฆษณา · สถิติการใช้งานเก็บเฉพาะเมื่อคุณยินยอม (ดู <a href="#analytics-th">คุกกี้สถิติ</a>)</p>
 
     <h2>ผู้ที่ได้รับข้อมูล</h2>
     <ul>
       <li><b>Google Firebase</b> (สหรัฐอเมริกา) เก็บข้อมูลเกมและบัญชี</li>
       <li><b>Google</b> หรือ <b>Meta (Facebook)</b> เมื่อคุณเลือกล็อกอินด้วยช่องทางนั้น</li>
       <li><b>GitHub Pages</b> โฮสต์เว็บไซต์ · <b>ipify</b> ใช้หา IP สาธารณะ</li>
+      <li><b>Google Analytics</b> ได้รับสถิติการใช้งาน เฉพาะเมื่อคุณยอมรับคุกกี้สถิติ (ดูด้านล่าง)</li>
       <li>คำที่พิมพ์ถูกส่งไปที่ <b>Datamuse</b>, <b>dictionaryapi.dev</b> และ <b>Wikipedia</b> เพื่อตรวจคำ หาความหมายและรูป (ส่งแค่คำ ไม่ส่งชื่อ)</li>
       <li>โมเดลเทียบความหมายดาวน์โหลดจาก <b>Hugging Face</b> และประมวลผลในเครื่องของคุณ · เสียงอ่านใช้เสียงของเบราว์เซอร์</li>
     </ul>
     <p>ผู้เล่นในห้องเดียวกันจะเห็นชื่อ คำ แชท และคะแนนของคุณ</p>
+
+    <h2 id="analytics-th">คุกกี้สถิติ (Google Analytics)</h2>
+    <p>เมื่อคุณกด <b>ยอมรับ</b> ที่แถบแจ้งคุกกี้เท่านั้น เกมจึงจะโหลด <b>Google Analytics 4</b> (Google LLC, สหรัฐอเมริกา)
+      เพื่อนับการเข้าชมและการใช้งานไปปรับปรุงเกม ก่อนกดยอมรับจะไม่มีการโหลดหรือส่งข้อมูลใด ๆ</p>
+    <ul>
+      <li><b>สิ่งที่ส่ง:</b> หน้าที่เปิด (ตัดรหัสห้องออก) และจำนวนครั้งของการกระทำ เช่น สมัคร/ล็อกอิน (พร้อมช่องทาง อีเมล Google หรือ Facebook)
+        สร้าง/เข้าห้อง เริ่มเกม จบรอบ (จำนวนผู้เล่นและความยาวเส้นทาง) เพิ่มคำ โหวตเชื่อมคำ เปิดพจนานุกรม ส่งแชท และคัดลอกลิงก์เชิญ
+        รวมถึงข้อมูลทางเทคนิคทั่วไปของเบราว์เซอร์ (อุปกรณ์ เบราว์เซอร์ ตำแหน่งโดยประมาณจาก IP) และคุกกี้ <code>_ga</code>, <code>_ga_*</code>
+        ที่เก็บรหัสสุ่มไว้ได้นานสูงสุด 2 ปี</li>
+      <li><b>สิ่งที่ไม่ส่ง:</b> คำที่เล่น ข้อความแชท ชื่อที่แสดง อีเมล รหัสผู้เล่น และรหัสห้อง · ปิด Google Signals และฟีเจอร์โฆษณา</li>
+      <li><b>เปลี่ยนใจได้:</b> กด <b>Cookie settings</b> ด้านล่างหน้าแรกหรือหน้าล็อกอิน เพื่อเปิดแถบแจ้งอีกครั้งแล้วเลือกไม่ยอมรับ
+        หรือล้างคุกกี้ของเว็บนี้ในเบราว์เซอร์</li>
+    </ul>
 
     <h2>ระยะเวลาเก็บ</h2>
     <ul>

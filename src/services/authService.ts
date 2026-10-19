@@ -24,6 +24,7 @@ import { FirebaseError } from 'firebase/app';
 import { get, ref, remove, set, update } from 'firebase/database';
 import { auth, db } from './firebase';
 import { savePublicProfile } from './leaderboardService';
+import { track } from './analytics';
 
 /**
  * Accounts. Everyone has a Firebase Auth user: guests are signed in anonymously, and
@@ -176,6 +177,14 @@ export interface SignedIn {
 }
 
 async function withProvider(provider: AuthProvider, fallbackName: string): Promise<SignedIn> {
+  const result = await providerSignIn(provider, fallbackName);
+  const method = provider instanceof GoogleAuthProvider ? 'google' : 'facebook';
+  // Linking the guest creates the account; otherwise an existing account was used
+  track(result.keptGuestId ? 'sign_up' : 'login', { method });
+  return result;
+}
+
+async function providerSignIn(provider: AuthProvider, fallbackName: string): Promise<SignedIn> {
   const current = auth.currentUser;
   if (current?.isAnonymous) {
     try {
@@ -210,11 +219,13 @@ export async function signUpWithEmail(email: string, password: string, name: str
   const clean = name.trim().slice(0, NAME_MAX) || 'Player';
   await updateProfile(user, { displayName: clean }).catch(() => {});
   await saveProfile(user, clean);
+  track('sign_up', { method: 'email' });
   return { user, name: clean, keptGuestId: !!current?.isAnonymous };
 }
 
 export async function logInWithEmail(email: string, password: string, fallbackName: string): Promise<SignedIn> {
   const { user } = await signInWithEmailAndPassword(auth, email, password);
+  track('login', { method: 'email' });
   return { user, name: await profileNameFor(user, fallbackName), keptGuestId: false };
 }
 

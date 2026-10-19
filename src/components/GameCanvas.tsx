@@ -28,6 +28,7 @@ import { getPairVoteCount, pairKey, PAIR_VOTE_THRESHOLD } from '../services/pair
 import { lookupDefinition } from '../services/dictionary';
 import DictImage from './DictImage';
 import SpeakButton from './SpeakButton';
+import { track } from '../services/analytics';
 
 const nodeTypes = { wordNode: WordNode };
 
@@ -174,6 +175,7 @@ export default function GameCanvas({ room, roomId, playerId, playerColorMap, fit
   const fetchDefinition = useCallback(async (rawWord: string) => {
     const word = rawWord.trim().toLowerCase();
     if (!word) return;
+    track('dict_lookup');
     setDictSearch(rawWord.trim());
     setDictChainLoading(true);
     setDictChain([]);

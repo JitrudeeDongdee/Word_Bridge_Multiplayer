@@ -2,6 +2,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { initAnalytics } from './services/analytics'
+
+initAnalytics()
 
 // When a new deploy replaces hashed JS chunks, any lazy-load of the old chunk
 // URLs will fail. Catch it globally and reload to pick up the new assets.

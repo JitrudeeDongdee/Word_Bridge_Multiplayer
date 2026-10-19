@@ -19,6 +19,7 @@ import { resetToLobby, requestJoinGame, leaveRoom } from '../services/roomServic
 import { useHasHydrated } from '../hooks/useHasHydrated';
 import { preloadEmbeddingModel } from '../utils/embeddingSimilarity';
 import type { Room } from '../types';
+import { track } from '../services/analytics';
 
 const CHAT_PINNED_KEY = 'wb-chat-pinned';
 
@@ -76,6 +77,7 @@ export default function GamePage() {
   const handleCopyLink = () => {
     const url = `${window.location.origin}${window.location.pathname}#/join/${roomId}`;
     navigator.clipboard.writeText(url);
+    track('share_invite', { from: 'game' });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
