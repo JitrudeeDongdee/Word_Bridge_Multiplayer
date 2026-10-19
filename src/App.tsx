@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
-import { useState } from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
@@ -11,6 +11,8 @@ import DeleteDataPage from './pages/DeleteDataPage';
 import ProfilePage from './pages/ProfilePage';
 import { useVersionCheck } from './hooks/useVersionCheck';
 import AuthGate from './components/AuthGate';
+import ConsentBanner from './components/ConsentBanner';
+import { onConsentChange, trackPageView } from './services/analytics';
 
 /**
  * "New version" notice: a small dismissible card under the header (on phones, below the
@@ -46,11 +48,22 @@ function UpdateBanner() {
   );
 }
 
+/** Sends a GA page_view on every route change (and once consent is given on the current page). */
+function PageViewTracker() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    trackPageView(pathname);
+    return onConsentChange(() => trackPageView(pathname));
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   return (
     <>
       <AuthGate>
       <HashRouter>
+        <PageViewTracker />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/rooms" element={<RoomsPage />} />
@@ -66,6 +79,7 @@ export default function App() {
       </HashRouter>
       </AuthGate>
       <UpdateBanner />
+      <ConsentBanner />
     </>
   );
 }

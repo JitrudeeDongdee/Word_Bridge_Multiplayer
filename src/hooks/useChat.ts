@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { ref, push, query, limitToLast, onValue, off } from 'firebase/database';
 import { db } from '../services/firebase';
 import type { ChatMessage } from '../types';
+import { track } from '../services/analytics';
 
 const MAX_MESSAGES = 50;
 
@@ -36,6 +37,7 @@ export function useChat(roomId: string | undefined, playerId: string | undefined
         text: trimmed,
         sentAt: Date.now(),
       });
+      track('chat_message');
     },
     [roomId, playerId, playerName],
   );

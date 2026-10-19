@@ -1,5 +1,6 @@
 import { ref, get, set, update, onValue } from 'firebase/database';
 import { db } from './firebase';
+import { track } from './analytics';
 
 const VOTES_PATH = 'pairVotes';
 const LEARNED_PATH = 'learnedPairs';
@@ -65,6 +66,7 @@ export async function castPairVote(
   const count = await getPairVoteCount(x, y);
   const learned = count >= PAIR_VOTE_THRESHOLD;
   if (learned) await set(ref(db, `${LEARNED_PATH}/${key}`), true);
+  track('vote_link', { learned });
   return { count, learned };
 }
 

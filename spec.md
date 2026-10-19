@@ -169,6 +169,25 @@ Still open:
 - Main lobby layout: room card fills the screen height (desktop: rooms left, board right;
   phone: rooms fill the first screen); empty state = vector "unbuilt bridge" + Create Room.
 
+## Analytics (GA4, 2026-10-19)
+- Property "Word Bridge" (Analytics account a397322879 "Default Account for Firebase", owner
+  jitrudee9723@gmail.com, Thailand time, THB), web stream for wordbridgemultiplayer.thaidongdee.com,
+  Measurement ID `G-EFRD06ENBH` (hard-coded in `src/services/analytics.ts`; it is public).
+- **Consent first (PDPA):** `ConsentBanner` asks once; gtag.js is not loaded and nothing is sent until
+  "ยอมรับ". Choice in localStorage `wb-analytics-consent`; "Cookie settings" in `PolicyLinks` clears it
+  so the banner returns. Google Signals and ad personalization off; ad consent stays denied.
+- Only the production host reports (dev/emulators never do); `VITE_GA_FORCE=1` forces it for testing.
+- Page views are sent by hand on route change (`PageViewTracker`), as `/lobby/:roomId` etc. — room
+  codes never reach GA. Enhanced measurement's "page changes based on browser history" is **off** in
+  the stream so it doesn't double-count.
+- Events (counts/flags only — never words, chat text, names, emails, uids or room codes):
+  `sign_up` / `login` {method: email|google|facebook}, `create_room` {has_password}, `join_room`
+  {has_password, as_spectator}, `game_start`, `game_restart`, `round_end` {players, path_length}
+  (sent by the client that detects the win), `add_word`, `vote_link` {learned}, `dict_lookup`,
+  `chat_message`, `share_invite` {from: lobby|game}.
+- Privacy policy has an "Analytics cookies" section (EN `#analytics`, TH `#analytics-th`).
+- GA data retention is still the default 2 months (Admin → Data retention can raise it to 14).
+
 ## Icons
 UI uses `lucide-react` icons (no emoji or symbol glyphs in components); decorative icons are
 `aria-hidden`, icon-only buttons have an `aria-label`.

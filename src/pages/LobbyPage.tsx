@@ -8,6 +8,7 @@ import RoomSettings from '../components/RoomSettings';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useState } from 'react';
 import { defaultRoomName } from '../services/roomIndexService';
+import { track } from '../services/analytics';
 
 export default function LobbyPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -24,6 +25,7 @@ export default function LobbyPage() {
   const handleCopyLink = () => {
     const url = `${window.location.origin}${window.location.pathname}#/join/${roomId}`;
     navigator.clipboard.writeText(url);
+    track('share_invite', { from: 'lobby' });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

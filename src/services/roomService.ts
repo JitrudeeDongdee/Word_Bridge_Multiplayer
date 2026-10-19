@@ -26,6 +26,7 @@ import { generateRoomCode } from '../utils/generateRoomCode';
 import { newPasswordSalt, hashRoomPassword, checkRoomPassword } from '../utils/roomPassword';
 import { syncRoomIndex, removeFromRoomIndex, findOrphanIndexIds } from './roomIndexService';
 import { logRound } from './leaderboardService';
+import { track } from './analytics';
 
 // --- Room operations ---
 
@@ -172,6 +173,7 @@ export async function createRoom(
 
   await set(ref(db, `rooms/${roomId}`), room);
   await syncRoomIndex(roomId);
+  track('create_room', { has_password: !!options.password });
   return { room, playerId };
 }
 
@@ -240,6 +242,7 @@ export async function joinRoom(
   await update(ref(db, `rooms/${roomId}/players`), { [playerId]: player });
   await syncRoomIndex(roomId);
   const updated = { ...room, players: { ...room.players, [playerId]: player } };
+  track('join_room', { has_password: !!room.passwordHash, as_spectator: room.status !== 'waiting' });
   return { ok: true, room: updated, playerId };
 }
 
@@ -301,6 +304,7 @@ export async function startGame(roomId: string): Promise<void> {
 
   await update(ref(db), updates);
   await syncRoomIndex(roomId);
+  track('game_start');
 }
 
 export async function restartGame(roomId: string): Promise<void> {
@@ -362,6 +366,7 @@ export async function restartGame(roomId: string): Promise<void> {
 
   await update(ref(db), updates);
   await syncRoomIndex(roomId);
+  track('game_restart');
 }
 
 export async function resetToLobby(roomId: string): Promise<void> {
@@ -428,6 +433,7 @@ export function placeNode(
     set(ref(db, `rooms/${roomId}/nodes/${nodeId}`), node),
     update(ref(db, `rooms/${roomId}`), { lastActiveAt: Date.now() }),
   ]).then(() => undefined);
+  track('add_word');
   return { nodeId, saved };
 }
 
@@ -550,6 +556,7 @@ export async function markRoomWon(
     scores: merged,
   });
   await syncRoomIndex(roomId);
+  track('round_end', { players: Object.keys(roundScores).length, path_length: winningPath.length });
   // Leaderboard (crowns + points across all rooms); never blocks the win
   await logRound(roomId, roundScores).catch(() => {});
 }
