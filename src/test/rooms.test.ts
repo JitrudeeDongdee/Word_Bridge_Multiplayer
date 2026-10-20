@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { hashRoomPassword, checkRoomPassword, newPasswordSalt } from '../utils/roomPassword';
 import { toIndexEntry, sortRoomList, filterRooms, ROOM_LIST_MAX_IDLE_MS } from '../services/roomIndexService';
 import type { Room, RoomIndexEntry } from '../types';
+import { activeHostId } from '../utils/roomHost';
 
 // In-memory stand-in for the Realtime Database
 const store: Record<string, unknown> = {};
@@ -17,6 +18,12 @@ vi.mock('firebase/database', () => ({
   },
   onValue: vi.fn(),
   serverTimestamp: () => 0,
+  runTransaction: async (path: string, fn: (cur: unknown) => unknown) => {
+    const next = fn(store[path] ?? null);
+    if (next === undefined) return { committed: false };
+    store[path] = next;
+    return { committed: true };
+  },
 }));
 
 const room = (over: Partial<Room> = {}): Room => ({
@@ -54,7 +61,7 @@ describe('room index', () => {
     expect(toIndexEntry(room({ name: 'Friday crew' })).name).toBe('Friday crew');
   });
 
-  it('lists waiting rooms first, then by recent activity, hiding empty and idle rooms', () => {
+  it('lists waiting rooms first, then by recent activity, hiding idle rooms (empty ones stay)', () => {
     const now = 10_000_000;
     const e = (id: string, status: RoomIndexEntry['status'], ago: number, playerCount = 1): RoomIndexEntry =>
       ({ id, name: id, hostName: '', playerCount, status, hasPassword: false, lastActiveAt: now - ago });
@@ -62,7 +69,7 @@ describe('room index', () => {
       e('playing-new', 'playing', 10), e('waiting-old', 'waiting', 500), e('waiting-new', 'waiting', 5),
       e('idle', 'waiting', ROOM_LIST_MAX_IDLE_MS + 1), e('empty', 'waiting', 1, 0),
     ], now);
-    expect(sorted.map((r) => r.id)).toEqual(['waiting-new', 'waiting-old', 'playing-new']);
+    expect(sorted.map((r) => r.id)).toEqual(['empty', 'waiting-new', 'waiting-old', 'playing-new']);
   });
 });
 
@@ -106,6 +113,43 @@ describe('joinRoom', () => {
     const res = await joinRoom('ABC123', 'QuickOwl');
     expect(res.ok && res.room.players[res.playerId].spectator).toBe(true);
     expect(await joinRoom('NOPE00', 'QuickOwl')).toEqual({ ok: false, reason: 'not_found' });
+  });
+
+  it('plays straight away in a room everyone left mid-game (nobody to approve a spectator)', async () => {
+    const { joinRoom } = await import('../services/roomService');
+    store['rooms/ABC123'] = room({ status: 'playing', players: {} });
+    const res = await joinRoom('ABC123', 'QuickOwl');
+    expect(res.ok && res.room.players[res.playerId].spectator).toBeFalsy();
+  });
+});
+
+describe('activeHostId', () => {
+  const p = (id: string, joinedAt: number, spectator = false) => ({ id, name: id, isHost: false, joinedAt, ...(spectator ? { spectator } : {}) });
+  it('is the host while they are in the room', () => {
+    expect(activeHostId(room({ players: { h: p('h', 9), a: p('a', 1) } }))).toBe('h');
+  });
+  it('falls to the longest-seated player when the host is away, players before spectators', () => {
+    expect(activeHostId(room({ players: { s: p('s', 1, true), b: p('b', 3), a: p('a', 2) } }))).toBe('a');
+  });
+  it('is nobody in an empty room', () => {
+    expect(activeHostId(room({ players: {} }))).toBeNull();
+  });
+});
+
+describe('startNextRound', () => {
+  beforeEach(() => { for (const k of Object.keys(store)) delete store[k]; });
+
+  it('restarts once even when every player\'s countdown fires', async () => {
+    const { startNextRound } = await import('../services/roomService');
+    store['rooms/ABC123/status'] = 'won';
+    const results = await Promise.all([startNextRound('ABC123', 'r1'), startNextRound('ABC123', 'r1'), startNextRound('ABC123', 'r1')]);
+    expect(results.filter(Boolean)).toHaveLength(1);
+  });
+
+  it('does nothing once the round already restarted', async () => {
+    const { startNextRound } = await import('../services/roomService');
+    store['rooms/ABC123/status'] = 'playing';
+    expect(await startNextRound('ABC123', 'r2')).toBe(false);
   });
 });
 

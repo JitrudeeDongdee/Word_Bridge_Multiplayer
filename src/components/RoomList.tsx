@@ -137,7 +137,7 @@ export default function RoomList({ onPick, onCreate }: RoomListProps) {
                       <span className="truncate">{r.name}</span>
                     </p>
                     <p className="text-xs text-gray-400 truncate">
-                      Host {r.hostName} · <span className="font-mono">{r.id}</span>
+                      {r.hostName ? `Host ${r.hostName}` : r.playerCount === 0 ? 'Empty — join to play' : 'Host away'} · <span className="font-mono">{r.id}</span>
                     </p>
                   </div>
                   <span className="flex-shrink-0 inline-flex items-center gap-1 text-xs text-gray-600" title="Players in the room">

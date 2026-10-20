@@ -9,6 +9,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { useState } from 'react';
 import { defaultRoomName } from '../services/roomIndexService';
 import { track } from '../services/analytics';
+import { activeHostId, isActiveHost } from '../utils/roomHost';
 
 export default function LobbyPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -20,7 +21,7 @@ export default function LobbyPage() {
   const [leaving, setLeaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [confirming, setConfirming] = useState<'delete' | 'leaveLast' | null>(null);
+  const [confirming, setConfirming] = useState<'delete' | null>(null);
 
   const handleCopyLink = () => {
     const url = `${window.location.origin}${window.location.pathname}#/join/${roomId}`;
@@ -40,7 +41,7 @@ export default function LobbyPage() {
     );
   }
 
-  const isHost = room.hostId === playerId;
+  const isHost = isActiveHost(room, playerId);
   const players = room.players ?? {};
   const playerCount = Object.keys(players).length;
 
@@ -70,19 +71,12 @@ export default function LobbyPage() {
     }
   };
 
-  /** Leave the room (if in it) and open the main lobby. */
-  const handleMainLobby = () => {
+  /** Leave the room (if in it) and open the main lobby. The room stays open for a comeback. */
+  const handleMainLobby = async () => {
     if (!roomId || !playerId || !players[playerId]) {
       navigate('/rooms');
       return;
     }
-    // Last one out closes the room: ask first
-    if (playerCount === 1) setConfirming('leaveLast');
-    else void leaveToMainLobby();
-  };
-
-  const leaveToMainLobby = async () => {
-    if (!playerId) return;
     setLeaving(true);
     try {
       await leaveRoom(roomId, playerId, players);
@@ -167,7 +161,7 @@ export default function LobbyPage() {
             <PlayerList
               players={players}
               currentPlayerId={playerId}
-              hostId={room.hostId}
+              hostId={activeHostId(room) ?? undefined}
               onKick={isHost ? handleKick : undefined}
             />
           </div>
@@ -223,16 +217,6 @@ export default function LobbyPage() {
           danger
           busy={deleting}
           onConfirm={handleDelete}
-          onCancel={() => setConfirming(null)}
-        />
-      )}
-      {confirming === 'leaveLast' && (
-        <ConfirmDialog
-          title="Close this room?"
-          message="You are the only player — leaving closes this room."
-          confirmLabel="Go to main lobby"
-          busy={leaving}
-          onConfirm={leaveToMainLobby}
           onCancel={() => setConfirming(null)}
         />
       )}

@@ -169,6 +169,21 @@ Still open:
 - Main lobby layout: room card fills the screen height (desktop: rooms left, board right;
   phone: rooms fill the first screen); empty state = vector "unbuilt bridge" + Create Room.
 
+## Rooms keep going without the host (2026-10-20)
+- **Leaving never closes a room.** The last player out only drops their seat (the room keeps its
+  code, board and scores, and gets its default name saved). Empty rooms stay in the main lobby
+  ("Empty — join to play") until the usual stale cleanup removes them (2 h idle / 24 h old /
+  30 min after a win). The host can still Delete Room.
+- **Acting host** (`utils/roomHost.ts` `activeHostId`): if `hostId` isn't seated, the
+  longest-seated player (players before spectators) runs the room: win detection, host controls,
+  approve/kick. `hostId` is unchanged (rules only let the host hand it over), so the real host gets
+  the room back on rejoin (`joinRoom` sets `isHost` when `hostId` matches).
+- Joining mid-round as a spectator only happens if someone is playing; in an abandoned room you play.
+- **Next round starts by itself** 5 s after a win (`NEXT_ROUND_DELAY_MS`); anyone can press
+  "Play Again" to skip. `startNextRound` claims `rooms/{id}/nextRound` `{round: gameState.startedAt,
+  at}` in a transaction so only one client restarts; a claim older than 15 s is treated as abandoned
+  and the others retry once.
+
 ## Analytics (GA4, 2026-10-19)
 - Property "Word Bridge" (Analytics account a397322879 "Default Account for Firebase", owner
   jitrudee9723@gmail.com, Thailand time, THB), web stream for wordbridgemultiplayer.thaidongdee.com,

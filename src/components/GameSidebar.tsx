@@ -4,6 +4,7 @@ import RoomSettings from './RoomSettings';
 import ScoreTable from './ScoreTable';
 import type { Room } from '../types';
 import { approveJoinRequest, denyJoinRequest, kickPlayer } from '../services/roomService';
+import { activeHostId } from '../utils/roomHost';
 
 interface GameSidebarProps {
   room: Room;
@@ -100,7 +101,7 @@ export default function GameSidebar({
         <PlayerList
           players={room.players ?? {}}
           currentPlayerId={playerId}
-          hostId={room.hostId}
+          hostId={activeHostId(room) ?? undefined}
           playerColorMap={playerColorMap}
           onApprove={isHost ? (pid) => approveJoinRequest(roomId, pid) : undefined}
           onDeny={isHost ? (pid) => denyJoinRequest(roomId, pid) : undefined}

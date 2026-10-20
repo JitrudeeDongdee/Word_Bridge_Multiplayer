@@ -3,10 +3,11 @@ import { checkWin, findPath } from '../utils/graph';
 import { markRoomWon } from '../services/roomService';
 import { computeRoundScores } from '../utils/scoring';
 import { useGameStore } from '../store/useGameStore';
+import { isActiveHost } from '../utils/roomHost';
 
 /**
  * Watches room edges and triggers win detection after every update.
- * Only the host executes the write to avoid duplicate Firebase writes.
+ * Only the (acting) host executes the write to avoid duplicate Firebase writes.
  */
 export function useWinDetection(roomId: string): void {
   const room = useGameStore((s) => s.room);
@@ -14,7 +15,7 @@ export function useWinDetection(roomId: string): void {
 
   useEffect(() => {
     if (!room || room.status !== 'playing' || !room.gameState) return;
-    if (!playerId || room.hostId !== playerId) return;
+    if (!playerId || !isActiveHost(room, playerId)) return;
 
     const { wordANodeId, wordBNodeId } = room.gameState;
     const edges = Object.values(room.edges ?? {});

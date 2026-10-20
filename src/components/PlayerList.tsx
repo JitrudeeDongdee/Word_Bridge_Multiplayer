@@ -40,7 +40,7 @@ export default function PlayerList({ players, currentPlayerId, hostId, onKick, o
             {player.joinRequest && player.id === currentPlayerId && (
               <span className="text-xs text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">Requested</span>
             )}
-            {player.isHost && (
+            {player.id === hostId && (
               <span className="text-xs font-medium text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded">
                 Host
               </span>
