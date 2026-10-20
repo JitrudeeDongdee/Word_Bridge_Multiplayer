@@ -71,7 +71,8 @@ export default function DeleteDataPage() {
                 This permanently deletes:
               </p>
               <ul className="text-sm text-gray-600 list-disc pl-5 flex flex-col gap-1">
-                {member && <li>your account and saved display name</li>}
+                {member && <li>your account, saved display name and profile picture</li>}
+                {member && <li>your name and picture on the leaderboard</li>}
                 <li>your votes to link words</li>
                 <li>your seat (name, IP address) in any room you're in</li>
                 <li>{member ? 'your sign-in (Google / Facebook / email) with Word Bridge' : 'your guest sign-in'}</li>

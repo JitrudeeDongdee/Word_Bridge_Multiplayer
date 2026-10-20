@@ -201,6 +201,10 @@ Still open:
   (sent by the client that detects the win), `add_word`, `vote_link` {learned}, `dict_lookup`,
   `chat_message`, `share_invite` {from: lobby|game}.
 - Privacy policy has an "Analytics cookies" section (EN `#analytics`, TH `#analytics-th`).
+- Privacy policy audited against what is stored (2026-10-20): uploaded profile picture, public
+  profile, leaderboard rounds (`winLog`, kept; players can't edit them, so "Delete my data" doesn't
+  remove them and the policy says to email for removal), rooms that stay open after leaving, the
+  total-players counter. "Delete my data" now also removes `publicProfiles/{uid}`.
 - GA data retention is still the default 2 months (Admin → Data retention can raise it to 14).
 
 ## Icons
