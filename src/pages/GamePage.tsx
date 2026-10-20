@@ -20,6 +20,7 @@ import { useHasHydrated } from '../hooks/useHasHydrated';
 import { preloadEmbeddingModel } from '../utils/embeddingSimilarity';
 import type { Room } from '../types';
 import { track } from '../services/analytics';
+import { isActiveHost } from '../utils/roomHost';
 
 const CHAT_PINNED_KEY = 'wb-chat-pinned';
 
@@ -70,7 +71,7 @@ export default function GamePage() {
     [room?.players],
   );
 
-  const isHost = room?.hostId === playerId;
+  const isHost = isActiveHost(room, playerId);
   const isSpectator = !!room?.players?.[playerId ?? '']?.spectator;
   const hasJoinRequest = !!room?.players?.[playerId ?? '']?.joinRequest;
 
@@ -203,7 +204,6 @@ export default function GamePage() {
             <VictoryModal
               room={room}
               roomId={roomId}
-              playerId={playerId}
               playerColorMap={playerColorMap}
             />
           )}

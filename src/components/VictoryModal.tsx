@@ -1,27 +1,43 @@
 import { ArrowRight, Flag, PartyPopper, Sparkles, Trophy, X, Zap } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import type { Room } from '../types';
-import { restartGame } from '../services/roomService';
+import { NEXT_ROUND_DELAY_MS, NEXT_ROUND_RETRY_MS, startNextRound } from '../services/roomService';
 
 const pts = (n: number) => `${n} pt${n === 1 ? '' : 's'}`;
 
 interface VictoryModalProps {
   room: Room;
   roomId: string;
-  playerId: string;
   playerColorMap: Record<string, string>;
 }
 
-export default function VictoryModal({ room, roomId, playerId, playerColorMap }: VictoryModalProps) {
+export default function VictoryModal({ room, roomId, playerColorMap }: VictoryModalProps) {
   const navigate = useNavigate();
   const [minimized, setMinimized] = useState(false);
   const [restarting, setRestarting] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(Math.ceil(NEXT_ROUND_DELAY_MS / 1000));
 
-  const isHost = room.hostId === playerId;
   const { gameState, nodes, winningPath } = room;
   const wordA = gameState?.wordA ?? '?';
+  // Identifies this round, so only one player's countdown restarts it
+  const round = String(gameState?.startedAt ?? (winningPath ?? []).join('|'));
+
+  const next = useCallback(() => startNextRound(roomId, round).catch(() => false), [roomId, round]);
+
+  // Next round starts by itself, so the room keeps going without the host. Every player
+  // counts down; startNextRound lets only the first one through. If that player vanished
+  // mid-restart, the claim expires and the others try again.
+  useEffect(() => {
+    const started = Date.now();
+    const tick = setInterval(() => {
+      setSecondsLeft(Math.max(0, Math.ceil((NEXT_ROUND_DELAY_MS - (Date.now() - started)) / 1000)));
+    }, 250);
+    const first = setTimeout(() => void next(), NEXT_ROUND_DELAY_MS);
+    const retry = setTimeout(() => void next(), NEXT_ROUND_DELAY_MS + NEXT_ROUND_RETRY_MS);
+    return () => { clearInterval(tick); clearTimeout(first); clearTimeout(retry); };
+  }, [next]);
 
   useEffect(() => {
     // Fire two bursts from the bottom corners
@@ -49,15 +65,12 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
   const totalEntries = Object.entries(room.scores ?? {}).sort(([, a], [, b]) => b - a);
 
   const handlePlayAgain = async () => {
-    if (!isHost) return;
     setRestarting(true);
-    try {
-      await restartGame(roomId);
-      // Component unmounts when status → 'playing'
-    } catch {
-      setRestarting(false);
-    }
+    // Component unmounts when status → 'playing'
+    if (!(await next())) setRestarting(false);
   };
+
+  const countdown = restarting || secondsLeft === 0 ? 'Starting…' : `Next round in ${secondsLeft}`;
 
   /* ── Minimised: floating pill at bottom-right ── */
   if (minimized) {
@@ -67,6 +80,7 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
         className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-white border-2 border-brand-400 rounded-2xl shadow-2xl text-brand-600 font-bold text-sm hover:bg-brand-50 transition-all"
       >
         <Trophy className="w-4 h-4" aria-hidden /> View Results
+        <span className="font-normal text-gray-500 tabular-nums">· {countdown}</span>
       </button>
     );
   }
@@ -231,19 +245,14 @@ export default function VictoryModal({ room, roomId, playerId, playerColorMap }:
 
         {/* Footer actions */}
         <div className="flex gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0">
-          {isHost ? (
-            <button
-              onClick={handlePlayAgain}
-              disabled={restarting}
-              className="flex-1 py-2.5 rounded-xl bg-brand-500 text-white font-bold text-sm hover:bg-brand-600 disabled:opacity-60 transition-colors"
-            >
-              {restarting ? 'Starting…' : 'Play Again'}
-            </button>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-sm text-gray-400 py-2.5">
-              Waiting for host to start…
-            </div>
-          )}
+          {/* Anyone can skip the countdown */}
+          <button
+            onClick={handlePlayAgain}
+            disabled={restarting || secondsLeft === 0}
+            className="flex-1 py-2.5 rounded-xl bg-brand-500 text-white font-bold text-sm hover:bg-brand-600 disabled:opacity-60 transition-colors tabular-nums"
+          >
+            {restarting || secondsLeft === 0 ? 'Starting…' : `Play Again · ${secondsLeft}`}
+          </button>
           <button
             onClick={() => navigate('/')}
             className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors"

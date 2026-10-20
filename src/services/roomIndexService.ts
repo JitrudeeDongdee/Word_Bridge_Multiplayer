@@ -59,7 +59,8 @@ export async function findOrphanIndexIds(existingRoomIds: Set<string>): Promise<
 export function sortRoomList(entries: RoomIndexEntry[], now = Date.now()): RoomIndexEntry[] {
   const rank = (e: RoomIndexEntry) => (e.status === 'waiting' ? 0 : 1);
   return entries
-    .filter((e) => e.playerCount > 0 && now - e.lastActiveAt < ROOM_LIST_MAX_IDLE_MS)
+    // Empty rooms stay listed (people can come back to them) until they go idle
+    .filter((e) => now - e.lastActiveAt < ROOM_LIST_MAX_IDLE_MS)
     .sort((a, b) => rank(a) - rank(b) || b.lastActiveAt - a.lastActiveAt);
 }
 

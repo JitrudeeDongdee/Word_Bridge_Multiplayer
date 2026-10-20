@@ -2,6 +2,7 @@ import { ArrowRight, RotateCcw, X } from 'lucide-react';
 import { useState } from 'react';
 import type { Room } from '../types';
 import { restartGame } from '../services/roomService';
+import { isActiveHost } from '../utils/roomHost';
 
 interface NewGameModalProps {
   room: Room;
@@ -20,7 +21,7 @@ export default function NewGameModal({
 }: NewGameModalProps) {
   const [restarting, setRestarting] = useState(false);
 
-  const isHost = room.hostId === playerId;
+  const isHost = isActiveHost(room, playerId);
   const { wordA, wordB } = room.gameState ?? { wordA: '?', wordB: '?' };
   const nodeCount = Object.keys(room.nodes ?? {}).length;
   const totalEntries = Object.entries(room.scores ?? {}).sort(([, a], [, b]) => b - a);

@@ -24,7 +24,7 @@ import type { Room, Player, GameNode, GameEdge, SharedWordScore, LastWordScores,
 import { pickWordPair } from '../utils/wordPairs';
 import { generateRoomCode } from '../utils/generateRoomCode';
 import { newPasswordSalt, hashRoomPassword, checkRoomPassword } from '../utils/roomPassword';
-import { syncRoomIndex, removeFromRoomIndex, findOrphanIndexIds } from './roomIndexService';
+import { syncRoomIndex, removeFromRoomIndex, findOrphanIndexIds, defaultRoomName } from './roomIndexService';
 import { logRound } from './leaderboardService';
 import { track } from './analytics';
 
@@ -78,18 +78,23 @@ export async function leaveRoom(
 ): Promise<void> {
   const remaining = Object.values(players).filter((p) => p.id !== playerId);
 
-  if (remaining.length === 0) {
-    // Last player leaving — delete the room entirely. Leave first: the database rules let
-    // anyone delete a room with no players, but only its host delete one that still has some.
-    await remove(ref(db, `rooms/${roomId}/players/${playerId}`));
-    await remove(ref(db, `rooms/${roomId}`));
-    await removeFromRoomIndex([roomId]);
-    return;
-  }
-
   const updates: Record<string, unknown> = {
     [`rooms/${roomId}/players/${playerId}`]: null,
   };
+
+  if (remaining.length === 0) {
+    // Last one out: the room stays open (same code, board and scores) so players can come
+    // back to it; the stale-room cleanup removes it after 2 hours idle. Keep the name it was
+    // listed under, since the default one comes from the (now absent) host's name.
+    const snap = await get(ref(db, `rooms/${roomId}/name`));
+    if (!snap.exists()) {
+      updates[`rooms/${roomId}/name`] = defaultRoomName(players[playerId]?.name ?? 'Someone');
+    }
+    updates[`rooms/${roomId}/lastActiveAt`] = Date.now();
+    await update(ref(db), updates);
+    await syncRoomIndex(roomId);
+    return;
+  }
 
   // Transfer host if the leaving player is the current host
   const isHost = players[playerId]?.isHost;
@@ -229,13 +234,17 @@ export async function joinRoom(
   }
 
   const playerId = currentUid() ?? uuidv4();
+  // Mid-round joiners watch until approved — unless nobody is playing (an abandoned room
+  // someone came back to), then they just play
+  const someonePlaying = Object.values(room.players ?? {}).some((p) => p.id !== playerId && !p.spectator);
   const player: Player = {
     id: playerId,
     name: playerName,
-    isHost: false,
+    // The room's own host coming back gets the room back
+    isHost: room.hostId === playerId,
     joinedAt: Date.now(),
     ...(playerIp ? { ip: playerIp } : {}),
-    ...(room.status !== 'waiting' ? { spectator: true } : {}),
+    ...(room.status !== 'waiting' && someonePlaying ? { spectator: true } : {}),
     ...myPhoto(),
   };
 
@@ -367,6 +376,32 @@ export async function restartGame(roomId: string): Promise<void> {
   await update(ref(db), updates);
   await syncRoomIndex(roomId);
   track('game_restart');
+}
+
+/** How long the victory screen counts down before the next round starts by itself. */
+export const NEXT_ROUND_DELAY_MS = 5000;
+/** A claim older than this is treated as abandoned (that client closed mid-restart). */
+const NEXT_ROUND_CLAIM_MS = 15000;
+/** When everyone still sees the victory screen this long after the countdown, try again. */
+export const NEXT_ROUND_RETRY_MS = NEXT_ROUND_CLAIM_MS + 1000;
+
+/**
+ * Starts the next round after a win — at most once, however many players' countdowns (or
+ * "Play again" clicks) fire together. The first to claim `nextRound` for this round restarts;
+ * everyone else backs off. Returns whether this call started it.
+ */
+export async function startNextRound(roomId: string, round: string): Promise<boolean> {
+  const now = Date.now();
+  const { committed } = await runTransaction(ref(db, `rooms/${roomId}/nextRound`), (claim) => {
+    const c = claim as { round?: string; at?: number } | null;
+    if (c?.round === round && now - (c.at ?? 0) < NEXT_ROUND_CLAIM_MS) return; // taken
+    return { round, at: now };
+  });
+  if (!committed) return false;
+  const status = await get(ref(db, `rooms/${roomId}/status`));
+  if (status.val() !== 'won') return false;
+  await restartGame(roomId);
+  return true;
 }
 
 export async function resetToLobby(roomId: string): Promise<void> {
