@@ -238,16 +238,18 @@ export async function logOut(): Promise<User | null> {
 }
 
 /**
- * Deletes everything stored about the signed-in player (guest or member): their profile,
- * their link votes, their seat in any room, and the sign-in account itself. Rooms, chat and
- * words already expire on their own. Afterwards the browser continues as a fresh guest.
+ * Deletes everything stored about the signed-in player (guest or member): their profile and
+ * public profile (name + picture), their link votes, their seat in any room, and the sign-in
+ * account itself. Rooms, chat and words already expire on their own; finished rounds on the
+ * leaderboard can't be edited by players (removed on request). Afterwards the browser
+ * continues as a fresh guest.
  */
 export async function deleteMyData(): Promise<void> {
   const user = auth.currentUser;
   if (!user) throw new Error('not signed in');
   const uid = user.uid;
   const [votes, rooms] = await Promise.all([get(ref(db, 'pairVotes')), get(ref(db, 'rooms'))]);
-  const removals: Promise<void>[] = [remove(ref(db, `users/${uid}`))];
+  const removals: Promise<void>[] = [remove(ref(db, `users/${uid}`)), remove(ref(db, `publicProfiles/${uid}`))];
   for (const [pair, record] of Object.entries((votes.val() ?? {}) as Record<string, { voters?: Record<string, { playerId?: string }> }>)) {
     for (const [voter, v] of Object.entries(record.voters ?? {})) {
       if (v?.playerId === uid) removals.push(remove(ref(db, `pairVotes/${pair}/voters/${voter}`)));

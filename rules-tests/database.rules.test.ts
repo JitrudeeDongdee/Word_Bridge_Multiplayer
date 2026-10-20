@@ -154,6 +154,9 @@ describe('leaderboard', () => {
     await assertSucceeds(get(ref(db('bob'), 'publicProfiles/alice')));
     await assertFails(set(ref(db('bob'), 'publicProfiles/alice'), { name: 'Hacked' }));
     await assertFails(update(ref(db('alice'), 'publicProfiles/alice'), { photo: 'https://x/y.png' }));
+    // "Delete my data" removes it; nobody else can
+    await assertFails(remove(ref(db('bob'), 'publicProfiles/alice')));
+    await assertSucceeds(remove(ref(db('alice'), 'publicProfiles/alice')));
   });
 });
 

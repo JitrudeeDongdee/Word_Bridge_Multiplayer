@@ -31,7 +31,7 @@
 
   <section id="en" lang="en">
     <h1>Privacy Policy</h1>
-    <p class="meta">Word Bridge · Effective October 19, 2026</p>
+    <p class="meta">Word Bridge · Effective October 20, 2026</p>
 
     <p>Word Bridge is a free multiplayer word game played in the browser at
       <a href="./">wordbridgemultiplayer.thaidongdee.com</a>. This page explains what the game stores,
@@ -42,12 +42,16 @@
       <thead><tr><th>Data</th><th>When</th><th>Why</th></tr></thead>
       <tbody>
         <tr><td>A random player ID (Firebase user ID)</td><td>Every visitor, including guests</td><td>To know which player you are in a room and to protect the database</td></tr>
-        <tr><td>Display name</td><td>When you create or join a room, or sign up</td><td>Shown to other players</td></tr>
-        <tr><td>Email address, and the name / profile photo link from Google or Facebook</td><td>Only if you sign up or log in with email, Google or Facebook</td><td>To log you in on any device. Stored by Firebase Authentication; the game itself only keeps your display name</td></tr>
+        <tr><td>Display name</td><td>When you create or join a room, or sign up</td><td>Shown to other players and on the leaderboard</td></tr>
+        <tr><td>Email address, and the name / profile photo link from Google or Facebook</td><td>Only if you sign up or log in with email, Google or Facebook</td><td>To log you in on any device. Stored by Firebase Authentication. The game does not use the Google / Facebook photo</td></tr>
+        <tr><td>Account record: display name, profile picture you upload, date the account was created</td><td>Members only. The picture only if you add one in Profile settings</td><td>To show the same name and picture on any device. The picture is shrunk to a small 128 × 128 image in your browser before it is saved</td></tr>
+        <tr><td>Public profile: display name and profile picture</td><td>Members (guests appear on the leaderboard only with the name they played under)</td><td>Shown on the leaderboard and next to your name in rooms</td></tr>
+        <tr><td>Leaderboard rounds: room code, time, each player's points, the name they used, who won the crown</td><td>Every finished round, guests included</td><td>To rank players by crowns and points (this week, this month, all time)</td></tr>
         <tr><td>Public IP address</td><td>When you create or join a room or vote to link two words</td><td>Stored with your seat in the room, and to count one vote per person</td></tr>
         <tr><td>Game content: words you add, chat messages, scores, room name and password lock</td><td>While you play</td><td>To run the game for everyone in the room</td></tr>
         <tr><td>Votes to link two words (the two words, a voter key based on your IP or player ID, your player ID, time)</td><td>When you use “Vote link”</td><td>To teach the game which words belong together</td></tr>
         <tr><td>Online status and device type (mobile / desktop)</td><td>While the game is open</td><td>To show how many players are online</td></tr>
+        <tr><td>A total-players counter (a number only)</td><td>Each visit</td><td>To show how many people have played</td></tr>
         <tr><td>Browser storage: your player ID and name, display preferences (chat panel, dictionary images), sign-in session, your analytics cookie choice</td><td>On your own device</td><td>To keep you in your room after a reload and remember your settings</td></tr>
       </tbody>
     </table>
@@ -64,7 +68,8 @@
       <li>The word-meaning model is downloaded from <b>Hugging Face</b> and runs on your device; your words are not sent to it.</li>
       <li>Pronunciation uses your browser's built-in speech voices.</li>
     </ul>
-    <p>Other players in your room see your display name, your words, chat messages and scores.</p>
+    <p>Other players in your room see your display name, profile picture, your words, chat messages and scores. Every signed-in player
+      (guests included) can see the leaderboard: names, pictures, crowns and points.</p>
 
     <h2 id="analytics">Analytics cookies (Google Analytics)</h2>
     <p>Only if you press <b>Accept</b> on the cookie banner, the game loads <b>Google Analytics 4</b> (Google LLC, United States)
@@ -83,15 +88,20 @@
     <h2>How long we keep it</h2>
     <ul>
       <li>Rooms — including players' names, IP addresses, words and chat — are deleted automatically: after 30 minutes of inactivity once a game is won, after 2 hours of inactivity, and at the latest 24 hours after the room was created (cleanup runs whenever a new room is created).</li>
+      <li>Leaving a room removes your seat (name, picture and IP address) at once. The room itself stays open for others to come back to until it expires as above.</li>
       <li>Online status is removed when you close the game.</li>
-      <li>Your account, display name and link votes are kept until you delete them.</li>
+      <li>Your account, display name, profile picture, public profile and link votes are kept until you delete them.</li>
+      <li>Leaderboard rounds are kept so the all-time board stays correct. Players can't edit them, and “Delete my data” does not remove them;
+        email us and we will remove your name and points from them.</li>
       <li>New words added to the shared word list and pairs the players taught the game are kept; they contain no personal data.</li>
     </ul>
 
     <h2>Your choices and rights</h2>
     <ul>
       <li>You can play as a guest without giving an email address.</li>
+      <li>Change your name or remove your picture at any time in <b>Profile settings</b> (members).</li>
       <li><b>Delete your data</b> at any time on the <a href="data-deletion.html">data deletion page</a>.</li>
+      <li>Decline or withdraw analytics cookies with <b>Cookie settings</b>.</li>
       <li>To ask what we hold about you, to correct it, or anything else about privacy, email
         <a href="mailto:jitrudee9723@gmail.com">jitrudee9723@gmail.com</a>.</li>
     </ul>
@@ -110,7 +120,7 @@
 
   <section id="th" lang="th">
     <h1>นโยบายความเป็นส่วนตัว</h1>
-    <p class="meta">Word Bridge · มีผลตั้งแต่ 19 ตุลาคม 2569</p>
+    <p class="meta">Word Bridge · มีผลตั้งแต่ 20 ตุลาคม 2569</p>
 
     <p>Word Bridge เป็นเกมเชื่อมคำแบบผู้เล่นหลายคน เล่นฟรีบนเบราว์เซอร์ หน้านี้อธิบายว่าเกมเก็บข้อมูลอะไร เพื่ออะไร ส่งให้ใคร เก็บนานแค่ไหน และลบได้อย่างไร</p>
 
@@ -118,12 +128,15 @@
     <ul>
       <li><b>รหัสผู้เล่นแบบสุ่ม</b> (Firebase user ID) — ทุกคนรวมถึง guest ใช้ระบุตัวผู้เล่นในห้องและป้องกันฐานข้อมูล</li>
       <li><b>ชื่อที่แสดง</b> — ตอนสร้าง/เข้าห้อง หรือสมัครสมาชิก ผู้เล่นคนอื่นจะเห็นชื่อนี้</li>
-      <li><b>อีเมล และชื่อ/ลิงก์รูปโปรไฟล์จาก Google หรือ Facebook</b> — เฉพาะเมื่อสมัครหรือล็อกอินด้วยช่องทางเหล่านี้ เก็บโดย Firebase Authentication ส่วนตัวเกมเก็บแค่ชื่อที่แสดง</li>
+      <li><b>อีเมล และชื่อ/ลิงก์รูปโปรไฟล์จาก Google หรือ Facebook</b> — เฉพาะเมื่อสมัครหรือล็อกอินด้วยช่องทางเหล่านี้ เก็บโดย Firebase Authentication ตัวเกมไม่ได้ใช้รูปจาก Google / Facebook</li>
+      <li><b>ข้อมูลบัญชีสมาชิก</b> — ชื่อที่แสดง รูปโปรไฟล์ที่คุณอัปโหลดเอง (ถ้ามี ย่อเป็นรูปเล็ก 128 × 128 ในเบราว์เซอร์ก่อนบันทึก) และวันที่สมัคร</li>
+      <li><b>โปรไฟล์สาธารณะ</b> (สมาชิก) — ชื่อและรูปโปรไฟล์ แสดงในกระดานคะแนนและข้างชื่อในห้อง · guest จะแสดงในกระดานคะแนนด้วยชื่อที่ใช้เล่นเท่านั้น</li>
+      <li><b>ผลแต่ละรอบสำหรับกระดานคะแนน</b> — รหัสห้อง เวลา คะแนนของผู้เล่นแต่ละคน ชื่อที่ใช้ตอนนั้น และผู้ได้มงกุฎ ทุกรอบที่จบ รวม guest</li>
       <li><b>IP address สาธารณะ</b> — ตอนสร้าง/เข้าห้อง และตอนโหวตเชื่อมคำ เก็บไว้กับที่นั่งในห้อง และใช้นับหนึ่งเสียงต่อหนึ่งคน</li>
       <li><b>เนื้อหาในเกม</b> — คำที่พิมพ์ ข้อความแชท คะแนน ชื่อห้อง และการล็อกห้อง</li>
       <li><b>การโหวตเชื่อมคำ</b> — คำทั้งสอง คีย์ผู้โหวต (จาก IP หรือรหัสผู้เล่น) รหัสผู้เล่น และเวลา</li>
-      <li><b>สถานะออนไลน์และชนิดอุปกรณ์</b> (มือถือ/คอม) — ใช้แสดงจำนวนคนออนไลน์</li>
-      <li><b>ข้อมูลในเบราว์เซอร์ของคุณเอง</b> — รหัสผู้เล่น ชื่อ การตั้งค่าการแสดงผล และ session การล็อกอิน</li>
+      <li><b>สถานะออนไลน์และชนิดอุปกรณ์</b> (มือถือ/คอม) — ใช้แสดงจำนวนคนออนไลน์ และตัวนับจำนวนผู้เล่นทั้งหมด (เป็นแค่ตัวเลข)</li>
+      <li><b>ข้อมูลในเบราว์เซอร์ของคุณเอง</b> — รหัสผู้เล่น ชื่อ การตั้งค่าการแสดงผล session การล็อกอิน และตัวเลือกคุกกี้สถิติ</li>
     </ul>
     <p>เราไม่ขายข้อมูล ไม่มีโฆษณา และไม่นำข้อมูลไปทำโปรไฟล์โฆษณา · สถิติการใช้งานเก็บเฉพาะเมื่อคุณยินยอม (ดู <a href="#analytics-th">คุกกี้สถิติ</a>)</p>
 
@@ -136,7 +149,7 @@
       <li>คำที่พิมพ์ถูกส่งไปที่ <b>Datamuse</b>, <b>dictionaryapi.dev</b> และ <b>Wikipedia</b> เพื่อตรวจคำ หาความหมายและรูป (ส่งแค่คำ ไม่ส่งชื่อ)</li>
       <li>โมเดลเทียบความหมายดาวน์โหลดจาก <b>Hugging Face</b> และประมวลผลในเครื่องของคุณ · เสียงอ่านใช้เสียงของเบราว์เซอร์</li>
     </ul>
-    <p>ผู้เล่นในห้องเดียวกันจะเห็นชื่อ คำ แชท และคะแนนของคุณ</p>
+    <p>ผู้เล่นในห้องเดียวกันจะเห็นชื่อ รูปโปรไฟล์ คำ แชท และคะแนนของคุณ · ผู้เล่นทุกคนที่เข้าเกม (รวม guest) เห็นกระดานคะแนน: ชื่อ รูป มงกุฎ และคะแนน</p>
 
     <h2 id="analytics-th">คุกกี้สถิติ (Google Analytics)</h2>
     <p>เมื่อคุณกด <b>ยอมรับ</b> ที่แถบแจ้งคุกกี้เท่านั้น เกมจึงจะโหลด <b>Google Analytics 4</b> (Google LLC, สหรัฐอเมริกา)
@@ -154,15 +167,19 @@
     <h2>ระยะเวลาเก็บ</h2>
     <ul>
       <li>ห้อง (รวมชื่อ IP คำ และแชท) ถูกลบอัตโนมัติ: 30 นาทีหลังจบเกมที่ไม่มีความเคลื่อนไหว, 2 ชั่วโมงที่ไม่มีความเคลื่อนไหว และไม่เกิน 24 ชั่วโมงหลังสร้างห้อง (ระบบล้างทำงานทุกครั้งที่มีการสร้างห้องใหม่)</li>
+      <li>เมื่อออกจากห้อง ที่นั่งของคุณ (ชื่อ รูป และ IP) ถูกลบทันที ส่วนตัวห้องยังเปิดไว้ให้คนกลับมาเล่นต่อได้จนกว่าจะหมดอายุตามข้างบน</li>
       <li>สถานะออนไลน์ถูกลบเมื่อปิดเกม</li>
-      <li>บัญชี ชื่อที่แสดง และการโหวต เก็บไว้จนกว่าคุณจะลบ</li>
+      <li>บัญชี ชื่อที่แสดง รูปโปรไฟล์ โปรไฟล์สาธารณะ และการโหวต เก็บไว้จนกว่าคุณจะลบ</li>
+      <li>ผลแต่ละรอบของกระดานคะแนนเก็บไว้เพื่อให้อันดับตลอดกาลถูกต้อง ผู้เล่นแก้ไขเองไม่ได้ และปุ่ม “Delete my data” ไม่ได้ลบส่วนนี้ อีเมลมาแจ้ง เราจะลบชื่อและคะแนนของคุณออกให้</li>
       <li>คำใหม่ในคลังคำรวม และคู่คำที่ผู้เล่นสอนเกม ถูกเก็บไว้ โดยไม่มีข้อมูลส่วนบุคคล</li>
     </ul>
 
     <h2>สิทธิ์ของคุณ</h2>
     <ul>
       <li>เล่นแบบ guest ได้โดยไม่ต้องให้อีเมล</li>
+      <li>เปลี่ยนชื่อหรือลบรูปโปรไฟล์ได้ทุกเมื่อที่ <b>Profile settings</b> (สมาชิก)</li>
       <li><b>ลบข้อมูลของคุณ</b> ได้ทุกเมื่อที่ <a href="data-deletion.html">หน้าลบข้อมูล</a></li>
+      <li>ไม่ยอมรับหรือถอนความยินยอมคุกกี้สถิติได้ที่ <b>Cookie settings</b></li>
       <li>ขอดู แก้ไขข้อมูล หรือสอบถามเรื่องความเป็นส่วนตัว อีเมล <a href="mailto:jitrudee9723@gmail.com">jitrudee9723@gmail.com</a></li>
     </ul>
 
