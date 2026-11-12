@@ -169,6 +169,25 @@ Still open:
 - Main lobby layout: room card fills the screen height (desktop: rooms left, board right;
   phone: rooms fill the first screen); empty state = vector "unbuilt bridge" + Create Room.
 
+## Player list under the leaderboard (2026-11-12, branch `feature/player-presence-list`)
+- Main lobby, under the leaderboard: **In a room / Online / Offline** (`PlayersPanel`, grouping in
+  `utils/players.ts`). Offline = members (`publicProfiles`) not online; guests appear only while
+  online (no lasting profile). Several tabs count once; a tab in a room wins. The room name links
+  to join it. Offline shows 8, then "Show all". Nobody can hide their status (owner's choice);
+  privacy policy says other players see name, online status and room (EN + TH).
+- Presence now runs on **every page** (`PresenceTracker` in `App.tsx`, `usePresenceTracker`) — it
+  used to exist only while the home page was open, so "online now" counted home-page visitors only.
+  It re-creates the entry on reconnect (`.info/connected`). `presence/{sessionId}` gains
+  `uid`, `name` (member: account name; guest: `playerName`), `member`, `roomId` (lobby / game /
+  victory routes).
+- Rules: presence `uid` must equal `auth.uid`; name ≤ 30, roomId ≤ 40, member boolean. Old
+  clients (no uid) still pass and are left out of the list. Entries aren't locked to their first
+  uid, because a tab keeps its entry when a guest signs in to another account.
+- The panel reads all of `publicProfiles` live (photos ≤ 60 KB each) — fine for now; page it or
+  drop photos from the list if members grow into the thousands.
+- **Rollout:** deploy the client first, then publish `database.rules.json` (the new rules accept
+  old clients too, so order is not critical).
+
 ## Rooms keep going without the host (2026-10-20)
 - **Leaving never closes a room.** The last player out only drops their seat (the room keeps its
   code, board and scores, and gets its default name saved). Empty rooms stay in the main lobby
