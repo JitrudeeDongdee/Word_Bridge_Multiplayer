@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wordbridgemultiplayer.thaidongdee.com/sitemap.xml

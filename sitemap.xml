@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Game routes are #hash URLs (HashRouter), which search engines don't index separately,
+     so only the real files are listed. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://wordbridgemultiplayer.thaidongdee.com/</loc></url>
+  <url><loc>https://wordbridgemultiplayer.thaidongdee.com/privacy.html</loc></url>
+</urlset>
