@@ -188,6 +188,11 @@ Still open:
 - Property "Word Bridge" (Analytics account a397322879 "Default Account for Firebase", owner
   jitrudee9723@gmail.com, Thailand time, THB), web stream for wordbridgemultiplayer.thaidongdee.com,
   Measurement ID `G-EFRD06ENBH` (hard-coded in `src/services/analytics.ts`; it is public).
+  Property ID **559534131** (signed in as the owner's Gmail = `authuser=1` in the Chrome profile used).
+- 2026-11-12: the Firebase auto-created property "word-bridge-multiplayer" (540826667, stream
+  `G-QTSZ3WLBQ2`, never used by the code, no data) was moved to GA trash — restorable until ~2026-12-17.
+  This also dropped its Firebase project link; the app doesn't use Firebase Analytics.
+  Verified the same day: after accepting consent, `page_view`/`scroll` hits reach 559534131 Realtime.
 - **Consent first (PDPA):** `ConsentBanner` asks once; gtag.js is not loaded and nothing is sent until
   "ยอมรับ". Choice in localStorage `wb-analytics-consent`; "Cookie settings" in `PolicyLinks` clears it
   so the banner returns. Google Signals and ad personalization off; ad consent stays denied.
@@ -206,6 +211,20 @@ Still open:
   remove them and the policy says to email for removal), rooms that stay open after leaving, the
   total-players counter. "Delete my data" now also removes `publicProfiles/{uid}`.
 - GA data retention is still the default 2 months (Admin → Data retention can raise it to 14).
+
+## SEO (2026-11-12, branch `feature/seo-basics`)
+- Problem: the site was not in search results at all — empty `#root`, title "Word Bridge" only, no
+  description, no robots.txt / sitemap, not registered in Google Search Console.
+- `index.html`: longer title with "Multiplayer Word Chain Game" + Thai, meta description, canonical,
+  Open Graph / Twitter card (`public/og-image.png`, 1200×630), JSON-LD `VideoGame`, and a plain-HTML
+  copy of the home page inside `#root` (React replaces it on mount; crawlers and no-JS visitors see it).
+- `public/robots.txt` (allow all + sitemap), `public/sitemap.xml` (`/` and `/privacy.html` only —
+  game routes are `#hash` URLs, which Google doesn't index separately).
+- GA `page_title` now reports the new long title instead of "Word Bridge".
+- **Still to do by the owner:** add the domain to Google Search Console (DNS TXT in Cloudflare or an
+  HTML verification file in `public/`), submit `sitemap.xml`, and request indexing for `/`.
+- "Word Bridge" alone competes with other games of the same name (CrazyGames etc.); people are more
+  likely to find it with "word bridge multiplayer" or Thai keywords.
 
 ## Icons
 UI uses `lucide-react` icons (no emoji or symbol glyphs in components); decorative icons are
