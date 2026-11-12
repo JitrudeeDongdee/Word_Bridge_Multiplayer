@@ -73,7 +73,10 @@
       ".read": "auth != null",
       "$sessionId": {
         ".write": "auth != null",
-        ".validate": "newData.hasChildren(['joinedAt'])"
+        ".validate": "newData.hasChildren(['joinedAt']) && (!newData.child('uid').exists() || newData.child('uid').val() === auth.uid)",
+        "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
+        "member": { ".validate": "newData.isBoolean()" },
+        "roomId": { ".validate": "newData.isString() && newData.val().length <= 40" }
       }
     },
 

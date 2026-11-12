@@ -13,6 +13,10 @@ import { useVersionCheck } from './hooks/useVersionCheck';
 import AuthGate from './components/AuthGate';
 import ConsentBanner from './components/ConsentBanner';
 import { onConsentChange, trackPageView } from './services/analytics';
+import { usePresenceTracker } from './hooks/usePresence';
+import { useAuthStore } from './store/useAuthStore';
+import { useGameStore } from './store/useGameStore';
+import { roomIdFromPath } from './utils/players';
 
 /**
  * "New version" notice: a small dismissible card under the header (on phones, below the
@@ -58,12 +62,29 @@ function PageViewTracker() {
   return null;
 }
 
+/** Tells other players who is online and which room they are in (see the main lobby's player list). */
+function PresenceTracker() {
+  const { pathname } = useLocation();
+  const user = useAuthStore((s) => s.user);
+  const memberName = useAuthStore((s) => s.memberName);
+  const guestName = useGameStore((s) => s.playerName);
+  const member = Boolean(user && !user.isAnonymous);
+  usePresenceTracker({
+    uid: user?.uid ?? null,
+    name: member ? memberName : guestName,
+    member,
+    roomId: roomIdFromPath(pathname),
+  });
+  return null;
+}
+
 export default function App() {
   return (
     <>
       <AuthGate>
       <HashRouter>
         <PageViewTracker />
+        <PresenceTracker />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/rooms" element={<RoomsPage />} />

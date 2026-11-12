@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus } from 'lucide-react';
 import RoomList from '../components/RoomList';
 import Leaderboard from '../components/Leaderboard';
+import PlayersPanel from '../components/PlayersPanel';
 import AccountButtons from '../components/AccountButtons';
 import type { RoomIndexEntry } from '../types';
 
@@ -47,8 +48,9 @@ export default function RoomsPage() {
           <div className="min-h-[calc(100dvh-11rem)] md:min-h-0 md:flex-1 flex flex-col">
             <RoomList onPick={pick} onCreate={create} />
           </div>
-          <div className="md:w-96 md:flex-shrink-0 md:overflow-y-auto pb-2">
+          <div className="md:w-96 md:flex-shrink-0 md:overflow-y-auto pb-2 flex flex-col gap-4">
             <Leaderboard />
+            <PlayersPanel />
           </div>
         </div>
       </div>

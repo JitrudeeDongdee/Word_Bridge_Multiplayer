@@ -58,3 +58,12 @@ export async function loadPublicProfiles(uids: string[]): Promise<Record<string,
   }));
   return out;
 }
+
+/** Every member's public name + picture, live (for the main lobby's player list). */
+export function subscribePublicProfiles(onProfiles: (profiles: Record<string, PublicProfile>) => void): () => void {
+  return onValue(
+    ref(db, PUBLIC_PATH),
+    (snap) => onProfiles((snap.val() ?? {}) as Record<string, PublicProfile>),
+    () => onProfiles({}),
+  );
+}
