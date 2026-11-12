@@ -171,6 +171,22 @@ describe('shared data', () => {
     await assertFails(set(ref(db('a'), 'stats/totalPlayers'), 999999));
   });
 
+  it('presence: who and which room, only as yourself', async () => {
+    const mine = { joinedAt: 1, device: 'desktop', uid: 'a', name: 'Ann', member: true, roomId: 'R1' };
+    await assertSucceeds(set(ref(db('a'), 'presence/s1'), mine));
+    await assertSucceeds(update(ref(db('a'), 'presence/s1'), { roomId: null, name: 'Ann B' }));
+    // Can't claim to be someone else. (A tab keeps its entry when its account changes —
+    // guest → member sign-in — so the entry itself isn't locked to the first uid.)
+    await assertFails(set(ref(db('b'), 'presence/s2'), { ...mine, uid: 'a' }));
+    await assertFails(update(ref(db('b'), 'presence/s1'), { roomId: 'R9' }));
+    await assertSucceeds(update(ref(db('b'), 'presence/s1'), { uid: 'b', name: 'Bea', member: false }));
+    // Field limits
+    await assertFails(set(ref(db('b'), 'presence/s3'), { joinedAt: 1, uid: 'b', name: 'x'.repeat(31) }));
+    await assertFails(set(ref(db('b'), 'presence/s3'), { joinedAt: 1, uid: 'b', member: 'yes' }));
+    // Everyone signed in can read the list
+    await assertSucceeds(get(ref(db('b'), 'presence')));
+  });
+
   it('votes, learned pairs and custom words', async () => {
     await assertSucceeds(update(ref(db('alice'), 'pairVotes/fire|snow'), { a: 'fire', b: 'snow', 'voters/p_alice': { playerId: 'alice', at: 1 } }));
     await assertFails(update(ref(db('alice'), 'pairVotes/fire|snow'), { 'voters/p_bob': { playerId: 'bob', at: 1 } }));
