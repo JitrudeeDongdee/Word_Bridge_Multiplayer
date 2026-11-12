@@ -221,8 +221,12 @@ Still open:
 - `public/robots.txt` (allow all + sitemap), `public/sitemap.xml` (`/` and `/privacy.html` only —
   game routes are `#hash` URLs, which Google doesn't index separately).
 - GA `page_title` now reports the new long title instead of "Word Bridge".
-- **Still to do by the owner:** add the domain to Google Search Console (DNS TXT in Cloudflare or an
-  HTML verification file in `public/`), submit `sitemap.xml`, and request indexing for `/`.
+- PR #41 merged and live 2026-11-12.
+- **Google Search Console (2026-11-12):** Domain property `wordbridgemultiplayer.thaidongdee.com`
+  under the owner's Gmail (same account as GA4). Ownership verified automatically through the domain
+  name provider (an existing DNS record — don't remove it). `sitemap.xml` submitted → "Success",
+  2 pages discovered. Home page inspected ("URL is not on Google") and indexing requested. Check back
+  in a few days under Pages / URL inspection.
 - "Word Bridge" alone competes with other games of the same name (CrazyGames etc.); people are more
   likely to find it with "word bridge multiplayer" or Thai keywords.
 
