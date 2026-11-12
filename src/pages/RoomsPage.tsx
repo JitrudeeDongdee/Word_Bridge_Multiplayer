@@ -1,24 +1,35 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, DoorOpen, Plus, Trophy, Users } from 'lucide-react';
 import RoomList from '../components/RoomList';
 import Leaderboard from '../components/Leaderboard';
 import PlayersPanel from '../components/PlayersPanel';
 import AccountButtons from '../components/AccountButtons';
 import type { RoomIndexEntry } from '../types';
 
+type Tab = 'rooms' | 'leaderboard' | 'players';
+const TABS: { id: Tab; label: string; Icon: typeof Users }[] = [
+  { id: 'rooms', label: 'Rooms', Icon: DoorOpen },
+  { id: 'leaderboard', label: 'Leaderboard', Icon: Trophy },
+  { id: 'players', label: 'Players', Icon: Users },
+];
+
 /**
- * Main lobby: every active room in the game, plus the leaderboard.
- * The room card always fills the screen height (desktop: rooms left, leaderboard right;
- * phone: rooms fill the first screen, leaderboard below).
+ * Main lobby: every active room in the game, the leaderboard and the player list.
+ * Desktop: rooms left; leaderboard (top 3 + you) and the player list share the right column,
+ * all filling the screen height. Phone: one tab at a time (Rooms / Leaderboard / Players).
  */
 export default function RoomsPage() {
   const navigate = useNavigate();
+  const [tab, setTab] = useState<Tab>('rooms');
 
   const pick = (room: RoomIndexEntry) => navigate(`/join/${room.id}`, { state: { room } });
   const create = () => navigate('/', { state: { mode: 'create' } });
+  // Phone: only the chosen tab; desktop (md+): everything
+  const shownOnPhone = (id: Tab) => (tab === id ? 'flex' : 'hidden md:flex');
 
   return (
-    <div className="min-h-dvh md:h-dvh bg-gradient-to-br from-brand-50 to-sky-100 p-4 flex flex-col">
+    <div className="h-dvh bg-gradient-to-br from-brand-50 to-sky-100 p-4 flex flex-col">
       <div className="w-full max-w-5xl mx-auto flex-1 min-h-0 flex flex-col gap-4">
         <header className="flex items-center justify-between gap-2 pt-2">
           <button
@@ -43,14 +54,32 @@ export default function RoomsPage() {
           </button>
         </div>
 
+        <div role="tablist" aria-label="Main lobby sections" className="md:hidden grid grid-cols-3 rounded-xl bg-white/70 p-1 text-xs font-semibold shadow-sm">
+          {TABS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => setTab(id)}
+              className={`inline-flex items-center justify-center gap-1.5 py-2 rounded-lg transition-colors ${tab === id ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500'}`}
+            >
+              <Icon className="w-4 h-4" aria-hidden /> {label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-4">
-          {/* Phone: at least the rest of the first screen; desktop: the full column height */}
-          <div className="min-h-[calc(100dvh-11rem)] md:min-h-0 md:flex-1 flex flex-col">
+          <div className={`${shownOnPhone('rooms')} flex-1 min-h-0 flex-col`}>
             <RoomList onPick={pick} onCreate={create} />
           </div>
-          <div className="md:w-96 md:flex-shrink-0 md:overflow-y-auto pb-2 flex flex-col gap-4">
-            <Leaderboard />
-            <PlayersPanel />
+          {/* Leaderboard takes what it needs, the player list fills the rest and scrolls */}
+          <div className={`${tab === 'rooms' ? 'hidden md:flex' : 'flex'} flex-1 md:flex-none md:w-96 md:flex-shrink-0 min-h-0 flex-col gap-4`}>
+            <div className={`${shownOnPhone('leaderboard')} flex-col flex-shrink-0 min-h-0 overflow-y-auto`}>
+              <Leaderboard />
+            </div>
+            <div className={`${shownOnPhone('players')} flex-1 min-h-0 flex-col md:pb-2`}>
+              <PlayersPanel />
+            </div>
           </div>
         </div>
       </div>

@@ -166,8 +166,10 @@ Still open:
   over up to 5 000 newest rounds — move to a Cloud Function if it grows.
 - `publicProfiles/{uid}` `{name, photo}` (readable by signed-in users; `users/` stays private),
   synced on sign-up, member sign-in and profile edits; the board uses it for pictures.
-- Main lobby layout: room card fills the screen height (desktop: rooms left, board right;
-  phone: rooms fill the first screen); empty state = vector "unbuilt bridge" + Create Room.
+- Main lobby layout (2026-11-12): the board shows the **top 3** plus your own rank below a "…" when
+  you are further down. Desktop: rooms left; leaderboard + player list share the right column and
+  fill the screen height (the player list scrolls inside). Phone: tabs **Rooms / Leaderboard /
+  Players**, one at a time, filling the screen. Empty state = vector "unbuilt bridge" + Create Room.
 
 ## Player list under the leaderboard (2026-11-12, branch `feature/player-presence-list`)
 - Main lobby, under the leaderboard: **In a room / Online / Offline** (`PlayersPanel`, grouping in

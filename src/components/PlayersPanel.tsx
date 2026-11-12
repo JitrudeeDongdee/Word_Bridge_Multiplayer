@@ -70,10 +70,11 @@ export default function PlayersPanel() {
   };
 
   return (
-    <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col gap-3" aria-label="Players">
-      <h2 className="text-lg font-black text-gray-800 inline-flex items-center gap-2">
+    <section className="flex-1 min-h-0 bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col gap-3" aria-label="Players">
+      <h2 className="flex-shrink-0 text-lg font-black text-gray-800 inline-flex items-center gap-2">
         <Users className="w-5 h-5 text-brand-500" aria-hidden /> Players
       </h2>
+      <div className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-3 -mx-1 px-1">
 
       {!groups ? (
         <p className="text-sm text-gray-400 text-center py-4">Loading…</p>
@@ -104,7 +105,8 @@ export default function PlayersPanel() {
           );
         })
       )}
-      <p className="text-[11px] text-gray-400">Offline lists members only — guests show up while they are online.</p>
+      </div>
+      <p className="flex-shrink-0 text-[11px] text-gray-400">Offline lists members only — guests show up while they are online.</p>
     </section>
   );
 }

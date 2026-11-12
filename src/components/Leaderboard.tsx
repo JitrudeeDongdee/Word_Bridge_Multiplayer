@@ -10,7 +10,8 @@ const TABS: { id: Period; label: string }[] = [
   { id: 'month', label: 'This month' },
   { id: 'all', label: 'All time' },
 ];
-const TOP = 10;
+/** Podium only; your own rank is added below when you are further down */
+const TOP = 3;
 const RANK_COLORS = ['text-amber-500', 'text-slate-400', 'text-orange-400'];
 
 /**
