@@ -20,6 +20,14 @@ window.addEventListener('unhandledrejection', (e) => {
   }
 });
 
+// Installable PWA / Play Store app (public/sw.js only adds an offline page; it caches nothing else).
+// Production builds only, so the dev server and emulators never run a worker.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
