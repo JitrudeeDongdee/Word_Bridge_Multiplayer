@@ -233,6 +233,23 @@ Still open:
   total-players counter. "Delete my data" now also removes `publicProfiles/{uid}`.
 - GA data retention is still the default 2 months (Admin → Data retention can raise it to 14).
 
+## PWA / Play Store (2026-11-13, branch `feature/pwa-play-store`)
+- Plan: publish on Google Play as a **Trusted Web Activity** (Bubblewrap / PWABuilder) that opens
+  the live site — Firebase Google/Facebook sign-in keep working (a plain WebView would block Google
+  sign-in) and web deploys update the app without a new store release.
+- Done (free part): `public/manifest.webmanifest` (standalone, theme #0284c7), icons in
+  `public/icons/` (any + maskable, 192/512, made from the favicon art), `public/sw.js` + `offline.html`.
+  The worker only serves the offline page for failed page loads and **caches nothing else**, so the
+  `version.txt` update check and hashed chunks behave as before. Registered in production only.
+- Verified in real Chrome: worker activates and controls the page; with the server down a page
+  load shows the offline page. (The Claude in-app browser can't run service workers.)
+- `.well-known/` is served: the deploy action already writes `.nojekyll` to gh-pages.
+- Store graphics (not in git, `store-assets/` locally): 512 icon, 1024×500 feature graphic.
+- **Still to do:** Play Console account ($25, owner), signing key → put its SHA-256 (and Play App
+  Signing's) in `public/.well-known/assetlinks.json`, build the `.aab` with Bubblewrap, phone
+  screenshots, data-safety form, content rating; chat needs **report / block** (Play UGC policy)
+  or must be off in the app; new personal accounts need a 12-tester / 14-day closed test.
+
 ## SEO (2026-11-12, branch `feature/seo-basics`)
 - Problem: the site was not in search results at all — empty `#root`, title "Word Bridge" only, no
   description, no robots.txt / sitemap, not registered in Google Search Console.
