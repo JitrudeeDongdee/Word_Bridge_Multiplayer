@@ -249,7 +249,11 @@ export async function deleteMyData(): Promise<void> {
   if (!user) throw new Error('not signed in');
   const uid = user.uid;
   const [votes, rooms] = await Promise.all([get(ref(db, 'pairVotes')), get(ref(db, 'rooms'))]);
-  const removals: Promise<void>[] = [remove(ref(db, `users/${uid}`)), remove(ref(db, `publicProfiles/${uid}`))];
+  const removals: Promise<void>[] = [
+    remove(ref(db, `users/${uid}`)),
+    remove(ref(db, `publicProfiles/${uid}`)),
+    remove(ref(db, `blocks/${uid}`)),
+  ];
   for (const [pair, record] of Object.entries((votes.val() ?? {}) as Record<string, { voters?: Record<string, { playerId?: string }> }>)) {
     for (const [voter, v] of Object.entries(record.voters ?? {})) {
       if (v?.playerId === uid) removals.push(remove(ref(db, `pairVotes/${pair}/voters/${voter}`)));

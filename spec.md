@@ -190,6 +190,22 @@ Still open:
 - **Rollout:** deploy the client first, then publish `database.rules.json` (the new rules accept
   old clients too, so order is not critical).
 
+## Chat report / block (2026-11-13, branch `feature/chat-report-block`)
+- Needed for Google Play's user-generated-content policy. Each message from someone else has a "⋯"
+  menu: **Report message** (reason: harassment / sexual / spam / other, "Also block" ticked by
+  default) and **Block**. Blocked players' messages are hidden in every room; the chat shows
+  "Messages from X are hidden (blocked) · Unblock".
+- Data: `blocks/{uid}/{otherUid}` `{name, at}` — only the owner reads/writes it; "Delete my data"
+  removes it. `reports/{pushId}` `{reporterId, reportedId, reportedName, roomId, messageId, text,
+  sentAt, reason, at}` — players can only create (as themselves, not about themselves, once, `at`
+  within 10 min); **nobody can read them from the app**. The owner reviews them in the Firebase
+  console → Realtime Database → `reports`. No notification yet (an email on new reports would need
+  a Cloud Function = Blaze plan).
+- Code: `services/moderationService.ts`, `components/ReportDialog.tsx`, `ChatPanel.tsx`.
+- Privacy policy (EN/TH) covers reports and block lists.
+- **Rollout:** merge, then publish `database.rules.json` (new `blocks` + `reports` paths; until
+  then reports/blocks fail with "Permission denied" because the root denies by default).
+
 ## Rooms keep going without the host (2026-10-20)
 - **Leaving never closes a room.** The last player out only drops their seat (the room keeps its
   code, board and scores, and gets its default name saved). Empty rooms stay in the main lobby
