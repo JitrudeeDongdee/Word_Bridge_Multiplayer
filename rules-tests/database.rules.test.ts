@@ -187,6 +187,32 @@ describe('shared data', () => {
     await assertSucceeds(get(ref(db('b'), 'presence')));
   });
 
+  it('blocks: your own list only', async () => {
+    const b = { name: 'Bob', at: 1 };
+    await assertSucceeds(set(ref(db('ann'), 'blocks/ann/bob'), b));
+    await assertSucceeds(get(ref(db('ann'), 'blocks/ann')));
+    await assertFails(get(ref(db('bob'), 'blocks/ann')));
+    await assertFails(set(ref(db('bob'), 'blocks/ann/cat'), b));
+    await assertFails(set(ref(db('ann'), 'blocks/ann/ann'), b));
+    await assertFails(set(ref(db('ann'), 'blocks/ann/bob'), { name: 'x'.repeat(31), at: 1 }));
+    await assertSucceeds(remove(ref(db('ann'), 'blocks/ann/bob')));
+  });
+
+  it('reports: write-only, as yourself, once', async () => {
+    const r = { reporterId: 'ann', reportedId: 'bob', reportedName: 'Bob', roomId: 'R1', messageId: 'm1', text: 'bad', sentAt: 1, reason: 'harassment', at: Date.now() };
+    await assertSucceeds(set(ref(db('ann'), 'reports/r1'), r));
+    await assertFails(get(ref(db('ann'), 'reports/r1')));
+    await assertFails(get(ref(db('ann'), 'reports')));
+    await assertFails(set(ref(db('ann'), 'reports/r1'), { ...r, reason: 'spam' })); // no edits
+    await assertFails(remove(ref(db('ann'), 'reports/r1')));
+    await assertFails(set(ref(db('bob'), 'reports/r2'), r)); // not as someone else
+    await assertFails(set(ref(db('ann'), 'reports/r3'), { ...r, reportedId: 'ann' })); // not yourself
+    await assertFails(set(ref(db('ann'), 'reports/r4'), { ...r, reason: 'boring' }));
+    await assertFails(set(ref(db('ann'), 'reports/r5'), { ...r, text: 'x'.repeat(201) }));
+    await assertFails(set(ref(db('ann'), 'reports/r6'), { ...r, at: 1 }));
+    await assertFails(set(ref(db(), 'reports/r7'), r));
+  });
+
   it('votes, learned pairs and custom words', async () => {
     await assertSucceeds(update(ref(db('alice'), 'pairVotes/fire|snow'), { a: 'fire', b: 'snow', 'voters/p_alice': { playerId: 'alice', at: 1 } }));
     await assertFails(update(ref(db('alice'), 'pairVotes/fire|snow'), { 'voters/p_bob': { playerId: 'bob', at: 1 } }));

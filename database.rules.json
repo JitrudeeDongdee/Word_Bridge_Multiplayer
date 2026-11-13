@@ -80,6 +80,23 @@
       }
     },
 
+    "blocks": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$other": {
+          ".validate": "$other !== $uid && newData.hasChildren(['name', 'at']) && newData.child('name').isString() && newData.child('name').val().length <= 30 && newData.child('at').isNumber()"
+        }
+      }
+    },
+
+    "reports": {
+      "$reportId": {
+        ".write": "auth != null && !data.exists() && newData.child('reporterId').val() === auth.uid",
+        ".validate": "newData.hasChildren(['reporterId', 'reportedId', 'roomId', 'messageId', 'text', 'reason', 'at']) && newData.child('reportedId').isString() && newData.child('reportedId').val() !== auth.uid && newData.child('roomId').isString() && newData.child('roomId').val().length <= 40 && newData.child('messageId').isString() && newData.child('messageId').val().length <= 40 && newData.child('text').isString() && newData.child('text').val().length <= 200 && newData.child('reason').val().matches(/^(harassment|sexual|spam|other)$/) && newData.child('at').isNumber() && newData.child('at').val() <= now + 60000 && newData.child('at').val() >= now - 600000 && (!newData.child('reportedName').exists() || (newData.child('reportedName').isString() && newData.child('reportedName').val().length <= 30)) && (!newData.child('sentAt').exists() || newData.child('sentAt').isNumber())"
+      }
+    },
+
     "stats": {
       ".read": "auth != null",
       "totalPlayers": {
